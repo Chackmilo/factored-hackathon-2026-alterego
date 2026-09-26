@@ -2,7 +2,7 @@
 **Workflow Focus: Autonomous & Controlled Transaction-Dispute Intake System**  
 *Document Version: 2.1.0 | Date: 26-Sep-2026*
 
-> **v2.1.0 (26-Sep-2026):** corrected against the official PDFs in `docs/` and a profile of the June 2026 data. Changes: provisional credit is a recommendation only (Decision 4), `fraud_score` leakage confirmed (Decision 3), currency caps recomputed from dataset rates, dispute statuses mapped to the data dictionary, clarification outcome added, handoff packet completed, held-out suite and metrics aligned with the official statement, S3 example fixed. Precedence and the decision log live in `AGENTS.md` (sections 2 and 10); verified data facts live in `AGENTS.md` section 7.
+> **v2.1.0 (26-Sep-2026):** corrected against the official PDFs in `docs/` and a profile of the June 2026 data. Changes: provisional credit is a recommendation only (Decision 4), `fraud_score` leakage confirmed (Decision 3), currency caps recomputed from dataset rates, dispute statuses mapped to the data dictionary, clarification outcome added, handoff packet completed, held-out suite and metrics aligned with the official statement, S3 example fixed. Precedence lives in `AGENTS.md` section 2, verified data facts in `AGENTS.md` section 7, and the plan and decision log in `docs/PLAN.md`.
 
 ---
 
@@ -13,14 +13,14 @@ The team brief is **fundamentally sound and strategically superior** to generic 
 2. **Core architectural philosophy aligns with the judging rubric**: *"The LLM proposes, deterministic policy disposes."* This is the exact design philosophy requested by the Factored brief (*"AI should not be autonomous just because it can be"*).
 3. **Data traps proactively spotted**: Identified template repetitions, unfilled placeholders (`{monto}`), and late arrivals.
 
-This complemented document **proposes answers to 5 open decisions**, details the **synthetic dispute policy**, handles the **`fraud_score` leakage trap**, specifies the **security/permission model**, and provides **data contracts and evaluation formulas**. Which decisions the team has closed is tracked only in the `AGENTS.md` section 10 decision log.
+This complemented document **proposes answers to 5 open decisions**, details the **synthetic dispute policy**, handles the **`fraud_score` leakage trap**, specifies the **security/permission model**, and provides **data contracts and evaluation formulas**. Which decisions the team has closed is tracked only in the `docs/PLAN.md` decision log.
 
 ---
 
 ## 2. Resolution of the 5 Open Decisions
 
 ### Decision 1: Confirm Disputes as the Workflow
-* **Status**: **Proposed.** The Notion "Task" page still marks the team decision as pending; close it there and in the `AGENTS.md` decision log.
+* **Status**: **Proposed.** The Notion "Task" page still marks the team decision as pending; close it there and in the `docs/PLAN.md` decision log.
 * **Justification**:
   - Accounts/Inquiries offers zero action and weak ML (pure FAQ/chatbot).
   - Credit eligibility entails high regulatory/fairness complexity in 10 days.
@@ -139,7 +139,7 @@ Transactions carry no MXN: Mexican customers transact in USD. MXN appears only i
 | **AI & Backend** | *Engineer 3* | FastAPI gateway; JWT session auth; State Machine (Understand→Decide→Act→Verify→Escalate); Tool registry with read-back verification; SQLite ops store and audit log; Indirect prompt injection defenses. |
 | **Analytics & UI/Docs**| *Engineer 4* | Contact-reason EDA & business case charts; Data-quality findings report; Interactive Frontend (Client chat + HITL review console); Held-out benchmark harness; Slide deck & Video pitch script. |
 
-Owners are still unassigned; the `AGENTS.md` section 10 decision log tracks them.
+Owners are still unassigned; the `docs/PLAN.md` decision log tracks them.
 
 ---
 

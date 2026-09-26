@@ -10,7 +10,7 @@ Team submission for the **Factored AI & Data Hackathon 2026**. The challenge: bu
 **AI-first banking customer-service system** (not a chatbot) for one focused workflow, end to end,
 with mandatory support for **Spanish and Portuguese**.
 
-Proposed workflow (team decision still pending, see section 10): **transaction-dispute intake**.
+Proposed workflow (team decision still pending, see `docs/PLAN.md`): **transaction-dispute intake**.
 The agent finds the disputed charge, checks policy eligibility, opens a well-documented case and
 protects the customer when needed. It never refunds or moves money.
 
@@ -242,7 +242,7 @@ interprets language and fills a strict JSON schema. A deterministic state machin
 tool gateway decide and act. `customer_id` always comes from the session token, never from the model.
 Dataset rows stay out of any external model call: Understand sees only the masked customer message.
 
-| Stage / component | Responsibility | Tech (decided or proposed, see section 10) |
+| Stage / component | Responsibility | Tech (decided or proposed, see `docs/PLAN.md`) |
 | --- | --- | --- |
 | Identity + input guard | Mock OIDC/JWT test sessions with expiry; PII redaction; prompt-injection filter; language detection | FastAPI, JWT |
 | Understand | Extract `{intent, transaction_ref, amount_hint, date_hint, reason, language, missing_fields}` into a Pydantic schema | Deterministic ES/PT keyword and slot extractor now; an LLM with structured output plugs in behind the same interface later |
@@ -285,56 +285,12 @@ this table tracks the gap to the plan. 24 tests pass.
 | README | Starter-kit text with a "7 pillars" rubric that is not the hackathon rubric | Rewrite to match the submission |
 | `data/synthetic_samples.json` | 4 English scenarios in USD | Team-generated; replace with the ES/PT held-out suite |
 
-## 10. Plan, lanes and open decisions
+## 10. Plan, roadmap and decisions
 
-### Revised plan (2026-09-26)
-
-Revised after the day-2 audit: days 1-2 left contracts, wiring and data correctness unfinished.
-The order builds one working end-to-end slice first, then widens it. A day is done only when its
-"done when" holds.
-
-| Day | Date | Focus | Done when |
-| --- | --- | --- | --- |
-| 2 | Sep 26 | Audit, brief v2.1, this plan; commit the untracked dispute stack on a branch; confirm the event-time shift on a raw CSV | The team confirms or changes every "Proposed" row below |
-| 3 | Sep 27 | Data: contracts, local event time, FX by transaction date, dedup and backup-prefix probe (2 h cap). Backend: SQLite ops store and audit log, gateway guards and enums, policy v2.1 clauses | Every fix has a test that failed first; ingestion reruns with contract checks green |
-| 4 | Sep 28 | Five-stage multi-turn orchestrator behind FastAPI and `get_current_session`; charge matching and clarification; handoff producer | One Spanish dispute conversation runs end to end through the API and ends in a verified case |
-| 5 | Sep 29 | ML on all years, time split, LightGBM vs heuristic baseline, cost-based threshold, MLflow; wire `ml_risk_score` and the 48h count; input guard for LATAM PII and escaped tags | The model beats the baseline on the held-out time window, and the run is logged |
-| 6 | Sep 30 | Streamlit customer chat (ES/PT) and HITL console; eval harness with the first 60 cases | The three case types run in the UI in both languages |
-| 7 | Oct 1 | Full 250-case suite with provenance labels; baseline vs proposed, 3 repeats, slices | A metrics report covers every brief section 5 metric with denominators |
-| 8 | Oct 2 | Fix failures; bounded retries, safe fallback, tracing; deploy | A public URL serves the demo |
-| 9 | Oct 3 | README rewrite, architecture, metrics, limitations, route to production; rerun the notebook | Every doc claim matches the code and the data |
-| 10 | Oct 4-5 | 4-6 slides, 3-minute video, repo rename, submission email | Submission sent to `hackathon.admin@factored.ai` |
-
-Cut order when late: the intent classifier, then MLflow (a JSON run log instead), then Portuguese
-policy text. Always kept: the end-to-end flow, act-and-verify, the handoff packet, the held-out
-comparison with the baseline, the deployment and the video.
-
-Lanes, one owner each: agent and backend; ML and evaluation; data engineering; analytics and docs.
-
-### Decision log
-
-Ask the team before acting on a "Proposed" or "Open" row. Record each closure here with its date.
-
-| Decision | Status | Resolution or proposal |
-| --- | --- | --- |
-| Operational system of record | Decided 2026-09-26 | SQLite `data/ops.sqlite` for cases, card locks, sessions and the audit log; DuckDB read-only for the app |
-| Understand stage | Decided 2026-09-26 | Deterministic ES/PT keyword and slot extractor now; an LLM provider later behind the same interface |
-| Git workflow | Decided 2026-09-26 | Work on branches, commit per phase with the suite green |
-| `fraud_score` leakage | Settled by data 2026-09-26 | Leaks the label; excluded from the model and the baseline |
-| Workflow | Proposed | Transaction-dispute intake (Notion "Task" still says pending; fallback: credit eligibility) |
-| Provisional credit | Proposed | Candidate flag for a human only (brief v2.1, rule 8); the code still returns it as an autonomous outcome |
-| Dispute policy | Proposed | Brief v2.1 clauses and order |
-| $500 escalation ceiling | Proposed | Keep it and report the ~53% containment ceiling it implies |
-| Baseline | Proposed | The current starter pipeline, measured on the same held-out suite |
-| Rebuild vs evolve | Proposed | Evolve: keep layout and contracts, build the dispute stack beside the baseline |
-| Policy explanations | Proposed | Policy-as-code with clause ids; RAG only if time remains |
-| Learned components | Proposed | Fraud model required; intent classifier stretch |
-| Portuguese depth | Proposed | PT utterances and answers only, labeled team-generated |
-| UI and deployment | Proposed | Streamlit; Docker on Render or Fly.io with a public URL |
-| Team size and lane owners | Open | |
-| Preventive card lock confirmation | Open | Whether the customer must confirm before the lock |
-| Disputable-charge rule and distress keywords | Open | Brief clauses `POL-DISP-TYPE` and `POL-ESC-DISTRESS` |
-| Documentation language | Open | |
+The problem question, the revised plan with its gates, the day-by-day roadmap, the lanes and the
+decision log live in `docs/PLAN.md` (Spanish). Shareable copies exist in a Claude Doc and in Notion;
+when they differ, the repo file wins. Ask the team before acting on a decision marked "Propuesta"
+or "Abierta" there, and record each closure in that file with its date.
 
 ## 11. Working conventions for agents
 
@@ -343,7 +299,7 @@ Ask the team before acting on a "Proposed" or "Open" row. Record each closure he
 - **Secrets:** `.env` is a git-ignored file holding the read-only AWS keys and any API keys; keep it
   out of commits, logs and prompts. Prompts sent to an external model carry only the masked customer
   message, never keys or dataset rows.
-- **Git:** work on a branch and commit per phase with the suite green (decision log, section 10).
+- **Git:** work on a branch and commit per phase with the suite green (`docs/PLAN.md` decision log).
 - **Data provenance:** every dataset, fixture and eval case carries a label: `synthetic-organizer`,
   `team-generated`, or `derived`. Portuguese content is always `team-generated`.
 - **Authorization:** any tool that reads or writes customer data takes `customer_id` from the

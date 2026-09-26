@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Read `AGENTS.md` before any non-trivial change: it holds the hackathon rules (violations disqualify the work), judging metrics, verified data findings (section 7), target architecture, the gap between code and plan (section 9), and the revised plan with its decision log (section 10). `docs/TEAM_BRIEF_COMPLEMENTED.md` (v2.1) holds the dispute policy spec, data contracts and evaluation spec; `src/rules/dispute_policy.py` and `src/data/ingestion.py` still implement v2.0 in places. This file covers only how to run the code and how it is wired today.
+Read `AGENTS.md` before any non-trivial change: it holds the hackathon rules (violations disqualify the work), judging metrics, verified data findings (section 7), target architecture, the gap between code and plan (section 9), and a pointer to `docs/PLAN.md` (problem question, plan, roadmap, decision log). `docs/TEAM_BRIEF_COMPLEMENTED.md` (v2.1) holds the dispute policy spec, data contracts and evaluation spec; `src/rules/dispute_policy.py` and `src/data/ingestion.py` still implement v2.0 in places. This file covers only how to run the code and how it is wired today.
 
 ## Commands
 
@@ -42,4 +42,4 @@ The repo holds two decision paths. Know which one you are touching.
 - `data/lakehouse.duckdb` is a relative path, so run commands from the repo root. It is git-ignored; rebuild it with the ingestion command.
 - DuckDB allows one writer process. An open notebook kernel or other process holding `data/lakehouse.duckdb` makes ingestion and the gateway fail with "Cannot open file ... being used by another process".
 - Thresholds live in two places: the dispute policy hardcodes its own in `dispute_policy.py`; the env thresholds in `src/core/config.py` (`MAX_AUTONOMOUS_TRANSACTION_LIMIT` and friends) feed only the baseline.
-- **Open conflict:** `POL-AUT-150` returns simulated provisional credit as an autonomous outcome (brief v2.0), while AGENTS.md rule 8 allows provisional credit only as a recommendation. Brief v2.1 proposes a candidate flag for human review. Change the code once the AGENTS.md section 10 decision log marks it Decided.
+- **Open conflict:** `POL-AUT-150` returns simulated provisional credit as an autonomous outcome (brief v2.0), while AGENTS.md rule 8 allows provisional credit only as a recommendation. Brief v2.1 proposes a candidate flag for human review. Change the code once the `docs/PLAN.md` decision log marks it "Decidida".

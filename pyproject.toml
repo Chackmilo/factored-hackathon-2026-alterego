@@ -1,7 +1,7 @@
 [project]
 name = "hackaton"
 version = "0.1.0"
-description = "OmniGuard AI - Hybrid Fraud & Customer Resolution Engine"
+description = "AlterEgo / OmniGuard AI - AI-First Banking Dispute Intake Engine"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -28,4 +28,18 @@ dependencies = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+addopts = "-v"
+filterwarnings = [
+    "ignore::starlette.testclient.StarletteDeprecationWarning",
+]
 
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]

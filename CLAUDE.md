@@ -16,7 +16,7 @@ uv run python -m src.data.ingestion                   # build data/lakehouse.duc
 docker-compose up --build -d                          # containerized API
 ```
 
-No linter or formatter is configured. pytest runs with `pythonpath = ["."]`, so imports are absolute from the repo root (`from src.rules.dispute_policy import ...`). Files in `scripts/` are one-off S3 and DuckDB probes.
+Ruff is configured in `pyproject.toml`. pytest runs with `pythonpath = ["."]`, so imports are absolute from the repo root (`from src.rules.dispute_policy import ...`). Operational scripts are organized in `scripts/audit/`, `scripts/data_ops/`, and `scripts/notebooks/` (see `scripts/README.md`), with root-level forwarders for backward compatibility.
 
 ## Architecture: two stacks side by side
 

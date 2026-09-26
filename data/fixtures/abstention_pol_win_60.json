@@ -1,0 +1,36 @@
+{
+  "fixture_id": "FX-ABST-WIN60-001",
+  "provenance": "synthetic-organizer",
+  "provenance_note": "Fila del dataset sintetico LATAM Bank (S3 data/transactions/year=2026/month=04), elegida por el equipo en notebooks/01_problema_y_datos.ipynb",
+  "today": "2026-06-17",
+  "transaction": {
+    "transaction_id": "TRX-2BVWL8Y4FVYU2DOYS3IJ",
+    "customer_id": "CLI-8TN3TVGDNRI0",
+    "product_id": "PRD-9TTPQQYYY4AZ",
+    "transaction_date_raw": "2026-04-02 04:24:01",
+    "process_date": "2026-04-01",
+    "local_date": "2026-04-01",
+    "days_since_local": 77,
+    "transaction_type": "Purchase",
+    "transaction_status": "Approved",
+    "amount": 324599.21,
+    "currency": "COP",
+    "amount_usd": 81.15,
+    "merchant_name": "Cine Premium"
+  },
+  "customer": {
+    "segment": "Plus",
+    "country": "Colombia",
+    "account_age_days": 686,
+    "complaints_last_90d": 0
+  },
+  "expected": {
+    "policy_outcome": "SAFE_POLICY_ABSTENTION",
+    "action_required": "ABSTAIN",
+    "cited_clauses": [
+      "POL-WIN-60"
+    ],
+    "case_opened": false,
+    "note": "Dentro de ventana seria candidato POL-AUT-150; la ventana decide antes."
+  }
+}

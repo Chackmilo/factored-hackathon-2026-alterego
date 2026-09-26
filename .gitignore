@@ -26,3 +26,8 @@ data/*.csv
 
 # Documentation binary files (contain credentials / large binaries)
 docs/*.pdf
+
+# IDE and tool caches
+.claude/
+.pytest_cache/
+

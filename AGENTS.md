@@ -2,7 +2,7 @@
 
 Instructions and context for AI coding agents (and new teammates) working in this repository.
 Read this file before touching code. It consolidates the team Notion workspace, the team brief,
-the official hackathon rules and the current state of the codebase as of 2026-09-25.
+the official hackathon rules and the current state of the codebase as of 2026-09-26.
 
 ## 1. What this repo is
 
@@ -26,10 +26,16 @@ Read these before inventing anything. Content in them was written by the team or
 | Notion: Scope e informacion no tecnica | Full summary of the official problem statement, judging criteria, metric definitions, logistics |
 | Notion: Task | The five-stage flow, the three case types, the four candidate workflows and their comparison |
 | Notion: Data y data dictionary | Dataset summary, all 13 tables and columns, FK relations, profiling findings, project implications |
-| Claude Doc: Factored Hackathon 2026 Team Brief | The team's proposal: rationale, architecture, evaluation plan, 10-day plan, open decisions |
+| Claude Doc: Factored Hackathon 2026 Team Brief | The team's original proposal: rationale, architecture, evaluation plan, first 10-day plan |
+| `docs/TEAM_BRIEF_COMPLEMENTED.md` (v2.1) | Dispute policy spec with clause ids, data contracts, handoff packet, held-out suite, metric formulas. Supersedes the original brief on these topics |
 | Official Problem Statement (Google Doc) | https://docs.google.com/document/d/18AwONT8hQupRcfNPLFrPo6fHOJ_OUn1nBf-3jMnla2c/edit |
 | LATAM Bank Dataset Summary (PDF) | https://drive.google.com/file/d/1V7n9v0zuv9SYzpW2AzPnssgAp5X_buXc/view |
 | LATAM Bank Complete Data Dictionary (PDF) | [link to the organizer's data dictionary removed] |
+| `docs/*.pdf` | Local copies of the official statement, kickoff slides, dataset summary and dictionary (git-ignored: the dictionary holds AWS keys) |
+
+**Precedence when sources disagree:** official problem statement and kickoff slides, then the section 4
+rules, then the complemented brief, then the code. Code that disagrees with the brief is a gap to plan
+(section 9), not a spec change.
 
 Notion parent page: https://app.notion.com/p/3e67b60f246881a3b780c10c7eff38c5
 Team brief: https://claude.ai/code/artifact/025bdc1c-573c-45a2-b3fd-82e7ae558f19
@@ -120,9 +126,9 @@ reconocido" (18.3%) plus "Cobro indebido" (18.2%) are about 36% of all complaint
 
 | Case | Example | Expected behavior |
 | --- | --- | --- |
-| Normal | "No reconozco un cargo de ayer en Oxxo" | Find the transaction, check the dispute window, open the case, read it back, confirm |
-| Ambiguous | "Tengo um cobranca estranha" with several candidate charges | List options and ask. Out of window: explain the policy and abstain |
-| Human required | High amount, several unrecognized charges, or high fraud score | Preventive card block plus a handoff packet of verified facts |
+| Normal | "No reconozco un cargo de ayer en Super Ahorro" | Find the transaction, check the dispute window, open the case, read it back, confirm |
+| Ambiguous | "Tenho uma cobrança estranha" with several candidate charges | List options and ask. Out of window: explain the policy and abstain |
+| Human required | High amount, several unrecognized charges, or high ML risk score | Handoff packet of verified facts; preventive card block when a stolen card or multi-charge fraud is claimed |
 
 Allowed real actions (proposed): **open dispute case** and **preventive card block**. Nothing else.
 Preventive block is part of disputes, not a second workflow. The other three candidate workflows
@@ -164,12 +170,13 @@ call_transcripts, satisfaction_surveys and complaints.
 
 ### Intentional quality traps
 
-- About 2% duplicates across tables. ID-level dedup found none, so duplicates likely require
-  business-key matching. Still to verify.
+- About 2% duplicates across tables (documented). **Unresolved:** ID-level and business-key dedup
+  both find 0 in June 2026 transactions and 2026 complaints. Next steps: brief section 4.
 - About 5% nulls in non-mandatory fields.
 - Late-arriving partitions. Observed row counts are below documented totals (686k vs 800k
-  interactions, 67k vs 80k complaints).
-- Schema evolution across partitions.
+  interactions, 67k vs 80k complaints). June 2026 holds 0 transactions processed more than 3 days
+  late; the unexplored `data_backup_20260831/` prefix may hold them.
+- Schema evolution across partitions. Value drift already seen: see "Verified findings" below.
 - A small share of orphaned foreign keys on purpose.
 
 ### Profiling findings (2025-03 sample for transactions and transcripts; full load for interactions and complaints)
@@ -202,109 +209,141 @@ is mostly Call Center (33,761), then Email, Web, App, Branch, Regulator.
 
 ### Usable signal
 
-- `transactions.is_fraud` about 0.09% in the sample. `fraud_score` averages about 50 on fraud vs
-  about 15 otherwise. **Check whether `fraud_score` is derived from `is_fraud` before using it as a
-  feature.** Treat this as a day-1 task.
+- `transactions.is_fraud` about 0.09% in the sample. **`fraud_score` leaks the label:** every
+  non-fraud row scores <= 30.0, so a score above 30 means fraud with 100% precision. Keep it out of
+  every model and out of the baseline; present it as a data-quality finding.
 - Transaction status in the sample: Approved about 92%, Declined 5%, Pending 2%, Reversed 1%.
 
 Implications: the dataset's intent labels are unusable, so any intent classifier needs a
 team-labeled ES/PT utterance set with inter-annotator agreement on a sample. Portuguese test cases
 are team-generated and must be labeled as such.
 
+### Verified findings (profile of 2026-09-26: June 2026 transactions, 2026 complaints)
+
+Each finding changes a design choice. Re-check against the full load before quoting it as final.
+
+| Finding | Evidence | Consequence |
+| --- | --- | --- |
+| Event time shifted | `transaction_date` hours 00-05 fall on the day after their `process_date` partition (25% of rows); 227 sampled rows land on 2026-06-18, after "today" | Derive the local date before window, velocity or time-of-day logic; confirm UTC on a raw CSV |
+| No MXN in transactions or products | Mexican customers transact in USD; `amount_usd` is NULL whenever `currency = 'USD'` | Caps and features work in USD; MXN appears only in `complaints.claimed_amount` |
+| Amounts are high | Median about $470; 14.8% <= $150, 38.6% $150-$500, 46.6% > $500 | The $500 ceiling caps containment near 53%; justify the threshold in the report |
+| Merchant rarely known | `merchant_name` NULL in 77% of rows; names are generic ("Super Ahorro", "Cine Premium") | Charge matching leans on amount and date; merchant is a weak hint |
+| Some rows cannot be disputed | Deposit and Adjustment rows are 17%; Declined, Pending and Reversed statuses about 8% | The policy needs the disputable-charge rule (brief clause `POL-DISP-TYPE`) |
+| Complaint product link is unreliable | 82% of non-null `complaints.affected_product_id` point outside the complainant's own products | Never infer the complained product from that column |
+| Name and enum drift | `transaction_country` holds "México" and "Mexico"; `product_type` values are Spanish ("Tarjeta Crédito") while the dictionary lists English; complaint `status` has no `INTAKE_RECEIVED`, `category` has no `Fraud`, `reception_channel` has no `Chat` | Normalize names; write only dictionary values |
+| Repeat flag exists natively | `complaints.is_repeat_complainer` is true on 15% of complaints | Use or reconcile it instead of hardcoding false |
+| Claim currency often missing | `complaints.currency` NULL on 68% of rows | Claimed amounts need a currency rule before any sum |
+| S3 layout | Dimensions are flat CSVs under `data/`; facts are partitioned `year=/month=/day=`; a second root `data_backup_20260831/` exists | There is no `data/complaints.csv` |
+
 ## 8. Target architecture
 
-Core design idea: **the LLM proposes, deterministic policy disposes.** The LLM only interprets
-language and fills a strict JSON schema. A deterministic state machine, policy engine and tool
-gateway decide and act. `customer_id` always comes from the session token, never from the model.
+Core design idea: **the model proposes, deterministic policy disposes.** The Understand stage only
+interprets language and fills a strict JSON schema. A deterministic state machine, policy engine and
+tool gateway decide and act. `customer_id` always comes from the session token, never from the model.
+Dataset rows stay out of any external model call: Understand sees only the masked customer message.
 
-| Stage / component | Responsibility | Candidate tech |
+| Stage / component | Responsibility | Tech (decided or proposed, see section 10) |
 | --- | --- | --- |
 | Identity + input guard | Mock OIDC/JWT test sessions with expiry; PII redaction; prompt-injection filter; language detection | FastAPI, JWT |
-| Understand | Extract `{intent, transaction_ref, reason, missing_fields}` into a Pydantic schema | LLM with structured output |
-| Decide | Synthetic dispute policy (window, amount caps per currency, confirmation rules) plus fraud-risk score | Policy-as-code, scikit-learn or LightGBM |
-| Act | Tool gateway: per-state tool allowlist, idempotency keys, bounded retries | FastAPI tool layer |
-| Verify | Read the created case or card status back from the system of record before telling the customer | Postgres |
-| Escalate | Handoff packet: request, verified facts, actions taken, evidence, policy clauses, open questions | JSON plus agent console |
-| Policy explanations | Bilingual dispute policy with clause citations | Policy-as-code with clause ids, or pgvector RAG (under discussion) |
-| Data platform | Bronze raw CSVs -> silver validated and deduplicated -> gold dispute and contact-reason marts | DuckDB/dbt or Databricks, Pandera |
-| Observability | Traces, append-only audit log, experiment tracking, eval runs | Langfuse or OpenTelemetry, MLflow |
+| Understand | Extract `{intent, transaction_ref, amount_hint, date_hint, reason, language, missing_fields}` into a Pydantic schema | Deterministic ES/PT keyword and slot extractor now; an LLM with structured output plugs in behind the same interface later |
+| Decide | Synthetic dispute policy (brief v2.1 clause order) plus ML risk score | Policy-as-code, LightGBM |
+| Act | Tool gateway: per-state tool allowlist, idempotency keys, bounded retries | FastAPI tool layer writing to the SQLite ops store |
+| Verify | Read the created case or card status back from the system of record before telling the customer | SQLite ops store (`data/ops.sqlite`) |
+| Escalate | Handoff packet: request, verified facts, actions taken, evidence, policy clauses, open questions | JSON plus Streamlit agent console |
+| Policy explanations | Bilingual dispute policy with clause citations | Policy-as-code with clause ids (built); RAG only if time remains |
+| Data platform | Bronze raw CSVs -> silver validated and deduplicated -> gold dispute and contact-reason marts | DuckDB (read-only for the app), Pandera or SQL checks |
+| Observability | Traces, append-only audit log, experiment tracking, eval runs | Audit log in the ops store, MLflow; OpenTelemetry if time remains |
 
 Learned components, each measured against a baseline:
 
-1. **Unrecognized-charge risk model** on `transactions.is_fraud`, time-based split, rules-only
-   baseline vs gradient boosting, threshold chosen by the cost of a missed escalation. This is the
-   required ML deliverable.
-2. **Intent and slot classifier** on a small team-labeled ES/PT set: keyword rules vs multilingual
-   embeddings plus logistic regression vs LLM zero-shot. Stretch goal; the LLM already extracts
-   intent.
+1. **Unrecognized-charge risk model** on `transactions.is_fraud`, all years, time-based split,
+   rules-only baseline vs gradient boosting, `fraud_score` excluded from both, threshold chosen by
+   the cost of a missed escalation. This is the required ML deliverable.
+2. **Intent and slot classifier** on a small team-labeled ES/PT set: keyword extractor vs
+   multilingual embeddings plus logistic regression vs LLM zero-shot. Stretch goal.
 
 ## 9. Current state of the codebase and the gap
 
-The repo is a starter kit named "OmniGuard AI" (see `README.md`, `src/`). It does **not** yet
-implement the plan above. Know what is real and what is scaffolding:
+The repo holds the "OmniGuard AI" starter pipeline (the proposed measured baseline, wired to the
+API) and a dispute stack beside it that nothing calls yet. `CLAUDE.md` describes how each is wired;
+this table tracks the gap to the plan. 24 tests pass.
 
-| Area | What exists | Status vs plan |
+| Area | What exists | Gap vs plan |
 | --- | --- | --- |
-| Layout and contracts | `src/{domain,core,privacy,rules,ml,agents,hitl,api}`, Pydantic v2 schemas, `uv` lockfile, Dockerfile, docker-compose, 13 passing tests | Keep |
-| PII masker | Regex redaction of cards, emails, phones, SSN | Keep, extend for LATAM document formats |
-| Orchestrator | Single-shot, one request one decision, English keyword matching, simulated LLM call (`record_tokens(450, 120)`), USD only | Rewrite as multi-turn five-stage state machine |
-| Rules engine | Regex keyword rules, sanctioned-country set, 10x-average anomaly rule | Replace with dispute policy-as-code with clause ids |
-| "ML" fraud detector | Hand-tuned logistic sigmoid, no training, no data | Replace with a model trained on `transactions.is_fraud` |
-| Tools | Hardcoded mocks that always succeed, auto "provisional credit" | Rewrite against Postgres system of record; remove provisional credit as an action |
-| HITL queue | In-memory dict | Persist; produce the structured handoff packet |
-| Identity | None | Add mock OIDC/JWT test sessions |
-| LLM | `LLM_PROVIDER=mock`, keys for openai/anthropic/gemini/groq in config, nothing wired | Wire one provider behind a thin interface; keep mock for tests |
-| Data pipeline | None | Build bronze/silver/gold with contracts and a late-arrival fixture |
-| README | Spanish, describes a "7 pillars" rubric that is not the hackathon rubric | Rewrite to match the actual submission |
-| `data/synthetic_samples.json` | 4 English scenarios in USD | Team-generated; replace with ES/PT held-out suite |
-
-Proposal on the table: keep the current pipeline as the **measured baseline** (rules plus heuristic
-score, no LLM) and build the proposed system next to it.
+| Baseline pipeline | Single-shot orchestrator, English keyword rules, hand-tuned "ML" sigmoid, always-succeeding mock tools, in-memory HITL queue | Keep as the measured baseline. Fix the crash at `src/agents/orchestrator.py:130` (`and`/`or` precedence). Its card lock on "cargo no reconocido" and its refund promise count as unsafe outcomes in the report |
+| Identity | `src/auth/session.py` HS256 JWT | No endpoint uses it; `JWT_SECRET` falls back to a hardcoded default |
+| Dispute policy | `src/rules/dispute_policy.py`, brief v2.0 clause order | Brief v2.1 clauses (session, clarify, disputable charge, distress); legal before window; provisional credit as a candidate flag; the "hace -1 días" message on future-dated charges |
+| Tool gateway | `src/tools/gateway.py` act-and-verify on DuckDB `silver_*`, fixture tests | Writes to the SQLite ops store, dictionary enums, card type and status guards, idempotency keys, audit log, escaped untrusted tags |
+| Handoff packet | `src/domain/handoff.py` model | `customer_request`, `supporting_evidence`, `provisional_credit_recommendation`; nothing produces a packet yet |
+| Data pipeline | `src/data/ingestion.py` bronze/silver/gold, customer-aligned sample with 0 orphans | Contracts, local event time, FX by transaction date, dedup, late arrivals, full-history load for ML |
+| ML | Hand-tuned heuristic | LightGBM on all years without `fraud_score` |
+| Understand | Baseline English keyword matching | ES/PT keyword and slot extractor behind the Understand interface |
+| Orchestrator | None for disputes | Multi-turn five-stage state machine behind FastAPI and `get_current_session` |
+| PII masker | Regex for cards, emails, US phones, SSN | LATAM documents (CURP, DNI, CC, CPF); stop masking amounts (a 7-digit COP amount becomes `[REDACTED_PHONE]`) |
+| UI, eval harness, deployment | None | Streamlit chat and console; 250-case suite; public URL |
+| Analysis notebook | `notebooks/01_problema_y_datos.ipynb` | Ran on the pre-fix lakehouse; rerun it and correct its false claim that most transactions fall under $150 (14.8% do) |
+| README | Starter-kit text with a "7 pillars" rubric that is not the hackathon rubric | Rewrite to match the submission |
+| `data/synthetic_samples.json` | 4 English scenarios in USD | Team-generated; replace with the ES/PT held-out suite |
 
 ## 10. Plan, lanes and open decisions
 
-### 10-day plan (from the team brief)
+### Revised plan (2026-09-26)
 
-| Days | Dates | Focus |
+Revised after the day-2 audit: days 1-2 left contracts, wiring and data correctness unfinished.
+The order builds one working end-to-end slice first, then widens it. A day is done only when its
+"done when" holds.
+
+| Day | Date | Focus | Done when |
+| --- | --- | --- | --- |
+| 2 | Sep 26 | Audit, brief v2.1, this plan; commit the untracked dispute stack on a branch; confirm the event-time shift on a raw CSV | The team confirms or changes every "Proposed" row below |
+| 3 | Sep 27 | Data: contracts, local event time, FX by transaction date, dedup and backup-prefix probe (2 h cap). Backend: SQLite ops store and audit log, gateway guards and enums, policy v2.1 clauses | Every fix has a test that failed first; ingestion reruns with contract checks green |
+| 4 | Sep 28 | Five-stage multi-turn orchestrator behind FastAPI and `get_current_session`; charge matching and clarification; handoff producer | One Spanish dispute conversation runs end to end through the API and ends in a verified case |
+| 5 | Sep 29 | ML on all years, time split, LightGBM vs heuristic baseline, cost-based threshold, MLflow; wire `ml_risk_score` and the 48h count; input guard for LATAM PII and escaped tags | The model beats the baseline on the held-out time window, and the run is logged |
+| 6 | Sep 30 | Streamlit customer chat (ES/PT) and HITL console; eval harness with the first 60 cases | The three case types run in the UI in both languages |
+| 7 | Oct 1 | Full 250-case suite with provenance labels; baseline vs proposed, 3 repeats, slices | A metrics report covers every brief section 5 metric with denominators |
+| 8 | Oct 2 | Fix failures; bounded retries, safe fallback, tracing; deploy | A public URL serves the demo |
+| 9 | Oct 3 | README rewrite, architecture, metrics, limitations, route to production; rerun the notebook | Every doc claim matches the code and the data |
+| 10 | Oct 4-5 | 4-6 slides, 3-minute video, repo rename, submission email | Submission sent to `hackathon.admin@factored.ai` |
+
+Cut order when late: the intent classifier, then MLflow (a JSON run log instead), then Portuguese
+policy text. Always kept: the end-to-end flow, act-and-verify, the handoff packet, the held-out
+comparison with the baseline, the deployment and the video.
+
+Lanes, one owner each: agent and backend; ML and evaluation; data engineering; analytics and docs.
+
+### Decision log
+
+Ask the team before acting on a "Proposed" or "Open" row. Record each closure here with its date.
+
+| Decision | Status | Resolution or proposal |
 | --- | --- | --- |
-| 1-2 | Sep 25-26 | Schemas and contracts, bronze/silver/gold pipeline, core bank mock API, identity service |
-| 3-4 | Sep 27-28 | Orchestrator state machine, tool gateway with permissions, policy engine, bilingual policy |
-| 5-6 | Sep 29-30 | Intent classifier and fraud-risk model vs baselines in MLflow; input guard; handoff packet and agent console |
-| 7 | Oct 1 | Held-out and red-team suite, first metrics run, fix what fails |
-| 8 | Oct 2 | Frontend polish, analytics view, deployment |
-| 9 | Oct 3 | Docs: rationale, architecture, metrics, limitations and remaining work |
-| 10 | Oct 4-5 | Demo video, buffer, submission |
-
-Suggested lanes, one owner each: agent and backend; ML and evaluation; data engineering;
-analytics and docs.
-
-### Open decisions (do not assume, ask the team)
-
-- [ ] Confirm disputes as the workflow (fallback: credit eligibility). An unanswered comment on
-      this sits in the team brief.
-- [ ] Team size and owner per lane.
-- [ ] Rebuild vs evolve the starter (proposal: keep layout and contracts, rewrite orchestrator,
-      rules, ML scorer, tools, README).
-- [ ] Use the current starter pipeline as the measured baseline.
-- [ ] Portuguese depth: PT utterances and answers only, or also PT policy text, or a fake Brazil
-      cohort (proposal: utterances and answers only, documented as team-generated).
-- [ ] Exact action set and whether preventive block needs explicit customer confirmation.
-- [ ] Learned components: fraud model required, intent classifier stretch.
-- [ ] Policy RAG vs policy-as-code with clause citations.
-- [ ] Stack: DuckDB/dbt vs Databricks; Postgres vs SQLite; which LLM provider.
-- [ ] Where the profiled data lives and who holds the AWS keys.
-- [ ] Multi-turn session state store and customer-facing surface (chat UI vs API only).
-- [ ] Deployment target (docker-compose floor, public URL stretch) and documentation language.
-- [ ] Check whether `fraud_score` leaks the `is_fraud` label.
-- [ ] Define the synthetic dispute policy (window, caps per currency, confirmation rules).
+| Operational system of record | Decided 2026-09-26 | SQLite `data/ops.sqlite` for cases, card locks, sessions and the audit log; DuckDB read-only for the app |
+| Understand stage | Decided 2026-09-26 | Deterministic ES/PT keyword and slot extractor now; an LLM provider later behind the same interface |
+| Git workflow | Decided 2026-09-26 | Work on branches, commit per phase with the suite green |
+| `fraud_score` leakage | Settled by data 2026-09-26 | Leaks the label; excluded from the model and the baseline |
+| Workflow | Proposed | Transaction-dispute intake (Notion "Task" still says pending; fallback: credit eligibility) |
+| Provisional credit | Proposed | Candidate flag for a human only (brief v2.1, rule 8); the code still returns it as an autonomous outcome |
+| Dispute policy | Proposed | Brief v2.1 clauses and order |
+| $500 escalation ceiling | Proposed | Keep it and report the ~53% containment ceiling it implies |
+| Baseline | Proposed | The current starter pipeline, measured on the same held-out suite |
+| Rebuild vs evolve | Proposed | Evolve: keep layout and contracts, build the dispute stack beside the baseline |
+| Policy explanations | Proposed | Policy-as-code with clause ids; RAG only if time remains |
+| Learned components | Proposed | Fraud model required; intent classifier stretch |
+| Portuguese depth | Proposed | PT utterances and answers only, labeled team-generated |
+| UI and deployment | Proposed | Streamlit; Docker on Render or Fly.io with a public URL |
+| Team size and lane owners | Open | |
+| Preventive card lock confirmation | Open | Whether the customer must confirm before the lock |
+| Disputable-charge rule and distress keywords | Open | Brief clauses `POL-DISP-TYPE` and `POL-ESC-DISTRESS` |
+| Documentation language | Open | |
 
 ## 11. Working conventions for agents
 
 - **Environment:** Python 3.11+, `uv`. Install with `uv sync`, test with `uv run pytest -v`, run
   the API with `uv run uvicorn src.api.app:app --reload --port 8000`.
-- **Secrets:** never commit `.env`. Never paste AWS keys, API keys or any dataset row into a prompt
-  sent to an external model. The `.env/` directory currently in the repo root is a stray
-  virtualenv, not a secrets file.
+- **Secrets:** `.env` is a git-ignored file holding the read-only AWS keys and any API keys; keep it
+  out of commits, logs and prompts. Prompts sent to an external model carry only the masked customer
+  message, never keys or dataset rows.
+- **Git:** work on a branch and commit per phase with the suite green (decision log, section 10).
 - **Data provenance:** every dataset, fixture and eval case carries a label: `synthetic-organizer`,
   `team-generated`, or `derived`. Portuguese content is always `team-generated`.
 - **Authorization:** any tool that reads or writes customer data takes `customer_id` from the

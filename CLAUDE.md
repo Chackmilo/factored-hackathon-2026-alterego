@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Read `AGENTS.md` before any non-trivial change: it holds the hackathon rules (violations disqualify the work), judging metrics, verified data findings (section 7), target architecture, the gap between code and plan (section 9), and a pointer to `docs/PLAN.md` (problem question, plan, roadmap, decision log). `docs/TEAM_BRIEF_COMPLEMENTED.md` (v2.3) holds the dispute policy spec, data contracts and evaluation spec; `src/rules/dispute_policy.py` and `src/data/ingestion.py` still implement v2.0 in places. This file covers only how to run the code and how it is wired today.
+Read `AGENTS.md` before any non-trivial change: it holds the hackathon rules (violations disqualify the work), judging metrics, verified data findings (section 7), target architecture, the gap between code and plan (section 9), and a pointer to `docs/PLAN.md` (problem question, plan, roadmap, decision log). `docs/TEAM_BRIEF_COMPLEMENTED.md` (v2.4) holds the dispute policy spec, data contracts and evaluation spec; `docs/SUPABASE_VERCEL.md` holds the identity, database and deployment design; `src/rules/dispute_policy.py` and `src/data/ingestion.py` still implement v2.0 in places. This file covers only how to run the code and how it is wired today.
 
 ## Commands
 
@@ -21,6 +21,8 @@ No linter or formatter is configured. pytest runs with `pythonpath = ["."]`, so 
 ## Architecture: two stacks side by side
 
 The repo holds two decision paths. Know which one you are touching.
+
+**Decided but not yet in code (26-Sep):** Supabase Auth replaces `src/auth/session.py`, and Supabase Postgres (`bank` read-only serving copy, `ops` for writes) replaces the gateway's DuckDB reads and writes and the planned SQLite store. Deployment on Vercel is proposed. Everything below describes the code as it runs today; see `docs/SUPABASE_VERCEL.md` before touching auth, the gateway or deployment.
 
 **Baseline (wired to the API and `main.py`).** `src/api/app.py` calls `HybridOrchestrator` in `src/agents/orchestrator.py`: a single-shot pipeline of `PIIMasker`, then `DeterministicRulesEngine` (`src/rules/engine.py`), then the hand-tuned `MLFraudDetector`, then a keyword branch calling always-succeeding mocks in `src/agents/tools.py`, with escalations going to the in-memory `hitl_queue`. It takes `customer_id` from the request body, is USD only and simulates LLM tokens. The team proposes keeping it as the measured baseline, so fix bugs there but build dispute features in the dispute stack.
 

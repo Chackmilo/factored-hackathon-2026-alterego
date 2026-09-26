@@ -10,7 +10,7 @@ Team submission for the **Factored AI & Data Hackathon 2026**. The challenge: bu
 **AI-first banking customer-service system** (not a chatbot) for one focused workflow, end to end,
 with mandatory support for **Spanish and Portuguese**.
 
-Proposed workflow (team decision still pending, see `docs/PLAN.md`): **transaction-dispute intake**.
+Workflow (decided 2026-09-26, see `docs/PLAN.md`): **transaction-dispute intake**.
 The agent finds the disputed charge, checks policy eligibility, opens a well-documented case and
 protects the customer when needed. It never refunds or moves money.
 
@@ -27,7 +27,7 @@ Read these before inventing anything. Content in them was written by the team or
 | Notion: Task | The five-stage flow, the three case types, the four candidate workflows and their comparison |
 | Notion: Data y data dictionary | Dataset summary, all 13 tables and columns, FK relations, profiling findings, project implications |
 | Claude Doc: Factored Hackathon 2026 Team Brief | The team's original proposal: rationale, architecture, evaluation plan, first 10-day plan |
-| `docs/TEAM_BRIEF_COMPLEMENTED.md` (v2.2) | Dispute policy spec with clause ids, data contracts, handoff packet, held-out suite, metric formulas. Supersedes the original brief on these topics |
+| `docs/TEAM_BRIEF_COMPLEMENTED.md` (v2.3) | Dispute policy spec with clause ids, data contracts, handoff packet, held-out suite, metric formulas. Supersedes the original brief on these topics |
 | `docs/JEV_TYPESAFE_AI.md` | Jev (TypeSafe AI) integration design: typed signals, their policy clauses, roles of Jev, the LLMs and code |
 | Official Problem Statement (Google Doc) | https://docs.google.com/document/d/18AwONT8hQupRcfNPLFrPo6fHOJ_OUn1nBf-3jMnla2c/edit |
 | LATAM Bank Dataset Summary (PDF) | https://drive.google.com/file/d/1V7n9v0zuv9SYzpW2AzPnssgAp5X_buXc/view |
@@ -245,24 +245,26 @@ Dataset rows stay out of any external model call: Understand sees only the maske
 
 | Stage / component | Responsibility | Tech (decided or proposed, see `docs/PLAN.md`) |
 | --- | --- | --- |
-| Identity + input guard | Mock OIDC/JWT test sessions with expiry; PII redaction; prompt-injection filter; language detection | FastAPI, JWT |
+| Identity + input guard | Mock OIDC/JWT test sessions with expiry and a `role` claim (`agent` for the HITL console); PII redaction; prompt-injection filter; language detection | FastAPI, JWT |
 | Understand | Extract `{intent, transaction_ref, amount_hint, date_hint, reason, language, missing_fields}` into a Pydantic schema | Jev (TypeSafe AI) typed signals behind an `IntentExtractor` interface; the ES/PT keyword and regex extractor is the default until a key arrives, the fallback and the baseline (`docs/JEV_TYPESAFE_AI.md`) |
-| Converse | Manage the customer conversation in ES/PT: questions, clarifications, answers | An LLM writing with placeholders that code fills from verified records (proposed); it never decides or acts |
-| Decide | Synthetic dispute policy (brief v2.2 clause order) plus ML risk score | Policy-as-code, LightGBM |
+| Converse | Manage the customer conversation in ES/PT: questions, clarifications, answers | Claude Haiku 4.5 writing with placeholders that code fills from verified records; it never decides or acts |
+| Decide | Synthetic dispute policy (brief v2.3 clause order) plus ML risk score | Policy-as-code, LightGBM |
 | Act | Tool gateway: per-state tool allowlist, idempotency keys, bounded retries | FastAPI tool layer writing to the SQLite ops store |
 | Verify | Read the created case or card status back from the system of record before telling the customer | SQLite ops store (`data/ops.sqlite`) |
-| Escalate | Handoff packet: request, verified facts, actions taken, evidence, policy clauses, open questions | JSON plus Streamlit agent console |
-| Policy explanations | Bilingual dispute policy with clause citations | Policy-as-code with clause ids (built); RAG only if time remains |
+| Escalate | Handoff packet: request, verified facts, actions taken, evidence, policy clauses, open questions | JSON plus the React HITL console (English), which also approves or rejects credit candidates |
+| Policy explanations | Dispute policy explained with clause citations | Policy-as-code with clause ids, plus RAG over a team-written Spanish policy text with local multilingual embeddings (ONNX); it never changes a decision |
 | Data platform | Bronze raw CSVs -> silver validated and deduplicated -> gold dispute and contact-reason marts | DuckDB (read-only for the app), Pandera or SQL checks |
-| Observability | Traces, append-only audit log, experiment tracking, eval runs | Audit log in the ops store, MLflow; OpenTelemetry if time remains |
+| Observability | Traces, append-only audit log, experiment tracking, eval runs | Audit log in the ops store, MLflow, OpenTelemetry |
 
 Learned components, each measured against a baseline:
 
 1. **Unrecognized-charge risk model** on `transactions.is_fraud`, all years, time-based split,
    rules-only baseline vs gradient boosting, `fraud_score` excluded from both, threshold chosen by
    the cost of a missed escalation. This is the required ML deliverable.
-2. **Intent and slot classifier** on a small team-labeled ES/PT set: keyword extractor vs
-   multilingual embeddings plus logistic regression vs LLM zero-shot. Stretch goal.
+2. **Intent classifier:** Jev `Choice` against the keyword extractor on a team-labeled ES/PT set,
+   with calibration per language.
+3. **Policy retrieval:** the RAG's multilingual embeddings against BM25, by recall@3 on labeled
+   ES/PT policy questions.
 
 ## 9. Current state of the codebase and the gap
 
@@ -274,15 +276,15 @@ this table tracks the gap to the plan. 24 tests pass.
 | --- | --- | --- |
 | Baseline pipeline | Single-shot orchestrator, English keyword rules, hand-tuned "ML" sigmoid, always-succeeding mock tools, in-memory HITL queue | Keep as the measured baseline. Fix the crash at `src/agents/orchestrator.py:130` (`and`/`or` precedence). Its card lock on "cargo no reconocido" and its refund promise count as unsafe outcomes in the report |
 | Identity | `src/auth/session.py` HS256 JWT | No endpoint uses it; `JWT_SECRET` falls back to a hardcoded default |
-| Dispute policy | `src/rules/dispute_policy.py`, brief v2.0 clause order | Brief v2.2 clauses (session, clarify, disputable charge, distress, Jev signals); legal before window; provisional credit as a candidate flag; the "hace -1 días" message on future-dated charges |
+| Dispute policy | `src/rules/dispute_policy.py`, brief v2.0 clause order | Brief v2.3 clauses (session, clarify, disputable charge, distress, Jev signals, lock confirmation); legal before window; provisional credit as a candidate flag; the "hace -1 días" message on future-dated charges |
 | Tool gateway | `src/tools/gateway.py` act-and-verify on DuckDB `silver_*`, fixture tests | Writes to the SQLite ops store, dictionary enums, card type and status guards, idempotency keys, audit log, escaped untrusted tags |
 | Handoff packet | `src/domain/handoff.py` model | `customer_request`, `supporting_evidence`, `provisional_credit_recommendation`; nothing produces a packet yet |
 | Data pipeline | `src/data/ingestion.py` bronze/silver/gold, customer-aligned sample with 0 orphans | Contracts, local event time, FX by transaction date, dedup, late arrivals, full-history load for ML |
 | ML | Hand-tuned heuristic | LightGBM on all years without `fraud_score` |
-| Understand and conversation | Baseline English keyword matching | `IntentExtractor` with the fallback extractor and Jev, slot regex, reply LLM with placeholders |
+| Understand and conversation | Baseline English keyword matching | `IntentExtractor` with the fallback extractor and Jev, slot regex plus helper LLM, Claude replies with placeholders, RAG over the policy text |
 | Orchestrator | None for disputes | Multi-turn five-stage state machine behind FastAPI and `get_current_session` |
 | PII masker | Regex for cards, emails, US phones, SSN | LATAM documents (CURP, DNI, CC, CPF); stop masking amounts (a 7-digit COP amount becomes `[REDACTED_PHONE]`) |
-| UI, eval harness, deployment | None | Streamlit chat and console; 250-case suite; public URL |
+| UI, eval harness, deployment | None | React chat (ES/PT) and English HITL console served by FastAPI; OpenAPI contract; 250 held-out plus 60 development cases; two baselines; Playwright smoke test; GitHub Action; public URL on Render |
 | Analysis notebook | `notebooks/01_problema_y_datos.ipynb`, re-run on 2026-09-26 against the rebuilt lakehouse (32 cells, no errors); fixture `data/fixtures/abstention_pol_win_60.json` (a real 77-day charge that `POL-WIN-60` abstains on) | Cell 22 still calls `POL-AUT-150` customers eligible for autonomous resolution with provisional credit (rule 8 conflict); rewrite the analysis report in English on day 9 |
 | README | Starter-kit text with a "7 pillars" rubric that is not the hackathon rubric | Rewrite to match the submission |
 | `data/synthetic_samples.json` | 4 English scenarios in USD | Team-generated; replace with the ES/PT held-out suite |
@@ -301,7 +303,7 @@ or "Abierta" there, and record each closure in that file with its date.
 - **Secrets:** `.env` is a git-ignored file holding the read-only AWS keys and any API keys; keep it
   out of commits, logs and prompts. Prompts sent to an external model carry only the masked customer
   message, never keys or dataset rows.
-- **Git:** work on a branch and commit per phase with the suite green (`docs/PLAN.md` decision log).
+- **Git:** one branch per front. Every PR to `main` needs a review from another front and a green GitHub Action (tests and front build); Daniel merges, and `main` is protected (`docs/PLAN.md` decision log).
 - **Data provenance:** every dataset, fixture and eval case carries a label: `synthetic-organizer`,
   `team-generated`, or `derived`. Portuguese content is always `team-generated`.
 - **Authorization:** any tool that reads or writes customer data takes `customer_id` from the

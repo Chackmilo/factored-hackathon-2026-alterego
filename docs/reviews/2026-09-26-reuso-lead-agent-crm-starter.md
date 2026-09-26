@@ -1,5 +1,7 @@
 # Reuso del lead-agent-crm-starter en el proyecto de disputas
 
+> **Estado al cierre del 26 sep.** El cuerpo de esta revisión no se modificó. Después de escribirla, el equipo cambió SQLite por Supabase Postgres y Render por Vercel (`docs/SUPABASE_VERCEL.md`). Consecuencias: el Dockerfile en dos etapas de la sección 3 deja de ser la vía de despliegue (Vercel sirve el build de React); el runner de migraciones y la idempotencia de la sección 4 se reusan casi directos, porque el starter ya usa Postgres (con el arreglo del bug 6.6); de la sección 5, PostgreSQL deja de descartarse, y el login con Argon2 y cookies sigue descartado porque la identidad es Supabase Auth.
+
 Fecha: 2026-09-26 (día 2). Rama de trabajo: `feat/dispute-stack`.
 
 Fuente: repo `Chackmilo/lead-agent-crm-starter`, commit `a94366d` (único commit, creado el 2026-09-24). Es un repo privado de Daniel; pide acceso si necesitas abrir los archivos citados.

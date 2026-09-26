@@ -217,7 +217,7 @@ Respaldos, en orden: (1) un segundo proyecto de Vercel con el preset de Vite y u
 | Cuerpo de petición y respuesta de 4,5 MB | Sin impacto |
 | Disco de solo lectura salvo `/tmp` | SQLite y DuckDB no sirven en la app; confirma el cambio a Postgres |
 | Región por defecto `iad1` (Washington) | Crear los proyectos de Supabase en `us-east-1` para que la latencia a la base sea mínima |
-| Cron en Hobby: una vez al día, con precisión de ±59 min | Alcanza para un canario diario (6.7), no para más |
+| Cron en Hobby: una vez al día, con precisión de ±59 min | Alcanza para un canario diario (6.8), no para más |
 
 ### 6.3 Qué entra en la función
 
@@ -309,13 +309,13 @@ Referencia para estimar, no para ejecutar hoy.
 | R7 | El MCP escribe donde no debe o sigue una instrucción inyectada | Pérdida o cambio de datos | `project_ref` y `read_only=true` en demo; cambios solo por migraciones revisadas | Daniel | Día 3 |
 | R8 | Límites de Auth frenan el harness desplegado | Corrida incompleta | Ritmo controlado, caché de tokens, límites más altos en dev | A | Día 7 |
 | R9 | Python 3.11 local frente a 3.12 en Vercel | Diferencias entre local y producción | Decidido: todo a 3.12; ningún paquete del stack pierde versión (verificado el 26 sep) | B | Día 3 |
-| R10 | Hobby de un solo usuario | Solo el dueño ve logs y variables | Daniel es dueño y comparte; Pro si hace falta | Daniel | Día 4 |
+| R10 | Hobby de un solo usuario | Solo el dueño ve logs y variables | Daniel es el dueño y comparte los logs que B necesite; sin plan pago (decidido el 26 sep) | Daniel | Día 4 |
 
 ## 10. Decisiones
 
 Cerradas el 26 sep:
 
-1. **Vercel en lugar de Render.** El deploy esqueleto del 28 sep es la prueba. Si el bundle falla y el respaldo no alcanza, se vuelve al contenedor, ahora sin estado local porque la base está en Supabase.
+1. **Vercel en lugar de Render.** El deploy esqueleto del 28 sep es la prueba. Si el bundle falla y Large Functions no alcanza, el API se sirve como imagen de contenedor en Vercel; ya no depende de un disco local porque el estado vive en Supabase.
 2. **Sin pago.** Supabase Free (sin Pro) y Vercel Hobby. La pausa se mitiga como dice la sección 6.8.
 3. **Harness en dos modos**, con la latencia del modo desplegado.
 4. **Python 3.12** en todo el repo: empata con 3.13 y 3.14 en todos los paquetes y es el default de Vercel.
@@ -330,4 +330,4 @@ Abiertas o en propuesta:
 
 - Supabase: [changelog](https://supabase.com/changelog), [claves de firma JWT y JWKS](https://supabase.com/docs/guides/auth/signing-keys), [API keys](https://supabase.com/docs/guides/api/api-keys), [custom access token hook](https://supabase.com/docs/guides/auth/auth-hooks/custom-access-token-hook), [rate limits de Auth](https://supabase.com/docs/guides/auth/rate-limits), [conexión a Postgres y pooler](https://supabase.com/docs/guides/database/connecting-to-postgres), [pausa de proyectos Free](https://supabase.com/docs/guides/platform/free-project-pausing), [facturación](https://supabase.com/docs/guides/platform/billing-on-supabase), [MCP](https://supabase.com/docs/guides/getting-started/mcp)
 - Vercel: [runtime de Python](https://vercel.com/docs/functions/runtimes/python), [límites de funciones](https://vercel.com/docs/functions/limitations), [FastAPI en Vercel](https://vercel.com/docs/frameworks/backend/fastapi), [Services](https://vercel.com/docs/services), [cron jobs](https://vercel.com/docs/cron-jobs/usage-and-pricing)
-- Repo: `AGENTS.md` (reglas y hallazgos de datos), `docs/PLAN.md` (registro de decisiones), `docs/reviews/2026-09-26-revision-adversarial-plan.md` (H01, H03, H15, H21, H32, H34), `docs/reviews/2026-09-26-reuso-lead-agent-crm-starter.md`, `docs/SECURITY_AUDIT_PLAN.md`
+- Repo: `AGENTS.md` (reglas y hallazgos de datos), `docs/PLAN.md` (registro de decisiones), `docs/reviews/2026-09-26-revision-adversarial-plan.md` (H01, H03, H12, H15, H21, H32, H34), `docs/reviews/2026-09-26-reuso-lead-agent-crm-starter.md`, `docs/SECURITY_AUDIT_PLAN.md`

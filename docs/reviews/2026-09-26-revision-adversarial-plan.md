@@ -1,5 +1,7 @@
 # Revisión adversarial del plan
 
+> **Estado al cierre del 26 sep.** El cuerpo de esta revisión no se modificó. Decisiones posteriores del mismo día atienden varios hallazgos: H01 (identidad con personas de Supabase Auth y credencial), H12 (patrones de la suite medidos en abril a junio, `AGENTS.md` sección 7), H15 (el estado vive en Supabase y el despliegue pasa a Vercel, con deploy esqueleto el 28 sep), H21 (vistas que suman `bank` y `ops`), H34 (la auditoría guarda la fecha simulada y el reloj real) y la contradicción 11 (el rol va en `app_metadata.app_role`). Parciales: H04 (planes gratis decididos: Supabase Free, Vercel Hobby, GitHub Free; faltan las horas por persona) y H32 (latencia contra producción y arranque en frío aparte, planificado). El resto sigue abierto. Detalle en `docs/SUPABASE_VERCEL.md` y en el registro de decisiones de `docs/PLAN.md`.
+
 Fecha: 2026-09-26 (día 2, con G0 cerrado). Rama revisada: `feat/dispute-stack`.
 
 Alcance: `docs/PLAN.md`, `docs/TEAM_BRIEF_COMPLEMENTED.md` (v2.3), `AGENTS.md`, `docs/JEV_TYPESAFE_AI.md` y `CLAUDE.md`, contrastados con el enunciado oficial, el kickoff y los dos PDFs del dataset. Se usaron como evidencia puntual el notebook `notebooks/01_problema_y_datos.ipynb`, `src/` y el handoff local del 26 sep.

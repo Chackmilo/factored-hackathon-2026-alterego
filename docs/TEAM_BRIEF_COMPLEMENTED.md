@@ -44,9 +44,9 @@ This complemented document **proposes answers to 5 open decisions**, details the
 | **Operational System of Record** | **Supabase Postgres, `ops` schema, decided 26-Sep (replaces SQLite)** | SQLite `data/ops.sqlite`, DuckDB `silver_*` | Conversations, dispute cases, card locks, handoffs and the append-only audit log live here. It survives redeploys, takes concurrent writers, and lets policy facts read `bank` plus `ops` live, so new cases count toward `POL-AUT-150` at once. |
 | **Identity** | **Supabase Auth, decided 26-Sep** | Self-minted HS256 JWT | An identity service the official statement accepts. Test personas log in with a credential; the API verifies ES256 tokens against the project JWKS, so it holds no shared secret. `customer_id` and `app_role` come from `app_metadata`. |
 | **API & Gateway** | **FastAPI + Pydantic v2** | Flask / Django | Asynchronous, typed, auto-generates OpenAPI docs, built-in dependency injection for verifying the Supabase session token. |
-| **ML Models & Tracking** | **LightGBM / scikit-learn + MLflow** | XGBoost / Sagemaker | Extremely fast training, native handling of categorical features, low inference latency (< 5ms). |
+| **ML Models & Tracking** | **LightGBM / scikit-learn + MLflow (local); served through ONNX Runtime (proposed 26-Sep)** | XGBoost / Sagemaker | Extremely fast training, native handling of categorical features, low inference latency (< 5ms). The Linux `lightgbm` wheel needs the system `libgomp` and pulls `scipy` (112 MB), so the deployed function serves the model exported to ONNX with the same runtime as the RAG embeddings (`docs/SUPABASE_VERCEL.md` section 6.4). |
 | **Understand and conversation** | **Jev (TypeSafe AI) for typed signals (intent, stolen card, distress); regex plus a helper LLM for amount, date and merchant; Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) writes replies with placeholders, decided 26-Sep** | One LLM for every step | Every decision and action stays deterministic in code, and no model sees dataset rows. Jev is in early access with no key yet: the ES/PT keyword and regex extractor is the default, the fallback and the baseline Jev is measured against. Design: `docs/JEV_TYPESAFE_AI.md`. |
-| **Policy explanations** | **Policy-as-code with clause ids, plus RAG over a team-written Spanish policy text (about 15 chunks, one per clause), decided 26-Sep** | Clause ids only | Clause ids cite every decision. The RAG answers informational policy questions only: it never changes a decision, cites the clause it retrieved and abstains when similarity is low. Local multilingual embeddings in ONNX (no torch; fallback: sentence-transformers with torch on a paid instance), computed for the corpus at image build time, so no text leaves the app. BM25 is its baseline. |
+| **Policy explanations** | **Policy-as-code with clause ids, plus RAG over a team-written Spanish policy text (about 15 chunks, one per clause), decided 26-Sep** | Clause ids only | Clause ids cite every decision. The RAG answers informational policy questions only: it never changes a decision, cites the clause it retrieved and abstains when similarity is low. Local multilingual embeddings in ONNX (no torch; fallback: sentence-transformers with torch on a paid instance), computed for the corpus at build time, so no text leaves the app. BM25 is its baseline. |
 | **Frontend UI** | **React + TypeScript (Vite), decided 26-Sep** | Streamlit | Two views: customer chat in ES/PT, and an English HITL console (cases, handoffs, credit candidates, audit log) behind `app_metadata.app_role = "agent"` in the Supabase token (Supabase reserves the `role` claim for the Postgres role). The front uses Supabase only to log in; all data goes through the API. Types are generated from the OpenAPI contract; a Playwright smoke test covers the three case types and the console 403. |
 | **Deployment** | **Vercel, decided 26-Sep: FastAPI as a Python function, the React build on the CDN, one domain** | One Docker container on Render (decided earlier on 26-Sep, superseded) | One URL, no CORS, previews per PR; state lives in Supabase so the function stays stateless. `docker-compose up` (API, local Postgres, local token issuer) stays the reproducibility path. If mentors do not allow publishing dataset rows, Supabase holds a team-generated fixture database with the same schema. |
 
@@ -96,7 +96,7 @@ Rules run in this order; the first rule that decides the case wins. Clause ids i
      -> ask a clarification question (thresholds set on the development split).
    - Still unresolved after 2 clarification attempts -> HITL [POL-ESC-AMBIG].
 
-3. DISPUTABLE CHARGE [POL-DISP-TYPE] (new, proposed):
+3. DISPUTABLE CHARGE [POL-DISP-TYPE] (new, decided 26-Sep):
    - Disputable: transaction_status = 'Approved' debits (Purchase, Payment, Withdrawal, Transfer).
    - Declined, Reversed or Pending, Deposit or Adjustment -> explain, open no case.
    - Charge dated after today -> data error: explain, open no case, flag for data-quality review.
@@ -148,7 +148,7 @@ Transactions carry no MXN: Mexican customers transact in USD. MXN appears only i
 | Role / Discipline | Primary Owner | Concrete Deliverables |
 |---|---|---|
 | **Data Engineering** | *Engineer 1* | S3 Ingestion pipeline; Pandera schema contracts; DuckDB Bronze/Silver/Gold marts; Business-key deduplication; Late-arrival partition stitcher; Timezone and country-name normalization; Customer-aligned sampling. |
-| **Machine Learning** | *Engineer 2* | Leak-free LightGBM fraud model on all years; Feature engineering; Intent/Slot classifier on ES/PT (stretch); MLflow tracking; Baseline comparison benchmarks. |
+| **Machine Learning** | *Engineer 2* | Leak-free LightGBM fraud model on all years; Feature engineering; Intent classifier evaluation on ES/PT (Jev against keywords, calibration per language); MLflow tracking; Baseline comparison benchmarks. |
 | **AI & Backend** | *Engineer 3* | FastAPI gateway; Supabase session verification; State Machine (Understand→Decide→Act→Verify→Escalate); Tool registry with read-back verification; Supabase `ops` schema and audit log; Indirect prompt injection defenses. |
 | **Analytics & UI/Docs**| *Engineer 4* | Contact-reason EDA & business case charts; Data-quality findings report; Interactive Frontend (Client chat + HITL review console); Held-out benchmark harness; Slide deck & Video pitch script. |
 
@@ -160,14 +160,14 @@ The team has 4 people in three fronts (26-Sep): A for data, ML and evaluation, B
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
-│                                 OmniGuard AI Pipeline                                   │
+│                          AlterEgo Dispute-Intake Pipeline                                │
 └──────────────────────────────────────────────────────────────────────────────────────────┘
 
  1. IDENTITY & GUARD LAYER
     [ Incoming Request ] ──► [ Supabase Access Token (ES256, JWKS) ] ──► Inject Verified `customer_id` (Immune to Prompt Override)
                                  │
                                  ▼
-                             [ PII Masker (Regex + Dialect NER) ]
+                             [ PII Masker (LATAM regex; amount and date extracted first) ]
                              [ Prompt Injection Defense (Direct & Indirect) ]
                                  │
  2. UNDERSTAND (Bilingual ES/PT) ▼
@@ -180,7 +180,7 @@ The team has 4 people in three fronts (26-Sep): A for data, ML and evaluation, B
                                  │
                                  ├──► [Clarify] (0 or 2+ candidate charges; HITL after 2 attempts)
                                  ├──► [Safe Abstention] (Out-of-window / Not disputable / Unsupported)
-                                 ├──► [HITL Escalation] (Legal / Amount > $500 / ML Score > 0.70 / Multi-charge)
+                                 ├──► [HITL Escalation] (Legal / Amount > $500 / ML Score > 0.70 / Multi-charge / Distress)
                                  └──► [Autonomous Path] (Eligible charge <= $500; <= $150 may be flagged
                                        as a provisional-credit candidate for a human)
                                  │
@@ -382,7 +382,7 @@ A second root prefix, `data_backup_20260831/`, also exists; nothing ingests it y
 ## 7. Deliverables Checklist for October 5
 
 - [ ] **Public GitHub Repo**: `factored-hackathon-2026-[team-name]` with full commit history and Clean Architecture. Team AlterEgo: `factored-hackathon-2026-alterego`. The current remote is `Chackmilo/Factored_Hackaton`: rename or mirror before submitting.
-- [ ] **Repeatable Pipeline**: DuckDB ingestion + Pandera data contracts + unit tests (`pytest`).
+- [ ] **Repeatable Pipeline**: DuckDB ingestion + Pandera data contracts + unit tests (`pytest`) + publication of the minimized serving subset to Supabase `bank` with parity contracts.
 - [ ] **Data-Quality & Insights Report**: contact-reason evidence, the verified data traps (`AGENTS.md` section 7) and how each is handled.
 - [ ] **Learned Components**: LightGBM fraud risk model benchmarked against a baseline without `fraud_score`, tracked in MLflow; Jev intent against keywords; RAG retrieval against BM25.
 - [ ] **Working System**: FastAPI backend with Supabase Auth session verification + Act & Verify tool gateway on Supabase Postgres, wired end to end.

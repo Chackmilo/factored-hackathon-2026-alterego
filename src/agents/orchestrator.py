@@ -127,7 +127,7 @@ class HybridOrchestrator:
         agent_steps: List[AgentReasoningStep] = []
         actions_taken: List[str] = []
 
-        if raw_input.transaction and "dispute" in sanitized.sanitized_text.lower() or "desconozco" in sanitized.sanitized_text.lower():
+        if raw_input.transaction and ("dispute" in sanitized.sanitized_text.lower() or "desconozco" in sanitized.sanitized_text.lower()):
             # Check autonomous transaction limit trade-off
             if raw_input.transaction.amount > settings.max_autonomous_transaction_limit:
                 ticket = hitl_queue.create_ticket(

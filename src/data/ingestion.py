@@ -208,11 +208,12 @@ def run_ingestion_pipeline(sample_only: bool = True):
             t.transaction_type,
             t.amount,
             t.currency,
+            t.amount_usd,
             -- Calculate normalized amount in USD
             CASE 
                 WHEN t.currency = 'USD' THEN t.amount
                 WHEN t.amount_usd IS NOT NULL THEN t.amount_usd
-                ELSE ROUND(t.amount * COALESCE(xr.exchange_rate, 1.0), 2)
+                ELSE ROUND(t.amount * COALESCE(xr_daily.exchange_rate, xr_latest.exchange_rate, 1.0), 2)
             END as amount_usd_normalized,
             t.channel,
             COALESCE(t.merchant_name, 'Unknown Merchant') as merchant_name,
@@ -222,13 +223,19 @@ def run_ingestion_pipeline(sample_only: bool = True):
             t.transaction_status,
             t.is_fraud,
             t.fraud_score,
-            -- Dispute Policy Window Check (<= 60 calendar days from anchor date)
-            (DATE_DIFF('day', CAST(t.transaction_date AS DATE), DATE '{ANCHOR_DATE}') <= 60 
-             AND DATE_DIFF('day', CAST(t.transaction_date AS DATE), DATE '{ANCHOR_DATE}') >= 0) as is_within_60_days,
-            DATE_DIFF('day', CAST(t.transaction_date AS DATE), DATE '{ANCHOR_DATE}') as days_since_transaction
+            -- Dispute Policy Window Check (<= 60 calendar days from anchor date using bank process_date UTC-6)
+            (DATE_DIFF('day', CAST(t.process_date AS DATE), DATE '{ANCHOR_DATE}') <= 60 
+             AND DATE_DIFF('day', CAST(t.process_date AS DATE), DATE '{ANCHOR_DATE}') >= 0) as is_within_60_days,
+            DATE_DIFF('day', CAST(t.process_date AS DATE), DATE '{ANCHOR_DATE}') as days_since_transaction
         FROM silver_transactions t
         LEFT JOIN silver_products p ON t.product_id = p.product_id
-        LEFT JOIN gold_exchange_rates xr ON t.currency = xr.source_currency AND xr.target_currency = 'USD';
+        LEFT JOIN bronze_daily_exchange_rates xr_daily 
+            ON t.currency = xr_daily.source_currency 
+            AND xr_daily.target_currency = 'USD' 
+            AND CAST(t.process_date AS DATE) = xr_daily.date
+        LEFT JOIN gold_exchange_rates xr_latest 
+            ON t.currency = xr_latest.source_currency 
+            AND xr_latest.target_currency = 'USD';
     """)
     gold_trx_count = con.execute("SELECT COUNT(*) FROM gold_transactions").fetchone()[0]
     console.print(f" -> [green]gold_transactions[/green]: {gold_trx_count:,} enriched transactions")

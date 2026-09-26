@@ -11,6 +11,9 @@ from src.data.db import get_db_connection
 
 console = Console()
 
+# Reference anchor date for hackathon dataset: 2026-06-17 (UTC-6 process_date)
+ANCHOR_DATE = "2026-06-17"
+
 def run_ingestion_pipeline(sample_only: bool = True):
     """
     Executes the Lakehouse ingestion pipeline:

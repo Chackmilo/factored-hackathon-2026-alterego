@@ -12,3 +12,17 @@ wheels/
 # Local secrets and stray virtualenvs
 .env
 .env/
+
+# Data and database artifacts
+*.duckdb
+*.duckdb.wal
+*.parquet
+data/bronze/
+data/silver/
+data/gold/
+data/raw/
+data/*.csv
+!data/synthetic_samples.json
+
+# Documentation binary files (contain credentials / large binaries)
+docs/*.pdf

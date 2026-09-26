@@ -76,7 +76,7 @@ distress_question = Score(
 
 ## 3. Principio Rector: "Jev Interpreta, el Codigo Gobierna"
 
-Jev **no decide acciones de negocio ni ejecuta politicas**. Sus salidas entran como campos tipados de `DisputePolicyInput`, y la politica las evalua en el orden de la especificacion canonica: `docs/TEAM_BRIEF_COMPLEMENTED.md`, Decision 4 (v2.2). Este documento no repite ese orden; solo mapea cada senal a su clausula:
+Jev **no decide acciones de negocio ni ejecuta politicas**. Sus salidas entran como campos tipados de `DisputePolicyInput`, y la politica las evalua en el orden de la especificacion canonica: `docs/TEAM_BRIEF_COMPLEMENTED.md`, Decision 4 (v2.3). Este documento no repite ese orden; solo mapea cada senal a su clausula:
 
 ```python
 # Campos nuevos en DisputePolicyInput (ademas de los actuales)
@@ -105,9 +105,9 @@ customer_distress_score: float  # Jev Score, 0.0 a 3.0
 | **Intencion, Robo y Angustia** | **Jev (System One)** | Recibe unicamente el mensaje del cliente enmascarado. Devuelve `Choice`, `Noul` y `Score`. |
 | **Extraccion de Entidades (Monto, Fecha, Comercio)** | **Regex + LLM de apoyo** | Regex determinista para formatos de moneda (COP, MXN, ARS, USD) y fechas relativas ("ayer", "12 de junio"), corriendo localmente sobre el mensaje original, antes del enmascarado (el masker actual convierte un monto COP de 7 digitos en `[REDACTED_PHONE]`). Si falla, un LLM extrae slots sobre el mensaje enmascarado. |
 | **Cruce con Datos del Banco** | **Codigo Python** | Busca candidatos en `silver_transactions` filtrando estrictamente por `customer_id` de la sesion. **Jev nunca ve registros del dataset**. |
-| **Politica y Permisos** | **Policy Engine (Python)** | Aplica las clausulas del brief v2.2 de forma determinista sobre las senales recibidas. |
+| **Politica y Permisos** | **Policy Engine (Python)** | Aplica las clausulas del brief v2.3 de forma determinista sobre las senales recibidas. |
 | **Acciones y Verificacion** | **Tool Gateway (Python)** | Escribe en el store de operacion SQLite y verifica leyendo de regreso antes de confirmar; DuckDB es solo lectura para la app. |
-| **Redaccion de Respuestas** | **LLM conversacional** | Redacta texto en ES/PT usando plantillas con marcadores (`{merchant}`, `{amount}`, `{complaint_id}`, `{clause_id}`) rellenados por codigo verificado. |
+| **Redaccion de Respuestas** | **Claude Haiku 4.5** | Redacta texto en ES/PT usando plantillas con marcadores (`{merchant}`, `{amount}`, `{complaint_id}`, `{clause_id}`) rellenados por codigo verificado. |
 
 ---
 

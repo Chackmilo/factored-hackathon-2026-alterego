@@ -1,7 +1,9 @@
 # 🛡️ Factored Hackathon 2026: Team Brief (Complemented & Hardened)
 **Workflow Focus: Autonomous & Controlled Transaction-Dispute Intake System**  
-*Document Version: 2.2.0 | Date: 26-Sep-2026*
+*Document Version: 2.3.0 | Date: 26-Sep-2026*
 
+> **v2.3.0 (26-Sep-2026):** G0 closed (decision log in `docs/PLAN.md`). The customer confirms the card lock; human approval of credit candidates in the HITL console; Claude Haiku 4.5 writes replies; RAG over a team-written policy text with local multilingual embeddings; React + TypeScript served by FastAPI on Render; two baselines; held-out suite of 250 cases plus a 60-case development split, frozen before tuning. The clause order is unchanged from v2.2; only the card-lock confirmation is new.
+>
 > **v2.2.0 (26-Sep-2026):** Jev (TypeSafe AI) typed signals feed `POL-CLARIFY`, `POL-ESC-DISTRESS` and the card-lock rule; keyword rules stay as fallback. Integration design: `docs/JEV_TYPESAFE_AI.md`.
 >
 > **v2.1.0 (26-Sep-2026):** corrected against the official PDFs in `docs/` and a profile of the June 2026 data. Changes: provisional credit is a recommendation only (Decision 4), `fraud_score` leakage confirmed (Decision 3), currency caps recomputed from dataset rates, dispute statuses mapped to the data dictionary, clarification outcome added, handoff packet completed, held-out suite and metrics aligned with the official statement, S3 example fixed. Precedence lives in `AGENTS.md` section 2, verified data facts in `AGENTS.md` section 7, and the plan and decision log in `docs/PLAN.md`.
@@ -22,7 +24,7 @@ This complemented document **proposes answers to 5 open decisions**, details the
 ## 2. Resolution of the 5 Open Decisions
 
 ### Decision 1: Confirm Disputes as the Workflow
-* **Status**: **Proposed.** The Notion "Task" page still marks the team decision as pending; close it there and in the `docs/PLAN.md` decision log.
+* **Status**: **Decided (26-Sep, G0).** Transaction-dispute intake; the credit-eligibility fallback is dropped. Update the Notion "Task" page, which still says pending.
 * **Justification**:
   - Accounts/Inquiries offers zero action and weak ML (pure FAQ/chatbot).
   - Credit eligibility entails high regulatory/fairness complexity in 10 days.
@@ -40,10 +42,10 @@ This complemented document **proposes answers to 5 open decisions**, details the
 | **Operational System of Record** | **SQLite (`data/ops.sqlite`), decided 26-Sep** | DuckDB `silver_*`, Postgres | Dispute cases, card locks and the audit log live here. Ingestion never touches it, and it tolerates the API writing while analysts read the lakehouse. DuckDB allows one writer and ingestion recreates `silver_*`. |
 | **API & Gateway** | **FastAPI + Pydantic v2** | Flask / Django | Asynchronous, typed, auto-generates OpenAPI docs, built-in dependency injection for JWT security. |
 | **ML Models & Tracking** | **LightGBM / scikit-learn + MLflow** | XGBoost / Sagemaker | Extremely fast training, native handling of categorical features, low inference latency (< 5ms). |
-| **Understand and conversation** | **Jev (TypeSafe AI) for typed signals (intent, stolen card, distress); regex plus a helper LLM for amount, date and merchant; an LLM that writes replies with placeholders, decided 26-Sep** | One LLM for every step | Every decision and action stays deterministic in code, and no model sees dataset rows. Jev is in early access with no key yet: the ES/PT keyword and regex extractor is the default, the fallback and the baseline Jev is measured against. Design: `docs/JEV_TYPESAFE_AI.md`. |
-| **Policy explanations** | **Policy-as-code with clause ids (built)** | ChromaDB / SQLite-vec RAG | Clause ids already cite every decision; RAG only if time remains after the held-out evaluation. |
-| **Frontend UI** | **Streamlit (proposed)** | Vite + React | Fastest dual view: customer self-service chat + human-in-the-loop agent console. |
-| **Deployment** | **Docker + Docker Compose on Render or Fly.io (proposed)** | Kubernetes | 1-command reproducibility (`docker-compose up`) and the public URL the submission requires. |
+| **Understand and conversation** | **Jev (TypeSafe AI) for typed signals (intent, stolen card, distress); regex plus a helper LLM for amount, date and merchant; Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) writes replies with placeholders, decided 26-Sep** | One LLM for every step | Every decision and action stays deterministic in code, and no model sees dataset rows. Jev is in early access with no key yet: the ES/PT keyword and regex extractor is the default, the fallback and the baseline Jev is measured against. Design: `docs/JEV_TYPESAFE_AI.md`. |
+| **Policy explanations** | **Policy-as-code with clause ids, plus RAG over a team-written Spanish policy text (about 15 chunks, one per clause), decided 26-Sep** | Clause ids only | Clause ids cite every decision. The RAG answers informational policy questions only: it never changes a decision, cites the clause it retrieved and abstains when similarity is low. Local multilingual embeddings in ONNX (no torch; fallback: sentence-transformers with torch on a paid instance), computed for the corpus at image build time, so no text leaves the app. BM25 is its baseline. |
+| **Frontend UI** | **React + TypeScript (Vite), decided 26-Sep** | Streamlit | Two views: customer chat in ES/PT, and an English HITL console (cases, handoffs, credit candidates, audit log) behind a JWT `role: "agent"`. Types are generated from the OpenAPI contract; a Playwright smoke test covers the three case types and the console 403. |
+| **Deployment** | **One Docker container on Render: FastAPI serves the React build, decided 26-Sep** | Separate front and API hosts | One URL, no CORS, 1-command reproducibility (`docker-compose up`). If mentors do not allow publishing dataset rows, the demo runs on a team-generated fixture database with the same schema. |
 
 ---
 
@@ -62,7 +64,8 @@ This complemented document **proposes answers to 5 open decisions**, details the
        - `is_foreign_country` (`transaction_country != customer.country`, after normalizing names: the data holds both "México" and "Mexico")
        - `time_of_day_sin/cos`, from `transaction_date` - 6 h, the processing-day clock (see `AGENTS.md` section 7)
      - **Training data**: all years (2023-2026) with a time-based split. The June 2026 customer sample holds only 9 fraud rows.
-     - **Second Learned Component (NLP/Intent)**: Multilingual Intent & Slot Extraction (Spanish dialects + Portuguese) evaluated against the keyword extractor. Stretch goal.
+     - **Second Learned Component (Intent)**: Jev `Choice` for intent, evaluated against the keyword extractor on a team-labeled ES/PT set, with calibration measured per language.
+     - **Third Learned Component (Retrieval)**: the RAG's multilingual embeddings, evaluated against BM25 by recall@3 on about 30 labeled ES/PT policy questions.
   2. **Evaluation Metric**: Cost-weighted loss function. A false negative (missed fraud dispute / missed human escalation) is penalised at **10x** the cost of a false positive (unnecessary verification).
 
 ---
@@ -71,7 +74,7 @@ This complemented document **proposes answers to 5 open decisions**, details the
 The brief mandates that *"the conversational model must not invent eligibility rules or independently approve credit."* Here is the definitive policy specification to be coded in `src/rules/dispute_policy.py`:
 
 ```
-                            DISPUTE INTAKE POLICY RULES (v2.2)
+                            DISPUTE INTAKE POLICY RULES (v2.3)
 Rules run in this order; the first rule that decides the case wins. Clause ids in brackets.
 "Today" is 2026-06-17, the dataset end date. (new) = added in v2.1, not yet in code.
 
@@ -111,7 +114,7 @@ Rules run in this order; the first rule that decides the case wins. Clause ids i
    - Temporary card lock only when the customer claims a stolen card (Jev stolen-card probability
      >= 0.80, or the keyword fallback) or multi-charge fraud,
      only on card products ('Tarjeta Crédito', 'Tarjeta Débito') in status 'Active'.
-     Whether the lock needs explicit customer confirmation is an open decision.
+     The customer confirms the lock (Yes/No) first; a refusal is recorded in the case and the handoff.
    - Open the dispute case [POL-AUT-INTAKE] with data-dictionary values:
      case_type='Claim', category='Transactions',
      subcategory='Cargo no reconocido' or 'Cobro indebido',
@@ -121,7 +124,7 @@ Rules run in this order; the first rule that decides the case wins. Clause ids i
      * Customer segment in ['Premium', 'Plus'], read from the system of record, not the token.
      * Account age > 180 days.
      * No complaints in the last 90 days.
-     The flag is a simulated recommendation for a human reviewer (AGENTS.md rule 8).
+     The flag is a simulated recommendation that a human approves or rejects in the HITL console (AGENTS.md rule 8).
      The customer hears that the case is registered and under review, never that credit was applied.
 ```
 
@@ -145,7 +148,7 @@ Transactions carry no MXN: Mexican customers transact in USD. MXN appears only i
 | **AI & Backend** | *Engineer 3* | FastAPI gateway; JWT session auth; State Machine (Understand→Decide→Act→Verify→Escalate); Tool registry with read-back verification; SQLite ops store and audit log; Indirect prompt injection defenses. |
 | **Analytics & UI/Docs**| *Engineer 4* | Contact-reason EDA & business case charts; Data-quality findings report; Interactive Frontend (Client chat + HITL review console); Held-out benchmark harness; Slide deck & Video pitch script. |
 
-The team has 2 people (26-Sep): these lanes merge into two fronts in `docs/PLAN.md`.
+The team has 4 people in three fronts (26-Sep): A for data, ML and evaluation, B for agent and backend, C (2 people) for the React front. Details in `docs/PLAN.md`.
 
 ---
 
@@ -335,6 +338,10 @@ The test suite consists of **250 scripted conversations** (60% Spanish, 40% Port
    - Cost per successful automated resolution, or "not defined" when there are none.
    - State the workload, sample size and cost assumptions.
 
+**Baselines (decided 26-Sep):** the main baseline is our own architecture in rules-only mode (keyword extractor, policy v2.3, rule-based risk without `fraud_score`, templated replies; no Jev, LightGBM, LLM or RAG). The starter pipeline is measured as a reference through a minimal adapter, with only its known crash fixed; its unverified card locks and refund promise count as unsafe outcomes.
+
+**Development split and freeze (decided 26-Sep):** 60 development cases, separate from the 250 held-out, tune every threshold (Jev, RAG, LightGBM). Cases are written from real dataset charges (`synthetic-organizer`) with `team-generated` messages; an LLM may paraphrase variants under human review. Labeling is split among the 4 team members, with Cohen's kappa on 50 double-labeled cases. The held-out suite is frozen with a commit and a hash on 30-Sep, before any tuning.
+
 **Reporting rules (official statement):** compare baseline and proposed system on the same cases; slice every metric by language, segment and country with small-sample caveats; run 3 repeats and report the spread; record model, prompt and extractor versions; if an LLM judge is used, publish its rubric and validate a sample against human labels; label offline results, simulations and projected savings separately, never as production gains.
 
 ---
@@ -369,11 +376,11 @@ A second root prefix, `data_backup_20260831/`, also exists; nothing ingests it y
 - [ ] **Public GitHub Repo**: `factored-hackathon-2026-[team-name]` with full commit history and Clean Architecture. Team AlterEgo: `factored-hackathon-2026-alterego`. The current remote is `Chackmilo/Factored_Hackaton`: rename or mirror before submitting.
 - [ ] **Repeatable Pipeline**: DuckDB ingestion + Pandera data contracts + unit tests (`pytest`).
 - [ ] **Data-Quality & Insights Report**: contact-reason evidence, the verified data traps (`AGENTS.md` section 7) and how each is handled.
-- [ ] **Learned Component**: LightGBM Fraud / Dispute risk model benchmarked against a baseline without `fraud_score`, tracked in MLflow.
+- [ ] **Learned Components**: LightGBM fraud risk model benchmarked against a baseline without `fraud_score`, tracked in MLflow; Jev intent against keywords; RAG retrieval against BM25.
 - [ ] **Working System**: FastAPI backend with JWT session auth + Act & Verify tool gateway, wired end to end.
-- [ ] **Bilingual Agent UI**: Customer chat (ES/PT) + Operator HITL console.
+- [ ] **Agent UI (React)**: customer chat (ES/PT) + English HITL console with credit-candidate approval and an audit-log viewer.
 - [ ] **Held-Out Evaluation Report**: markdown report with the section 5 metrics and reporting rules, plus error analysis.
-- [ ] **Live Deployment**: public URL on Render or Fly.io.
+- [ ] **Live Deployment**: public URL on Render, one container.
 - [ ] **Slide Deck (4-6 slides)**: Problem justification, Architecture, Benchmark results, Limitations & Route to Production.
 - [ ] **Video Pitch (Mandatory)**: 3-minute screen-recorded walkthrough demonstrating Normal, Ambiguous, and Escalation flows.
 - [ ] **Submission email** to `hackathon.admin@factored.ai` with the repo link, deployment link, slides and video.

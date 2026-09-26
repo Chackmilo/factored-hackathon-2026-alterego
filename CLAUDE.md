@@ -35,7 +35,7 @@ The repo holds two decision paths. Know which one you are touching.
 ## Gotchas
 
 - **"Today" is 2026-06-17**, the dataset end date. It is hardcoded as `ANCHOR_DATE` in `ingestion.py` and as the default `DisputePolicyInput.current_date`. Window and account-age math uses it, not the wall clock. Keep both in sync.
-- **Event time is shifted.** `transaction_date` runs about 6 hours ahead of its `process_date` partition, so `CAST(transaction_date AS DATE)` misdates about 25% of rows and gives 227 sampled charges a day count of -1. Derive the local date first (AGENTS.md section 7).
+- **Event time is offset.** Each daily partition spans 06:00 to 05:59 of the next day, so `process_date` = date(`transaction_date` - 6 h). `CAST(transaction_date AS DATE)` misdates about 24% of rows and gives 227 sampled charges a day count of -1. Use `process_date` for window and velocity math (AGENTS.md section 7).
 - **`fraud_score` leaks `is_fraud`** (every non-fraud row scores <= 30). It stays in `gold_transactions` for analysis only; models and the baseline use it nowhere.
 - **Gateway reads hit `gold_*`, gateway writes hit `silver_*`.** Gold tables are materialized snapshots: after a card lock `gold_transactions.product_status` stays stale, and a new dispute does not raise `gold_customers.complaints_last_90d`, until ingestion reruns.
 - Gateway tests run against the team-generated `fixture_db` in `tests/test_dispute_flow.py`, never the real lakehouse. Point `BankingToolGateway(db_path=...)` at a fixture the same way for new tool tests.

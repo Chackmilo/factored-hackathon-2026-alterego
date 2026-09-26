@@ -60,7 +60,7 @@ This complemented document **proposes answers to 5 open decisions**, details the
        - `merchant_category_encoded`
        - `channel` (ATM, POS, Web, App, Transfer, Branch)
        - `is_foreign_country` (`transaction_country != customer.country`, after normalizing names: the data holds both "México" and "Mexico")
-       - `time_of_day_sin/cos`, from local time (timestamps look shifted +6h against the partition day, see `AGENTS.md` section 7)
+       - `time_of_day_sin/cos`, from `transaction_date` - 6 h, the processing-day clock (see `AGENTS.md` section 7)
      - **Training data**: all years (2023-2026) with a time-based split. The June 2026 customer sample holds only 9 fraud rows.
      - **Second Learned Component (NLP/Intent)**: Multilingual Intent & Slot Extraction (Spanish dialects + Portuguese) evaluated against the keyword extractor. Stretch goal.
   2. **Evaluation Metric**: Cost-weighted loss function. A false negative (missed fraud dispute / missed human escalation) is penalised at **10x** the cost of a false positive (unnecessary verification).
@@ -97,7 +97,7 @@ Rules run in this order; the first rule that decides the case wins. Clause ids i
    - Jev intent 'fuera_de_alcance' (loans, other products) -> abstain and explain the scope.
 
 4. FILING WINDOW [POL-WIN-60]:
-   - Eligible: local transaction date within 60 calendar days of today.
+   - Eligible: `process_date` within 60 calendar days of today.
    - Older -> Safe Policy Abstention (explain the policy, direct to a branch).
 
 5. MANDATORY HUMAN ESCALATION (HITL transfer):
@@ -132,7 +132,7 @@ All policies compute limits in USD. Convert with the `daily_exchange_rates` row 
 
 Transactions carry no MXN: Mexican customers transact in USD. MXN appears only in `complaints.claimed_amount`.
 
-**Threshold impact (June 2026 transactions):** 14.8% are <= $150, 38.6% fall between $150 and $500, and 46.6% exceed $500. `POL-ESC-500` therefore caps containment near 53% of charges. Keeping $500 is an open decision; the report must state this ceiling either way.
+**Threshold impact (June 2026 customer sample):** of the 8,967 disputable charges, 39.5% exceed $500, 5.4% are `POL-AUT-150` candidates and 55.1% go to plain intake. `POL-ESC-500` therefore caps containment at 60.5% of disputable charges, an upper bound before ML-risk, legal, multi-charge and clarification escalations. Keeping $500 is proposed; the report must state this ceiling either way.
 
 ---
 
@@ -292,7 +292,7 @@ Records where `duplicate_rank > 1` are logged to `quarantine_duplicate_transacti
 Partitions arriving with `process_date > transaction_date + 3 days` are flagged with `is_late_arrival = True` and merged via an idempotent upsert into DuckDB Silver tables. **Status (26-Sep):** not built; the June 2026 sample holds 0 such rows. Check all years and `data_backup_20260831/` before building it, and demonstrate it with a labeled test fixture if the data has none.
 
 ### Event-Time Normalization
-`transaction_date` sits 6 hours ahead of its `process_date` partition (hours 00 to 05 land on the next day, about 25% of rows), which looks like UTC against local time. Confirm on a raw CSV, then derive the local date before any window, velocity or time-of-day logic.
+Confirmed on raw CSVs (26-Sep): timestamps carry no offset, and each daily partition spans 06:00 to 05:59 of the next day, so `process_date` = date(`transaction_date` - 6 h) on 100% of June rows. Window and velocity logic uses `process_date`, the bank's processing day (UTC-6). It is not the customer's local day (Colombia UTC-5, Argentina UTC-3).
 
 ### Sampling
 `sample_only=True` samples customers first and keeps only their products, complaints and transactions, so foreign keys line up (0 orphans verified on 26-Sep). The dataset's intentional orphan-FK trap shows only in the full load.

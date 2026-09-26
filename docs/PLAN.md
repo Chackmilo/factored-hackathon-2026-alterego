@@ -26,7 +26,7 @@ Las quejas son el contacto más costoso del banco. Datos sintéticos del organiz
 
 **Cómo se mide:** las métricas oficiales, definidas en `docs/TEAM_BRIEF_COMPLEMENTED.md` sección 5. Resolución segura automatizada con el porcentaje de casos intentados, contención, calidad de escalamiento (transferencias omitidas e innecesarias), resultados inseguros, latencia p50 y p95, y costo por caso intentado y por resolución exitosa. Todo se corta por idioma, segmento y país.
 
-**Límites conocidos:** el dataset no tiene portugués ni Brasil, así que los casos en portugués son generados por el equipo. El techo de $500 limita la contención a cerca del 53% de los cargos. La trampa de duplicados sigue sin resolver.
+**Límites conocidos:** el dataset no tiene portugués ni Brasil, así que los casos en portugués son generados por el equipo. El techo de $500 limita la contención a un máximo de 60,5% de los 8.967 cargos disputables de la muestra de junio, antes de los escalamientos por riesgo, legales, de varios cargos y de aclaración. La trampa de duplicados sigue sin resolver.
 
 ## 2. Planeación
 
@@ -56,7 +56,7 @@ Se consulta al equipo antes de actuar sobre una fila Propuesta o Abierta. Al cer
 | Workflow | Propuesta | Intake de disputas; alternativa: elegibilidad de crédito |
 | Crédito provisional | Propuesta | Solo marca de candidato para revisión humana (regla 8); el código aún lo trata como acción autónoma |
 | Política de disputas | Propuesta | Cláusulas y orden del brief v2.2 |
-| Techo de escalamiento de $500 | Propuesta | Mantenerlo y reportar el techo de contención de ~53% |
+| Techo de escalamiento de $500 | Propuesta | Mantenerlo y reportar el techo de contención de 60,5% de los cargos disputables |
 | Baseline | Propuesta | El pipeline inicial del repo, medido en la misma suite |
 | Reconstruir o evolucionar | Propuesta | Evolucionar: conservar la estructura y construir el stack de disputas al lado |
 | Explicaciones de política | Propuesta | Política como código con ids de cláusula; RAG solo si sobra tiempo |
@@ -105,7 +105,7 @@ gantt
 
 | Día | Fecha | Frente A: datos, ML y evaluación | Frente B: agente, backend y UI | Listo cuando |
 | --- | --- | --- | --- | --- |
-| 2 | 26 sep | Confirmar el desfase horario en un CSV crudo; commitear el código sin trackear | Cerrar decisiones; enviar la pregunta a mentores; pedir acceso a Jev | G0: cada decisión Propuesta confirmada o cambiada |
+| 2 | 26 sep | Hecho: desfase horario confirmado en el CSV crudo; código y notebook commiteados en `feat/dispute-stack` | Cerrar decisiones; enviar la pregunta a mentores; pedir acceso a Jev | G0: cada decisión Propuesta confirmada o cambiada |
 | 3 | 27 sep | Contratos, hora local, tipo de cambio por fecha, muestra abril-junio, sondeo de duplicados y del prefijo de respaldo (máximo 2 h) | SQLite de operación con auditoría; guardas y valores del diccionario en el gateway; cláusulas v2.2 | Cada arreglo tiene un test que falló primero; la ingesta corre con los contratos en verde |
 | 4 | 28 sep | Carga de transacciones 2023-2026 y features; baseline de reglas sin `fraud_score` | Orquestador de cinco etapas y varios turnos detrás de FastAPI y la sesión JWT; interfaz `IntentExtractor` con el extractor de respaldo; regex de monto y fecha; búsqueda del cargo y aclaración; handoff | G1: una conversación en español recorre la API y termina en un caso verificado |
 | 5 | 29 sep | LightGBM contra baseline, split temporal, umbral por costo, MLflow; conectar el riesgo a la política | Jev detrás de `IntentExtractor` si hay key; LLM de apoyo para slots y LLM de redacción ES/PT con marcadores; guardas de PII LATAM y etiquetas escapadas | El modelo supera al baseline en la ventana held-out; conversaciones ES y PT pasan por el LLM |

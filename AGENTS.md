@@ -225,11 +225,11 @@ Each finding changes a design choice. Re-check against the full load before quot
 
 | Finding | Evidence | Consequence |
 | --- | --- | --- |
-| Event time shifted | `transaction_date` hours 00-05 fall on the day after their `process_date` partition (25% of rows); 227 sampled rows land on 2026-06-18, after "today" | Derive the local date before window, velocity or time-of-day logic; confirm UTC on a raw CSV |
+| Event time is offset (confirmed on raw CSVs) | Raw timestamps carry no offset, and each daily partition spans 06:00 to 05:59 of the next day: `process_date` = date(`transaction_date` - 6 h) on 100% of June rows, while a plain cast matches 76%; 227 sampled rows land on 2026-06-18 under the plain cast | Use `process_date` (the bank's processing day, UTC-6) for window and velocity logic, and treat `transaction_date` as UTC. It is not the customer's local day: Colombia is UTC-5 and Argentina UTC-3 |
 | No MXN in transactions or products | Mexican customers transact in USD; `amount_usd` is NULL whenever `currency = 'USD'` | Caps and features work in USD; MXN appears only in `complaints.claimed_amount` |
-| Amounts are high | Median about $470; 14.8% <= $150, 38.6% $150-$500, 46.6% > $500 | The $500 ceiling caps containment near 53%; justify the threshold in the report |
+| Amounts are high | Median about $470. Of the 8,967 disputable charges in the June customer sample, 39.5% exceed $500, 5.4% are `POL-AUT-150` candidates and 55.1% go to plain intake | The $500 ceiling caps containment at 60.5% of disputable charges, an upper bound before ML-risk, legal, multi-charge and clarification escalations; justify the threshold in the report |
 | Merchant rarely known | `merchant_name` NULL in 77% of rows; names are generic ("Super Ahorro", "Cine Premium") | Charge matching leans on amount and date; merchant is a weak hint |
-| Some rows cannot be disputed | Deposit and Adjustment rows are 17%; Declined, Pending and Reversed statuses about 8% | The policy needs the disputable-charge rule (brief clause `POL-DISP-TYPE`) |
+| Some rows cannot be disputed | 23.4% of the June customer sample fails `POL-DISP-TYPE` (Deposit or Adjustment, or not Approved) | The policy needs the disputable-charge rule (brief clause `POL-DISP-TYPE`) |
 | Complaint product link is unreliable | 82% of non-null `complaints.affected_product_id` point outside the complainant's own products | Never infer the complained product from that column |
 | Name and enum drift | `transaction_country` holds "México" and "Mexico"; `product_type` values are Spanish ("Tarjeta Crédito") while the dictionary lists English; complaint `status` has no `INTAKE_RECEIVED`, `category` has no `Fraud`, `reception_channel` has no `Chat` | Normalize names; write only dictionary values |
 | Repeat flag exists natively | `complaints.is_repeat_complainer` is true on 15% of complaints | Use or reconcile it instead of hardcoding false |
@@ -283,7 +283,7 @@ this table tracks the gap to the plan. 24 tests pass.
 | Orchestrator | None for disputes | Multi-turn five-stage state machine behind FastAPI and `get_current_session` |
 | PII masker | Regex for cards, emails, US phones, SSN | LATAM documents (CURP, DNI, CC, CPF); stop masking amounts (a 7-digit COP amount becomes `[REDACTED_PHONE]`) |
 | UI, eval harness, deployment | None | Streamlit chat and console; 250-case suite; public URL |
-| Analysis notebook | `notebooks/01_problema_y_datos.ipynb` | Ran on the pre-fix lakehouse; rerun it and correct its false claim that most transactions fall under $150 (14.8% do) |
+| Analysis notebook | `notebooks/01_problema_y_datos.ipynb`, re-run on 2026-09-26 against the rebuilt lakehouse (32 cells, no errors); fixture `data/fixtures/abstention_pol_win_60.json` (a real 77-day charge that `POL-WIN-60` abstains on) | Cell 22 still calls `POL-AUT-150` customers eligible for autonomous resolution with provisional credit (rule 8 conflict); rewrite the analysis report in English on day 9 |
 | README | Starter-kit text with a "7 pillars" rubric that is not the hackathon rubric | Rewrite to match the submission |
 | `data/synthetic_samples.json` | 4 English scenarios in USD | Team-generated; replace with the ES/PT held-out suite |
 

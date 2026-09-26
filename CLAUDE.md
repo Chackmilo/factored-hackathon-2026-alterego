@@ -22,7 +22,7 @@ No linter or formatter is configured. pytest runs with `pythonpath = ["."]`, so 
 
 The repo holds two decision paths. Know which one you are touching.
 
-**Decided but not yet in code (26-Sep):** Supabase Auth replaces `src/auth/session.py`, and Supabase Postgres (`bank` read-only serving copy, `ops` for writes) replaces the gateway's DuckDB reads and writes and the planned SQLite store. Deployment on Vercel is proposed. Everything below describes the code as it runs today; see `docs/SUPABASE_VERCEL.md` before touching auth, the gateway or deployment.
+**Decided but not yet in code (26-Sep):** Supabase Auth replaces `src/auth/session.py`, and Supabase Postgres (`bank` read-only serving copy, `ops` for writes) replaces the gateway's DuckDB reads and writes and the planned SQLite store. Deployment moves to Vercel (decided), on free plans, and the stack moves to Python 3.12 (decided). Everything below describes the code as it runs today; see `docs/SUPABASE_VERCEL.md` before touching auth, the gateway or deployment.
 
 **Baseline (wired to the API and `main.py`).** `src/api/app.py` calls `HybridOrchestrator` in `src/agents/orchestrator.py`: a single-shot pipeline of `PIIMasker`, then `DeterministicRulesEngine` (`src/rules/engine.py`), then the hand-tuned `MLFraudDetector`, then a keyword branch calling always-succeeding mocks in `src/agents/tools.py`, with escalations going to the in-memory `hitl_queue`. It takes `customer_id` from the request body, is USD only and simulates LLM tokens. The team proposes keeping it as the measured baseline, so fix bugs there but build dispute features in the dispute stack.
 

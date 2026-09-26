@@ -29,7 +29,7 @@ Read these before inventing anything. Content in them was written by the team or
 | Claude Doc: Factored Hackathon 2026 Team Brief | The team's original proposal: rationale, architecture, evaluation plan, first 10-day plan |
 | `docs/TEAM_BRIEF_COMPLEMENTED.md` (v2.4) | Dispute policy spec with clause ids, data contracts, handoff packet, held-out suite, metric formulas. Supersedes the original brief on these topics |
 | `docs/JEV_TYPESAFE_AI.md` | Jev (TypeSafe AI) integration design: typed signals, their policy clauses, roles of Jev, the LLMs and code |
-| `docs/SUPABASE_VERCEL.md` | Supabase Auth identity model, the `bank` and `ops` Postgres schemas mapped from our lakehouse, database security, the proposed Vercel deployment, new risks |
+| `docs/SUPABASE_VERCEL.md` | Supabase Auth identity model, the `bank` and `ops` Postgres schemas mapped from our lakehouse, database security, the Vercel deployment, the serving-subset data probe, new risks |
 | Official Problem Statement (Google Doc) | https://docs.google.com/document/d/18AwONT8hQupRcfNPLFrPo6fHOJ_OUn1nBf-3jMnla2c/edit |
 | LATAM Bank Dataset Summary (PDF) | https://drive.google.com/file/d/1V7n9v0zuv9SYzpW2AzPnssgAp5X_buXc/view |
 | LATAM Bank Complete Data Dictionary (PDF) | [link to the organizer's data dictionary removed] |
@@ -236,6 +236,8 @@ Each finding changes a design choice. Re-check against the full load before quot
 | Repeat flag exists natively | `complaints.is_repeat_complainer` is true on 15% of complaints | Use or reconcile it instead of hardcoding false |
 | Claim currency often missing | `complaints.currency` NULL on 68% of rows | Claimed amounts need a currency rule before any sum |
 | S3 layout | Dimensions are flat CSVs under `data/`; facts are partitioned `year=/month=/day=`; a second root `data_backup_20260831/` exists | There is no `data/complaints.csv` |
+| Suite patterns are uneven (read-only S3 probe, 1 Apr to 17 Jun 2026) | 54,157 transactions of 18,756 sampled customers; 32,109 disputable in window, 9,358 real out-of-window (61 to 77 days). Only 1 same-customer pair with the same amount within 7 days; 1,629 customers with 2+ disputable charges in 48 h; 70 with 3+; 429 foreign Web or App charges; 42 `is_fraud` rows (17 Apr, 16 May, 9 to 17 Jun), 22 disputable in window | Ambiguous cases come from vague date or merchant hints over several candidates, not equal amounts; fraud cases sit at the cap of 20. Closes the H12 check of the adversarial review |
+| `amount_usd` null on 5% of non-USD rows | 514 ARS and 755 COP rows (5.15%) from April to June; the daily FX rate for their `process_date` exists for all 1,269; where both exist, native `amount_usd` differs from the daily rate by up to 2.1% | Fill from the daily rate and record the source; fail the load when no rate exists (gold's `1.0` fallback would treat pesos as dollars) |
 
 ## 8. Target architecture
 
@@ -257,7 +259,7 @@ Dataset rows stay out of any external model call: Understand sees only the maske
 | Policy explanations | Dispute policy explained with clause citations | Policy-as-code with clause ids, plus RAG over a team-written Spanish policy text with local multilingual embeddings (ONNX); it never changes a decision |
 | Data platform | Bronze raw CSVs -> silver validated and deduplicated -> gold dispute and contact-reason marts; a minimized serving subset is published to Supabase `bank` (no `is_fraud`, `fraud_score`, card numbers, documents or contacts) | DuckDB, local only (ingestion, ML, notebook; the app never opens it), Pandera or SQL checks |
 | Observability | Traces, append-only audit log, experiment tracking, eval runs | Audit log in `ops.audit_log`, MLflow (local), OpenTelemetry |
-| Deployment | One public domain serving the API and the React build | Vercel (proposed 26-Sep, replaces Render): FastAPI as a Python function, React on the CDN, region `iad1` next to Supabase `us-east-1` |
+| Deployment | One public domain serving the API and the React build | Vercel Hobby (decided 26-Sep, replaces Render): FastAPI as a Python function, React on the CDN, region `iad1` next to Supabase `us-east-1` (Free plan, no Pro; a double canary keeps the project from pausing) |
 
 Learned components, each measured against a baseline:
 
@@ -287,7 +289,7 @@ this table tracks the gap to the plan. 24 tests pass.
 | Understand and conversation | Baseline English keyword matching | `IntentExtractor` with the fallback extractor and Jev, slot regex plus helper LLM, Claude replies with placeholders, RAG over the policy text |
 | Orchestrator | None for disputes | Multi-turn five-stage state machine behind FastAPI and `get_current_session` |
 | PII masker | Regex for cards, emails, US phones, SSN | LATAM documents (CURP, DNI, CC, CPF); stop masking amounts (a 7-digit COP amount becomes `[REDACTED_PHONE]`) |
-| UI, eval harness, deployment | None | React chat (ES/PT) and English HITL console served by FastAPI; OpenAPI contract; 250 held-out plus 60 development cases; two baselines; Playwright smoke test; GitHub Action with a Postgres service; public URL on Vercel (proposed; was Render) |
+| UI, eval harness, deployment | None | React chat (ES/PT) and English HITL console served by FastAPI; OpenAPI contract; 250 held-out plus 60 development cases; two baselines; Playwright smoke test; GitHub Action with a Postgres service; public URL on Vercel (decided 26-Sep; was Render) |
 | Analysis notebook | `notebooks/01_problema_y_datos.ipynb`, re-run on 2026-09-26 against the rebuilt lakehouse (32 cells, no errors); fixture `data/fixtures/abstention_pol_win_60.json` (a real 77-day charge that `POL-WIN-60` abstains on) | Cell 22 still calls `POL-AUT-150` customers eligible for autonomous resolution with provisional credit (rule 8 conflict); rewrite the analysis report in English on day 9 |
 | README | Starter-kit text with a "7 pillars" rubric that is not the hackathon rubric | Rewrite to match the submission |
 | `data/synthetic_samples.json` | 4 English scenarios in USD | Team-generated; replace with the ES/PT held-out suite |
@@ -301,7 +303,8 @@ or "Abierta" there, and record each closure in that file with its date.
 
 ## 11. Working conventions for agents
 
-- **Environment:** Python 3.11+, `uv`. Install with `uv sync`, test with `uv run pytest -v`, run
+- **Environment:** Python 3.11+ today; the team moves to 3.12 (decided 26-Sep: Vercel offers no 3.11,
+  and every package of the stack resolves to the same latest version on 3.12). `uv`. Install with `uv sync`, test with `uv run pytest -v`, run
   the API with `uv run uvicorn src.api.app:app --reload --port 8000`.
 - **Secrets:** `.env` is a git-ignored file holding the read-only AWS keys and any API keys; keep it
   out of commits, logs and prompts. Prompts sent to an external model carry only the masked customer

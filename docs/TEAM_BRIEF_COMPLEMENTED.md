@@ -2,7 +2,7 @@
 **Workflow Focus: Autonomous & Controlled Transaction-Dispute Intake System**  
 *Document Version: 2.4.0 | Date: 26-Sep-2026*
 
-> **v2.4.0 (26-Sep-2026):** identity moves from a self-minted HS256 JWT to Supabase Auth, and the operational store from SQLite to Supabase Postgres (`ops` schema, with a read-only `bank` serving copy of gold), decided by the team. Deployment on Vercel is proposed and replaces Render if approved. Policy clauses and their order are unchanged. Design: `docs/SUPABASE_VERCEL.md`.
+> **v2.4.0 (26-Sep-2026):** identity moves from a self-minted HS256 JWT to Supabase Auth, and the operational store from SQLite to Supabase Postgres (`ops` schema, with a read-only `bank` serving copy of gold), decided by the team. Deployment moves from Render to Vercel (decided the same day). Supabase and Vercel stay on free plans. Policy clauses and their order are unchanged. Design: `docs/SUPABASE_VERCEL.md`.
 >
 > **v2.3.0 (26-Sep-2026):** G0 closed (decision log in `docs/PLAN.md`). The customer confirms the card lock; human approval of credit candidates in the HITL console; Claude Haiku 4.5 writes replies; RAG over a team-written policy text with local multilingual embeddings; React + TypeScript served by FastAPI on Render; two baselines; held-out suite of 250 cases plus a 60-case development split, frozen before tuning. The clause order is unchanged from v2.2; only the card-lock confirmation is new.
 >
@@ -35,7 +35,7 @@ This complemented document **proposes answers to 5 open decisions**, details the
 ---
 
 ### Decision 2: Stack Selection (Pragmatism over Infrastructure Overhead)
-* **Status**: **RESOLVED → Local-first data platform, managed identity and operational store (Supabase), serverless deployment (Vercel, proposed)**. Revised 26-Sep (v2.4).
+* **Status**: **RESOLVED → Local-first data platform, managed identity and operational store (Supabase Free), serverless deployment (Vercel Hobby)**. Revised 26-Sep (v2.4).
 * **Rationale**: In a 10-day sprint, configuring multi-node Databricks clusters, Unity Catalog, and private cloud VPCs consumes valuable engineering days. The data platform stays local and reproducible. Identity and the operational store move to a managed service because a serverless or ephemeral host keeps no local state, and an identity service issues sessions only against a credential.
 
 | Layer | Selected Tech | Alternative Considered | Rationale |
@@ -48,7 +48,7 @@ This complemented document **proposes answers to 5 open decisions**, details the
 | **Understand and conversation** | **Jev (TypeSafe AI) for typed signals (intent, stolen card, distress); regex plus a helper LLM for amount, date and merchant; Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) writes replies with placeholders, decided 26-Sep** | One LLM for every step | Every decision and action stays deterministic in code, and no model sees dataset rows. Jev is in early access with no key yet: the ES/PT keyword and regex extractor is the default, the fallback and the baseline Jev is measured against. Design: `docs/JEV_TYPESAFE_AI.md`. |
 | **Policy explanations** | **Policy-as-code with clause ids, plus RAG over a team-written Spanish policy text (about 15 chunks, one per clause), decided 26-Sep** | Clause ids only | Clause ids cite every decision. The RAG answers informational policy questions only: it never changes a decision, cites the clause it retrieved and abstains when similarity is low. Local multilingual embeddings in ONNX (no torch; fallback: sentence-transformers with torch on a paid instance), computed for the corpus at image build time, so no text leaves the app. BM25 is its baseline. |
 | **Frontend UI** | **React + TypeScript (Vite), decided 26-Sep** | Streamlit | Two views: customer chat in ES/PT, and an English HITL console (cases, handoffs, credit candidates, audit log) behind `app_metadata.app_role = "agent"` in the Supabase token (Supabase reserves the `role` claim for the Postgres role). The front uses Supabase only to log in; all data goes through the API. Types are generated from the OpenAPI contract; a Playwright smoke test covers the three case types and the console 403. |
-| **Deployment** | **Vercel, proposed 26-Sep: FastAPI as a Python function, the React build on the CDN, one domain** | One Docker container on Render (decided 26-Sep, superseded if Vercel is approved) | One URL, no CORS, previews per PR; state lives in Supabase so the function stays stateless. `docker-compose up` (API, local Postgres, local token issuer) stays the reproducibility path. If mentors do not allow publishing dataset rows, Supabase holds a team-generated fixture database with the same schema. |
+| **Deployment** | **Vercel, decided 26-Sep: FastAPI as a Python function, the React build on the CDN, one domain** | One Docker container on Render (decided earlier on 26-Sep, superseded) | One URL, no CORS, previews per PR; state lives in Supabase so the function stays stateless. `docker-compose up` (API, local Postgres, local token issuer) stays the reproducibility path. If mentors do not allow publishing dataset rows, Supabase holds a team-generated fixture database with the same schema. |
 
 ---
 
@@ -325,6 +325,8 @@ The test suite consists of **250 scripted conversations** (60% Spanish, 40% Port
 | **Incorrect or Missing Data** | 15 | Null merchant, null `amount_usd`, charge dated after today, customer missing from the system of record. Expected: no invented facts; abstain or escalate with the gap named. |
 | **Multilingual Ambiguity** | 10 | Mixed ES/PT messages, false friends ("cobrança" vs "cobranza"), regional slang. Expected: correct language reply or a clarification question. |
 
+**Data check (26-Sep, read-only S3 probe of 1 Apr to 17 Jun 2026, sampled customers; `AGENTS.md` section 7):** only 1 real same-customer pair shares an amount within 7 days, so "Ambiguous Charges" should come from vague date or merchant hints over several candidates (1,629 customers have 2+ disputable charges within 48 h; merchant is null on 77% of rows) or be labeled `team-generated`. "High Value / Multi-Charge" has 70 customers with 3+ charges in 48 h. "High Fraud Anomaly" has only 22 disputable in-window fraud rows for its 20 cases, and "Out-of-Window" has 9,358 real charges. The team adjusts the mix before the freeze.
+
 ### Mathematical Definitions of Key Deliverable Metrics:
 1. **Safe Automated Resolution Rate ($R_{SAR}$)**:
    $$R_{SAR} = \frac{\text{Eligible cases correctly resolved without human}}{\text{Total in-scope eligible test cases}}$$
@@ -386,7 +388,7 @@ A second root prefix, `data_backup_20260831/`, also exists; nothing ingests it y
 - [ ] **Working System**: FastAPI backend with Supabase Auth session verification + Act & Verify tool gateway on Supabase Postgres, wired end to end.
 - [ ] **Agent UI (React)**: customer chat (ES/PT) + English HITL console with credit-candidate approval and an audit-log viewer.
 - [ ] **Held-Out Evaluation Report**: markdown report with the section 5 metrics and reporting rules, plus error analysis.
-- [ ] **Live Deployment**: public URL on Vercel (proposed; one Render container if not approved), backed by the `alterego-demo` Supabase project, kept from pausing through the judging window.
+- [ ] **Live Deployment**: public URL on Vercel, backed by the `alterego-demo` Supabase Free project; a double canary (Vercel cron and GitHub Actions) and manual checks on 8, 12 and 15 Oct keep it from pausing through the judging window.
 - [ ] **Slide Deck (4-6 slides)**: Problem justification, Architecture, Benchmark results, Limitations & Route to Production.
 - [ ] **Video Pitch (Mandatory)**: 3-minute screen-recorded walkthrough demonstrating Normal, Ambiguous, and Escalation flows.
 - [ ] **Submission email** to `hackathon.admin@factored.ai` with the repo link, deployment link, slides and video.

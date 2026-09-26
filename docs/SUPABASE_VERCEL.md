@@ -1,6 +1,6 @@
 # Supabase y Vercel: identidad, base de operación y despliegue
 
-Actualizado: 2026-09-26 (día 2). Estado: el equipo decidió el 26 sep reemplazar el JWT propio y la SQLite de operación por Supabase (Auth y Postgres). Vercel como plataforma de despliegue está en propuesta. Lo marcado "(propuesta)" depende de filas Propuesta o Abierta de `docs/PLAN.md` y no cambia nada hasta que el equipo las apruebe.
+Actualizado: 2026-09-26 (día 2). Estado: el equipo decidió el 26 sep reemplazar el JWT propio y la SQLite de operación por Supabase (Auth y Postgres) en el plan Free, sin Supabase Pro; desplegar en Vercel; usar Python 3.12; y correr el harness en dos modos. Lo marcado "(propuesta)" depende de filas Propuesta o Abierta de `docs/PLAN.md` y no cambia nada hasta que el equipo las apruebe.
 
 Límites y comportamientos de Supabase y Vercel verificados el 26 sep en su documentación oficial (sección 11). Este diseño **no inspeccionó el proyecto Supabase**: el MCP de Supabase no estaba autenticado en la sesión en que se escribió. El primer paso del día 3 es una inspección de solo lectura (sección 5.6).
 
@@ -9,7 +9,7 @@ Límites y comportamientos de Supabase y Vercel verificados el 26 sep en su docu
 - **Qué cambia.** La identidad pasa de un JWT HS256 que firmamos nosotros (`src/auth/session.py`) a Supabase Auth: el cliente y el agente ingresan con una credencial y FastAPI verifica el token de Supabase con la clave pública del proyecto. La base de operación pasa de SQLite (`data/ops.sqlite`, que no existía aún) a Postgres en Supabase. La app deja de abrir DuckDB: lee un subconjunto de servicio publicado desde gold al esquema `bank`.
 - **Qué no cambia.** El lakehouse DuckDB local sigue siendo la plataforma de datos (bronze, silver, gold, ML sobre todos los años, notebook). La política sigue en Python, el modelo propone y el código decide, el gateway hace act-and-verify. Las cláusulas y su orden (brief v2.3) no se tocan.
 - **Qué resuelve.** H01 (cómo obtienen su token el cliente y el agente), H15 (disco efímero: los casos y la auditoría se perdían en cada reinicio), H21 (los hechos de política en gold no veían los casos nuevos), SEC-03 (secreto por defecto en el repo), el límite de un solo escritor de DuckDB y la contradicción 11 de la revisión adversarial (el rol en el JWT).
-- **Qué riesgos agrega.** Más trabajo antes de G1 en la ruta crítica de B, la pausa del plan Free de Supabase tras 7 días sin actividad (cae en plena ventana de jurados), el límite de 500 MB del bundle de Python en Vercel frente a ONNX y LightGBM, y datos del organizador alojados en un tercero (pregunta abierta a mentores). Sección 9.
+- **Qué riesgos agrega.** Más trabajo antes de G1 en la ruta crítica de B, la pausa del plan Free de Supabase tras 7 días sin actividad (cae en plena ventana de jurados y no se paga Pro, así que se mitiga con un canario doble y revisión manual), el límite de 500 MB del bundle de Python en Vercel frente a ONNX y LightGBM, y datos del organizador alojados en un tercero (pregunta abierta a mentores). Sección 9.
 
 El enunciado admite como fuente de identidad "mock OIDC/JWT or an identity service" (regla 5 de `AGENTS.md`). Supabase Auth es un servicio de identidad: la regla se cumple mejor que con el JWT de prueba, porque el token sale solo tras presentar una credencial.
 
@@ -22,7 +22,7 @@ El enunciado admite como fuente de identidad "mock OIDC/JWT or an identity servi
 | Base de operación | SQLite `data/ops.sqlite` | Supabase Postgres, esquema `ops` | Decidida (26 sep) |
 | Datos que lee la app | DuckDB `gold_*` y `silver_*` abiertos en solo lectura | Supabase Postgres, esquema `bank`, cargado desde gold por un script | Propuesta (consecuencia de la anterior) |
 | Lakehouse, ingesta, ML, notebook | DuckDB local | Sin cambio | Decidida |
-| Despliegue | Un contenedor Docker en Render | Vercel: FastAPI como función de Python y el build de React por CDN, un solo dominio | Propuesta |
+| Despliegue | Un contenedor Docker en Render | Vercel (Hobby): FastAPI como función de Python y el build de React por CDN, un solo dominio | Decidida (26 sep) |
 | Reproducibilidad local | `docker-compose up` | `docker-compose up` con API más Postgres local y emisor de tokens local, sin cuenta de Supabase | Propuesta |
 
 ## 3. Identidad con Supabase Auth
@@ -95,17 +95,33 @@ Separarlos permite recargar datos sin perder casos, dar permisos mínimos por es
 
 ### 4.2 Qué viaja a `bank` y qué no
 
-Conteos de la muestra actual (`data/lakehouse.duckdb`, 26 sep). Transacciones: la muestra de junio tiene 11.703 filas; el plan del día 3 la amplía a abril a junio (estimación: unas 35.000).
+Conteos de la muestra actual (`data/lakehouse.duckdb`, 26 sep). Transacciones: la muestra de junio tiene 11.703 filas; de abril al 17 de junio son 54.157 filas de 18.756 de los 25.000 clientes (sondeo de solo lectura sobre S3, 26 sep). Esas son las filas máximas por tabla; la sección 4.2.1 propone publicar solo los clientes que usan los casos.
 
 | Tabla `bank` | Origen | Filas | Columnas que viajan | Columnas que no viajan, y por qué |
 | --- | --- | --- | --- | --- |
 | `customers` | `gold_customers` | 25.000 | `customer_id` (PK), `full_name`, `country` (normalizado), `city`, `segment`, `registration_date`, `customer_status` | `document_number`, `document_type`, `email`, `mobile_phone`, `credit_score`, `accepts_marketing`: el flujo no los usa. Minimizar lo que sale a un tercero (regla 10, H02) |
 | `products` | `silver_products` | 66.554 (23.311 tarjetas de 15.236 clientes) | `product_id` (PK), `customer_id` (FK), `product_type`, `product_status`, `currency`, `opening_date`, `expiration_date` | `product_number` (10 a 16 dígitos, con forma de número de tarjeta), saldos, límites, tasas y mora. Si la UI necesita "tarjeta terminada en", se publica solo `last4` |
-| `transactions` | `gold_transactions` | 11.703 (junio) | `transaction_id` (PK), `customer_id` (FK), `product_id` (FK), `transaction_date`, `process_date`, `transaction_type`, `amount`, `currency`, `amount_usd` (normalizado), `channel`, `merchant_name`, `merchant_category`, `transaction_country` (normalizado), `transaction_city`, `transaction_status` | `is_fraud` (la etiqueta) y `fraud_score` (la fuga). La app no los necesita, el modelo en línea no puede verlos y ningún visitante de la demo los encuentra |
+| `transactions` | `gold_transactions` | 11.703 (junio); 54.157 (1 abr a 17 jun) | `transaction_id` (PK), `customer_id` (FK), `product_id` (FK), `transaction_date`, `process_date`, `transaction_type`, `amount`, `currency`, `amount_usd` (normalizado), `channel`, `merchant_name`, `merchant_category`, `transaction_country` (normalizado), `transaction_city`, `transaction_status` | `is_fraud` (la etiqueta) y `fraud_score` (la fuga). La app no los necesita, el modelo en línea no puede verlos y ningún visitante de la demo los encuentra |
 | `complaints` | `silver_complaints` (2026) | 1.719 | `complaint_id` (PK), `customer_id` (FK), `creation_date`, `process_date`, `case_type`, `category`, `subcategory`, `status`, `claimed_amount`, `currency`, `is_repeat_complainer` | `description` y `resolution` (plantillas), y `affected_product_id`: el 82% apunta a productos de otro cliente, así que nunca es FK ni se usa en un join |
 | `exchange_rates` | `bronze_daily_exchange_rates` | 13.164 | `date`, `source_currency`, `target_currency`, `exchange_rate` | Nada |
 
-Tamaño estimado con índices: menos de 100 MB (por medir con `pg_total_relation_size` tras la primera carga). El techo del plan Free es 500 MB por proyecto.
+El CSV crudo trae además `transaction_category`, `branch_id`, `response_code`, `latitude` y `longitude`, que gold ya descarta; la ubicación tampoco viaja. Tamaño estimado de la muestra completa con índices: menos de 100 MB (unos 150 bytes por transacción antes de índices; por medir con `pg_total_relation_size` tras la primera carga). El techo del plan Free es 500 MB por proyecto: el tamaño no obliga a recortar.
+
+#### 4.2.1 Qué clientes publicar, según los datos (propuesta)
+
+Sondeo de solo lectura del 26 sep sobre S3 (transacciones del 1 abr al 17 jun 2026 de los 25.000 clientes de la muestra; cargo disputable según `POL-DISP-TYPE`; ventana medida con `process_date`):
+
+| Qué necesita la suite (brief sección 5) | Lo que hay en los datos | Consecuencia |
+| --- | --- | --- |
+| Cargos disputables en ventana (normales, alto monto) | 32.109: 5.331 de hasta $150, 13.720 entre $150 y $500, 12.289 de más de $500 y 769 sin `amount_usd` | De sobra |
+| Fuera de ventana (abstención) | 9.358 cargos reales de 61 a 77 días | De sobra; confirma el fixture de abstención |
+| Ambiguo: dos cargos del mismo monto | 1 solo par (mismo monto y moneda, a 7 días o menos); 15 clientes con montos a menos de 5% el mismo día; 1.629 clientes con 2 o más cargos disputables en 48 h | La ambigüedad real viene de pistas vagas de fecha o comercio sobre varios candidatos (el comercio falta en el 77% de las filas), no de montos iguales. Reescribir la categoría "Ambiguous Charges" del brief |
+| Varios cargos: 3 o más en 48 h | 70 clientes | Alcanza para la parte multi de los 35 casos de alto monto o multi |
+| Anomalía: compra extranjera por Web o App | 429 cargos de 418 clientes | De sobra |
+| Fraude real (`is_fraud`) | 42 en total (17 en abril, 16 en mayo, 9 en junio hasta el 17); 22 disputables en ventana | Justo para los 20 casos de "High Fraud Anomaly": usar todos o bajar la categoría y declararlo |
+| Candidatos a `POL-AUT-150` | 1.681 cargos de 1.446 clientes | De sobra |
+
+Lectura: los patrones escasos (ambiguo por monto, multi y fraude) se buscan en toda la muestra, y eso ocurre en DuckDB, donde se arma la suite. Supabase solo necesita los clientes que los casos usan. Como el tamaño no obliga a recortar, decide la minimización (regla 10, H02): se publican los clientes de la suite (desarrollo y held-out), las personas de la demo y el canario, con todos sus productos, quejas y transacciones de la ventana. Serán unos cientos de clientes. El script recibe esa lista (`data/serving_customers.json`, `team-generated`); hasta congelar la suite, `alterego-dev` recibe las personas y los clientes de desarrollo. Si los mentores permiten más, publicar la muestra completa es solo cambiar la lista.
 
 ### 4.3 Reglas del script de publicación (propuesta, frente A)
 
@@ -113,7 +129,7 @@ Tamaño estimado con índices: menos de 100 MB (por medir con `pg_total_relation
 
 1. **Nombres y valores.** Normaliza "Mexico" a "México" en `country` y `transaction_country`, en UTF-8. Conserva los valores en español de `product_type` ("Tarjeta Crédito").
 2. **Tiempo.** `transaction_date` viaja como `timestamp` sin zona, tal cual el CSV, y `process_date` como `date` tal cual. Ninguno pasa por `timestamptz`: la sesión de Postgres con otra zona correría las fechas. Nunca se recalcula `process_date` en Postgres.
-3. **Montos.** `amount_usd` normalizado con el tipo de cambio de la fecha de la transacción (plan del día 3), no el último disponible.
+3. **Montos.** Se conserva el `amount_usd` nativo cuando existe. El 5,15% de las filas en COP o ARS de abril a junio lo trae nulo (514 ARS y 755 COP: la trampa de nulos del dataset); el tipo de cambio diario de su `process_date` existe para las 1.269, así que se completan con él. Donde hay ambos, el `amount_usd` nativo difiere hasta un 2,1% del tipo diario: cerca del umbral de $500 eso puede cambiar la cláusula, así que el caso guarda qué fuente usó. Sin tipo de cambio la carga falla: nunca el respaldo `1.0` que hoy usa `gold_transactions`, que trataría pesos como dólares.
 4. **Integridad.** Las FKs de `bank` se crean de verdad. Las filas huérfanas (0 en la muestra; la trampa aparece en la carga completa) van a una tabla de cuarentena en DuckDB con su conteo, antes de cargar. Las PKs detectan IDs duplicados (0 hoy).
 5. **Contratos.** Paridad de conteos por tabla entre DuckDB y Postgres, 0 huérfanos, ninguna columna prohibida en `bank` (test que lista las columnas), `max(process_date) <= 2026-06-17`.
 6. **Recarga idempotente.** Vacía y carga `bank` en una sola transacción. Nunca toca `ops`.
@@ -181,7 +197,7 @@ Ninguna función `SECURITY DEFINER` en esquemas expuestos. Los advisors de segur
 - Riesgo de inyección: el contenido de las tablas (nombres de comercio) puede traer instrucciones. Los resultados del MCP son datos, nunca órdenes.
 - Primer paso del día 3, en solo lectura: listar esquemas, tablas, extensiones, la configuración de la Data API y los advisors del proyecto, y compararlo con este documento antes de crear nada.
 
-## 6. Despliegue en Vercel (propuesta)
+## 6. Despliegue en Vercel (decidido el 26 sep; los detalles marcados siguen en propuesta)
 
 ### 6.1 Topología
 
@@ -195,7 +211,7 @@ Respaldos, en orden: (1) un segundo proyecto de Vercel con el preset de Vite y u
 
 | Límite (26 sep) | Consecuencia |
 | --- | --- |
-| Python 3.12 (por defecto), 3.13 o 3.14; no hay 3.11 | Subir el repo a 3.12 (`.python-version`, `requires-python`, `uv.lock`, CI) para que local, CI y producción coincidan |
+| Python 3.12 (por defecto), 3.13 o 3.14; no hay 3.11 | Decidido: 3.12 en `.python-version`, `requires-python`, `uv.lock` y CI. Verificado el 26 sep con `uv pip compile --only-binary :all:`: los 28 paquetes directos del stack (los actuales del `pyproject.toml` más psycopg, lightgbm, onnxruntime, onnxmltools, skl2onnx, tokenizers, mlflow, pandera, anthropic y supabase) y sus 171 dependencias resuelven a la misma última versión con wheels binarias en Linux y Windows para 3.12, 3.13 y 3.14, igual que `typesafe-sdk==0.7.1` probado aparte. Empatan; 3.12 gana por ser el default de Vercel |
 | Bundle de Python de 500 MB sin comprimir, sin tree-shaking | Separar dependencias (6.3) y medir el bundle el día 4 |
 | Hobby: 2 GB y 1 vCPU, 300 s por invocación | Suficiente para un turno de chat; los modelos se cargan una vez con el `lifespan` de FastAPI |
 | Cuerpo de petición y respuesta de 4,5 MB | Sin impacto |
@@ -209,7 +225,15 @@ Solo lo que corre en producción: `fastapi`, `pydantic`, `psycopg[binary]`, `pyj
 
 ### 6.4 Riesgo del runtime de inferencia
 
-La rueda de LightGBM para Linux necesita `libgomp` al importarse y trae `scipy`. En runtimes serverless eso suele fallar o pesar demasiado. Propuesta: entrenar con LightGBM y servir el modelo exportado a ONNX con `onnxruntime`, el mismo runtime que ya piden los embeddings del RAG. Así hay un solo runtime y un bundle más chico. Se decide con el deploy esqueleto del día 4: si `lightgbm` importa y el bundle cabe, se sirve directo.
+Medido el 26 sep sobre las ruedas `manylinux_2_28` para Python 3.12:
+
+| Paquete | Sin comprimir | Librerías del sistema que exige |
+| --- | --- | --- |
+| `lightgbm` 4.7.0 | 9,7 MB, más `scipy` 1.18.1 (111,9 MB) como dependencia | `libgomp.so.1` (OpenMP), que la rueda no incluye |
+| `onnxruntime` 1.30.0 | 63,8 MB | Ninguna fuera de libc y libstdc++ |
+| `numpy` 2.5.3 | 56,4 MB | Ninguna (lo piden los dos caminos) |
+
+Propuesta: entrenar con LightGBM y servir el modelo exportado a ONNX (`onnxmltools`) con `onnxruntime`, el mismo runtime que ya piden los embeddings del RAG. Ahorra unos 122 MB del bundle y elimina la dependencia de `libgomp`, que el runtime de Vercel puede no tener. El deploy esqueleto del día 4 lo confirma; el reporte compara las predicciones de LightGBM y de su exportación ONNX sobre el split de validación.
 
 ### 6.5 Embeddings del RAG
 
@@ -225,23 +249,23 @@ Pooler de Supabase (Supavisor) en modo transacción, puerto 6543, que funciona p
 
 ### 6.8 Pausa de Supabase y monitoreo
 
-El plan Free pausa un proyecto tras 7 días con poca actividad. Entregamos el 5 oct, los finalistas salen el 15 y la premiación es el 16: un jurado que abre la URL el día 13 puede encontrar la base pausada. Opciones:
+El plan Free pausa un proyecto tras 7 días con poca actividad. Entregamos el 5 oct, los finalistas salen el 15 y la premiación es el 16: un jurado que abre la URL el día 13 puede encontrar la base pausada. El equipo decidió no pagar Supabase Pro (26 sep), así que la mitigación es:
 
-1. **Pro en el proyecto demo durante octubre** ($25 al mes): sin pausa. Recomendado; entra en la decisión abierta "Keys y presupuesto".
-2. **Canario diario con cron de Vercel**: una conversación sintética de una persona dedicada que abre y verifica un caso. También cubre el monitoreo que pedía H14. La documentación no dice qué cuenta como actividad, así que solo no garantiza que el proyecto no se pause.
-
-Recomendación: las dos. El canario sirve de monitoreo aunque se pague Pro.
+1. **Canario doble e independiente.** Un cron diario de Vercel (Hobby permite uno por día, con ±59 min de precisión) y un workflow programado de GitHub Actions cada 12 horas llaman al mismo endpoint `/api/v1/canary`, protegido con un secreto (`CRON_SECRET` en el header `Authorization`). El canario ingresa con una persona dedicada en Supabase Auth (actividad de Auth), lee `bank`, escribe una entrada `CANARY` en `ops.audit_log` y la lee de vuelta (actividad de base). No abre casos, así que no ensucia los datos de la demo. Dos programadores distintos evitan que la caída de uno deje el proyecto sin tráfico.
+2. **Aviso.** Si el canario falla, el workflow de GitHub Actions falla y GitHub avisa por correo a Daniel. Esto también cubre el monitoreo que pedía H14.
+3. **Revisión y restauración manual.** Daniel revisa el dashboard de Supabase el 8, el 12 y el 15 oct. Si el proyecto se pausó, lo restaura desde el dashboard (un proyecto Free pausado se puede restaurar durante 90 días).
+4. **Riesgo residual declarado.** La documentación de Supabase no dice qué cuenta como actividad, así que el canario reduce el riesgo pero no lo elimina. El reporte lo dice en limitaciones, y el video y las capturas quedan como evidencia de que el sistema funciona aunque la URL falle.
 
 ### 6.9 Previews, CI y cuentas
 
 - Cada PR genera un preview. Por defecto los previews piden Vercel Authentication: Playwright necesita el secreto de "Protection Bypass for Automation".
 - Dos proyectos de Supabase Free (el máximo del plan): `alterego-dev` para previews, CI end-to-end y pruebas del harness, y `alterego-demo` para producción. Las variables de entorno de Preview apuntan a dev y las de Production a demo.
 - Variables del API: `SUPABASE_URL` (JWKS y emisor), `DATABASE_URL` (pooler con `app_gateway`), las keys de LLM. Del front, en build: `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`. Nunca en Vercel: la secret key de Supabase ni las keys de AWS del diccionario.
-- El plan Hobby de Vercel es personal y no comercial, y su dashboard (logs, variables) tiene un solo usuario: solo el dueño ve los logs. Por verificar en los términos vigentes; si B necesita los logs, hace falta Pro o que Daniel sea el dueño y los comparta.
+- El plan Hobby de Vercel es personal y no comercial, y su dashboard (logs, variables) tiene un solo usuario: solo el dueño ve los logs. Por verificar en los términos vigentes. Daniel es el dueño y comparte los logs que B necesite.
 
 ### 6.10 Latencia y costo en el reporte
 
-La latencia p50 y p95 se mide contra producción en Vercel y el arranque en frío se reporta aparte (H32). El costo de cómputo por caso se estima con la tarifa de CPU activa de Vercel Pro, declarada como supuesto, más el costo de Supabase si se paga Pro.
+La latencia p50 y p95 se mide contra producción en Vercel y el arranque en frío se reporta aparte (H32). En planes gratis el costo real de cómputo es $0, así que el costo por caso se estima con la tarifa de CPU activa de Vercel Pro y la de Supabase Pro, declaradas como supuestos de una operación real, más los tokens medidos.
 
 ## 7. Pruebas, harness y desarrollo local (propuesta)
 
@@ -264,7 +288,9 @@ Referencia para estimar, no para ejecutar hoy.
 | `src/data/publish_serving.py` | Nuevo (sección 4.3) |
 | `supabase/migrations/` | Nuevo: `bank`, `ops`, vistas, roles, grants, RLS |
 | `scripts/seed_personas.py` | Nuevo; secret key solo local |
-| `src/api/app.py` | Endpoints nuevos detrás de `get_current_session`; la cola en memoria sale del despliegue |
+| `src/api/app.py` | Endpoints nuevos detrás de `get_current_session`; `/api/v1/canary` protegido con `CRON_SECRET`; la cola en memoria sale del despliegue |
+| `vercel.json`, `.github/workflows/canary.yml` | Cron diario de Vercel y workflow programado cada 12 h contra el canario |
+| `data/serving_customers.json` | Nuevo (`team-generated`): lista de clientes que se publican (suite, personas, canario) |
 | `pyproject.toml`, `.python-version`, `uv.lock` | Python 3.12, grupos de dependencias, `[tool.vercel]` |
 | `Dockerfile`, `docker-compose.yml` | Postgres local, emisor local |
 | `tests/test_dispute_flow.py` | Fixture de Postgres; tests del verificador |
@@ -275,25 +301,30 @@ Referencia para estimar, no para ejecutar hoy.
 | # | Riesgo | Impacto | Mitigación | Dueño | Cuándo |
 | --- | --- | --- | --- | --- | --- |
 | R1 | Más trabajo en la ruta crítica de B antes de G1 (agrava H03) | G1 se corre y arrastra G2 y G3 | Repartir: Daniel crea proyectos, personas y el MCP; A escribe la migración de `bank` y la publicación; B el verificador, `ops` y el gateway; C el ingreso y el deploy esqueleto. G1 puede correr contra `alterego-dev` o contra Postgres local | Daniel | 27 sep |
-| R2 | Pausa del plan Free en la ventana de jurados | La URL pública falla ante un jurado | Pro en el proyecto demo en octubre y canario diario | Daniel | Antes de G3 |
-| R3 | El bundle pasa 500 MB o LightGBM no importa | El deploy falla el día 8 | Deploy esqueleto el 28 sep con los paquetes pesados; ONNX como runtime único; Large Functions como respaldo | B | 28 sep |
+| R2 | Pausa del plan Free en la ventana de jurados (sin Pro, decidido el 26 sep) | La URL pública falla ante un jurado | Canario doble (Vercel y GitHub Actions), aviso por correo, revisión manual el 8, 12 y 15 oct, restauración; riesgo residual declarado en el reporte | Daniel | Día 8 y del 6 al 16 oct |
+| R3 | El bundle pasa 500 MB o LightGBM no importa (su rueda exige `libgomp.so.1`, medido el 26 sep) | El deploy falla el día 8 | ONNX como runtime único desde el inicio; deploy esqueleto el 28 sep con los paquetes pesados; Large Functions como respaldo | B | 28 sep |
 | R4 | Arranque en frío | p95 alto | Carga en `lifespan`; arranque en frío reportado aparte | B y A | Día 7 |
 | R5 | Datos del organizador en un tercero | Choque con la regla 10 si los mentores dicen que no | Columnas mínimas, sin etiqueta ni fuga ni números de tarjeta; fixture del equipo con el mismo esquema | Daniel y A | Respuesta de mentores |
 | R6 | El emisor local llega a producción | Cualquiera forja tokens | Guarda de `APP_ENV`, arranque que falla y test | B | Día 3 |
 | R7 | El MCP escribe donde no debe o sigue una instrucción inyectada | Pérdida o cambio de datos | `project_ref` y `read_only=true` en demo; cambios solo por migraciones revisadas | Daniel | Día 3 |
 | R8 | Límites de Auth frenan el harness desplegado | Corrida incompleta | Ritmo controlado, caché de tokens, límites más altos en dev | A | Día 7 |
-| R9 | Python 3.11 local frente a 3.12 en Vercel | Diferencias entre local y producción | Todo a 3.12 | B | Día 3 |
+| R9 | Python 3.11 local frente a 3.12 en Vercel | Diferencias entre local y producción | Decidido: todo a 3.12; ningún paquete del stack pierde versión (verificado el 26 sep) | B | Día 3 |
 | R10 | Hobby de un solo usuario | Solo el dueño ve logs y variables | Daniel es dueño y comparte; Pro si hace falta | Daniel | Día 4 |
 
-## 10. Decisiones para cerrar
+## 10. Decisiones
 
-1. **Vercel en lugar de Render.** Recomendación: sí, con el deploy esqueleto el 28 sep como prueba. Si el bundle o LightGBM fallan y el respaldo no alcanza, se vuelve al contenedor, ahora sin estado local porque la base está en Supabase.
-2. **Pago.** Supabase Pro en el proyecto demo durante octubre ($25). Vercel Hobby salvo que B necesite logs.
-3. **Datos en Supabase.** Publicar el subconjunto minimizado de la sección 4.2, sujeto a la respuesta de los mentores.
-4. **Nombres de claims.** `app_metadata.customer_id` y `app_metadata.app_role`.
-5. **Harness.** Dos modos, con la latencia del modo desplegado.
-6. **Python 3.12** en todo el repo.
-7. **Runtime de inferencia.** ONNX si el deploy esqueleto lo exige.
+Cerradas el 26 sep:
+
+1. **Vercel en lugar de Render.** El deploy esqueleto del 28 sep es la prueba. Si el bundle falla y el respaldo no alcanza, se vuelve al contenedor, ahora sin estado local porque la base está en Supabase.
+2. **Sin pago.** Supabase Free (sin Pro) y Vercel Hobby. La pausa se mitiga como dice la sección 6.8.
+3. **Harness en dos modos**, con la latencia del modo desplegado.
+4. **Python 3.12** en todo el repo: empata con 3.13 y 3.14 en todos los paquetes y es el default de Vercel.
+
+Abiertas o en propuesta:
+
+1. **Datos en Supabase.** El equipo pidió decidir según los datos: la sección 4.2.1 propone publicar solo los clientes de los casos, las personas y el canario, sujeto también a la respuesta de los mentores.
+2. **Nombres de claims.** `app_metadata.customer_id` y `app_metadata.app_role`.
+3. **Runtime de inferencia.** ONNX desde el inicio (evidencia en 6.4).
 
 ## 11. Fuentes (verificadas el 26 sep 2026)
 

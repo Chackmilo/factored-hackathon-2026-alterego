@@ -1,7 +1,9 @@
 # 🛡️ Factored Hackathon 2026: Team Brief (Complemented & Hardened)
 **Workflow Focus: Autonomous & Controlled Transaction-Dispute Intake System**  
-*Document Version: 2.1.0 | Date: 26-Sep-2026*
+*Document Version: 2.2.0 | Date: 26-Sep-2026*
 
+> **v2.2.0 (26-Sep-2026):** Jev (TypeSafe AI) typed signals feed `POL-CLARIFY`, `POL-ESC-DISTRESS` and the card-lock rule; keyword rules stay as fallback. Integration design: `docs/JEV_TYPESAFE_AI.md`.
+>
 > **v2.1.0 (26-Sep-2026):** corrected against the official PDFs in `docs/` and a profile of the June 2026 data. Changes: provisional credit is a recommendation only (Decision 4), `fraud_score` leakage confirmed (Decision 3), currency caps recomputed from dataset rates, dispute statuses mapped to the data dictionary, clarification outcome added, handoff packet completed, held-out suite and metrics aligned with the official statement, S3 example fixed. Precedence lives in `AGENTS.md` section 2, verified data facts in `AGENTS.md` section 7, and the plan and decision log in `docs/PLAN.md`.
 
 ---
@@ -38,7 +40,7 @@ This complemented document **proposes answers to 5 open decisions**, details the
 | **Operational System of Record** | **SQLite (`data/ops.sqlite`), decided 26-Sep** | DuckDB `silver_*`, Postgres | Dispute cases, card locks and the audit log live here. Ingestion never touches it, and it tolerates the API writing while analysts read the lakehouse. DuckDB allows one writer and ingestion recreates `silver_*`. |
 | **API & Gateway** | **FastAPI + Pydantic v2** | Flask / Django | Asynchronous, typed, auto-generates OpenAPI docs, built-in dependency injection for JWT security. |
 | **ML Models & Tracking** | **LightGBM / scikit-learn + MLflow** | XGBoost / Sagemaker | Extremely fast training, native handling of categorical features, low inference latency (< 5ms). |
-| **Understand and conversation** | **Initial layer ("Jev", to be clarified), then an LLM that manages the customer conversation, decided 26-Sep** | LLM for every step | Every decision and action stays deterministic in code. The ES/PT keyword and slot extractor fills the same JSON schema, serves as fallback and is the baseline the LLM is measured against. Proposed: the LLM writes with placeholders that code fills from verified records, so it never sees dataset rows. |
+| **Understand and conversation** | **Jev (TypeSafe AI) for typed signals (intent, stolen card, distress); regex plus a helper LLM for amount, date and merchant; an LLM that writes replies with placeholders, decided 26-Sep** | One LLM for every step | Every decision and action stays deterministic in code, and no model sees dataset rows. Jev is in early access with no key yet: the ES/PT keyword and regex extractor is the default, the fallback and the baseline Jev is measured against. Design: `docs/JEV_TYPESAFE_AI.md`. |
 | **Policy explanations** | **Policy-as-code with clause ids (built)** | ChromaDB / SQLite-vec RAG | Clause ids already cite every decision; RAG only if time remains after the held-out evaluation. |
 | **Frontend UI** | **Streamlit (proposed)** | Vite + React | Fastest dual view: customer self-service chat + human-in-the-loop agent console. |
 | **Deployment** | **Docker + Docker Compose on Render or Fly.io (proposed)** | Kubernetes | 1-command reproducibility (`docker-compose up`) and the public URL the submission requires. |
@@ -69,7 +71,7 @@ This complemented document **proposes answers to 5 open decisions**, details the
 The brief mandates that *"the conversational model must not invent eligibility rules or independently approve credit."* Here is the definitive policy specification to be coded in `src/rules/dispute_policy.py`:
 
 ```
-                            DISPUTE INTAKE POLICY RULES (v2.1)
+                            DISPUTE INTAKE POLICY RULES (v2.2)
 Rules run in this order; the first rule that decides the case wins. Clause ids in brackets.
 "Today" is 2026-06-17, the dataset end date. (new) = added in v2.1, not yet in code.
 
@@ -84,12 +86,15 @@ Rules run in this order; the first rule that decides the case wins. Clause ids i
 2. IDENTIFY THE CHARGE [POL-CLARIFY] (new):
    - Exactly one candidate charge matches the customer's hints -> continue.
    - Zero or several candidates -> ask a clarification question listing the candidates.
+   - Jev intent confidence < 0.70, or Jev stolen-card probability between 0.40 and 0.60
+     -> ask a clarification question (thresholds set on the development split).
    - Still unresolved after 2 clarification attempts -> HITL [POL-ESC-AMBIG].
 
 3. DISPUTABLE CHARGE [POL-DISP-TYPE] (new, proposed):
    - Disputable: transaction_status = 'Approved' debits (Purchase, Payment, Withdrawal, Transfer).
    - Declined, Reversed or Pending, Deposit or Adjustment -> explain, open no case.
    - Charge dated after today -> data error: explain, open no case, flag for data-quality review.
+   - Jev intent 'fuera_de_alcance' (loans, other products) -> abstain and explain the scope.
 
 4. FILING WINDOW [POL-WIN-60]:
    - Eligible: local transaction date within 60 calendar days of today.
@@ -99,11 +104,12 @@ Rules run in this order; the first rule that decides the case wins. Clause ids i
    - Claimed amount > $500 USD equivalent [POL-ESC-500].
    - Learned ML risk score > 0.70 [POL-ESC-ML-RISK].
    - More than 2 distinct disputed charges within 48 hours [POL-ESC-MULTI].
-   - Severe distress expressed, ES/PT keyword list [POL-ESC-DISTRESS] (new).
+   - Severe distress: Jev distress Score >= 2, or the ES/PT keyword list as fallback [POL-ESC-DISTRESS] (new).
 
 6. AUTONOMOUS ACTIONS (agent authorized):
    - Search and match candidate charges for the session's customer_id (from the JWT only).
-   - Temporary card lock only when the customer claims a stolen card or multi-charge fraud,
+   - Temporary card lock only when the customer claims a stolen card (Jev stolen-card probability
+     >= 0.80, or the keyword fallback) or multi-charge fraud,
      only on card products ('Tarjeta Crédito', 'Tarjeta Débito') in status 'Active'.
      Whether the lock needs explicit customer confirmation is an open decision.
    - Open the dispute case [POL-AUT-INTAKE] with data-dictionary values:

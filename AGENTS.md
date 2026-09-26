@@ -27,7 +27,8 @@ Read these before inventing anything. Content in them was written by the team or
 | Notion: Task | The five-stage flow, the three case types, the four candidate workflows and their comparison |
 | Notion: Data y data dictionary | Dataset summary, all 13 tables and columns, FK relations, profiling findings, project implications |
 | Claude Doc: Factored Hackathon 2026 Team Brief | The team's original proposal: rationale, architecture, evaluation plan, first 10-day plan |
-| `docs/TEAM_BRIEF_COMPLEMENTED.md` (v2.1) | Dispute policy spec with clause ids, data contracts, handoff packet, held-out suite, metric formulas. Supersedes the original brief on these topics |
+| `docs/TEAM_BRIEF_COMPLEMENTED.md` (v2.2) | Dispute policy spec with clause ids, data contracts, handoff packet, held-out suite, metric formulas. Supersedes the original brief on these topics |
+| `docs/JEV_TYPESAFE_AI.md` | Jev (TypeSafe AI) integration design: typed signals, their policy clauses, roles of Jev, the LLMs and code |
 | Official Problem Statement (Google Doc) | https://docs.google.com/document/d/18AwONT8hQupRcfNPLFrPo6fHOJ_OUn1nBf-3jMnla2c/edit |
 | LATAM Bank Dataset Summary (PDF) | https://drive.google.com/file/d/1V7n9v0zuv9SYzpW2AzPnssgAp5X_buXc/view |
 | LATAM Bank Complete Data Dictionary (PDF) | [link to the organizer's data dictionary removed] |
@@ -245,9 +246,9 @@ Dataset rows stay out of any external model call: Understand sees only the maske
 | Stage / component | Responsibility | Tech (decided or proposed, see `docs/PLAN.md`) |
 | --- | --- | --- |
 | Identity + input guard | Mock OIDC/JWT test sessions with expiry; PII redaction; prompt-injection filter; language detection | FastAPI, JWT |
-| Understand | Extract `{intent, transaction_ref, amount_hint, date_hint, reason, language, missing_fields}` into a Pydantic schema | Initial layer ("Jev", to be clarified) plus the ES/PT keyword and slot extractor, which stays as fallback and baseline |
+| Understand | Extract `{intent, transaction_ref, amount_hint, date_hint, reason, language, missing_fields}` into a Pydantic schema | Jev (TypeSafe AI) typed signals behind an `IntentExtractor` interface; the ES/PT keyword and regex extractor is the default until a key arrives, the fallback and the baseline (`docs/JEV_TYPESAFE_AI.md`) |
 | Converse | Manage the customer conversation in ES/PT: questions, clarifications, answers | An LLM writing with placeholders that code fills from verified records (proposed); it never decides or acts |
-| Decide | Synthetic dispute policy (brief v2.1 clause order) plus ML risk score | Policy-as-code, LightGBM |
+| Decide | Synthetic dispute policy (brief v2.2 clause order) plus ML risk score | Policy-as-code, LightGBM |
 | Act | Tool gateway: per-state tool allowlist, idempotency keys, bounded retries | FastAPI tool layer writing to the SQLite ops store |
 | Verify | Read the created case or card status back from the system of record before telling the customer | SQLite ops store (`data/ops.sqlite`) |
 | Escalate | Handoff packet: request, verified facts, actions taken, evidence, policy clauses, open questions | JSON plus Streamlit agent console |
@@ -273,12 +274,12 @@ this table tracks the gap to the plan. 24 tests pass.
 | --- | --- | --- |
 | Baseline pipeline | Single-shot orchestrator, English keyword rules, hand-tuned "ML" sigmoid, always-succeeding mock tools, in-memory HITL queue | Keep as the measured baseline. Fix the crash at `src/agents/orchestrator.py:130` (`and`/`or` precedence). Its card lock on "cargo no reconocido" and its refund promise count as unsafe outcomes in the report |
 | Identity | `src/auth/session.py` HS256 JWT | No endpoint uses it; `JWT_SECRET` falls back to a hardcoded default |
-| Dispute policy | `src/rules/dispute_policy.py`, brief v2.0 clause order | Brief v2.1 clauses (session, clarify, disputable charge, distress); legal before window; provisional credit as a candidate flag; the "hace -1 días" message on future-dated charges |
+| Dispute policy | `src/rules/dispute_policy.py`, brief v2.0 clause order | Brief v2.2 clauses (session, clarify, disputable charge, distress, Jev signals); legal before window; provisional credit as a candidate flag; the "hace -1 días" message on future-dated charges |
 | Tool gateway | `src/tools/gateway.py` act-and-verify on DuckDB `silver_*`, fixture tests | Writes to the SQLite ops store, dictionary enums, card type and status guards, idempotency keys, audit log, escaped untrusted tags |
 | Handoff packet | `src/domain/handoff.py` model | `customer_request`, `supporting_evidence`, `provisional_credit_recommendation`; nothing produces a packet yet |
 | Data pipeline | `src/data/ingestion.py` bronze/silver/gold, customer-aligned sample with 0 orphans | Contracts, local event time, FX by transaction date, dedup, late arrivals, full-history load for ML |
 | ML | Hand-tuned heuristic | LightGBM on all years without `fraud_score` |
-| Understand and conversation | Baseline English keyword matching | Initial layer, ES/PT keyword and slot extractor, conversation LLM with placeholders |
+| Understand and conversation | Baseline English keyword matching | `IntentExtractor` with the fallback extractor and Jev, slot regex, reply LLM with placeholders |
 | Orchestrator | None for disputes | Multi-turn five-stage state machine behind FastAPI and `get_current_session` |
 | PII masker | Regex for cards, emails, US phones, SSN | LATAM documents (CURP, DNI, CC, CPF); stop masking amounts (a 7-digit COP amount becomes `[REDACTED_PHONE]`) |
 | UI, eval harness, deployment | None | Streamlit chat and console; 250-case suite; public URL |

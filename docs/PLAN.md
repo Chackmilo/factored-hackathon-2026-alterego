@@ -22,6 +22,7 @@ Las quejas son el contacto más costoso del banco. Datos sintéticos del organiz
 1. El sistema propuesto supera al baseline en resolución segura automatizada.
 2. Los resultados inseguros no aumentan; se reportan como conteos con denominador.
 3. El modelo de riesgo sin `fraud_score` supera a la línea base de reglas en la ventana temporal held-out.
+4. Jev clasifica la intención mejor que el extractor por palabras clave, con calibración medida por separado en ES y PT.
 
 **Cómo se mide:** las métricas oficiales, definidas en `docs/TEAM_BRIEF_COMPLEMENTED.md` sección 5. Resolución segura automatizada con el porcentaje de casos intentados, contención, calidad de escalamiento (transferencias omitidas e innecesarias), resultados inseguros, latencia p50 y p95, y costo por caso intentado y por resolución exitosa. Todo se corta por idioma, segmento y país.
 
@@ -46,24 +47,25 @@ Se consulta al equipo antes de actuar sobre una fila Propuesta o Abierta. Al cer
 | Idioma | Decidida (26 sep) | Inglés para los entregables (README, reporte, slides, video); el plan interno sigue en español |
 | Fuente canónica del plan | Decidida (26 sep) | Este archivo; Notion es la copia con la que el equipo se sincroniza |
 | Base de operación | Decidida (26 sep) | SQLite `data/ops.sqlite` para casos, bloqueos, sesiones y auditoría; DuckDB solo lectura para la app |
-| Understand y conversación | Decidida (26 sep) | Capa inicial "Jev" (por aclarar qué es), luego un LLM que gestiona la conversación con el cliente; toda decisión y acción determinista queda en código. El extractor ES/PT por palabras clave queda como respaldo y como línea base |
-| Datos que ve el LLM | Propuesta | Solo el mensaje enmascarado. El LLM redacta con marcadores (`{monto}`, `{caso}`) y el código los rellena con datos verificados: no ve registros ni puede inventar hechos |
+| Understand y conversación | Decidida (26 sep) | Jev (TypeSafe AI) da señales tipadas (intención, robo de tarjeta, angustia) sobre el mensaje enmascarado; regex y un LLM de apoyo extraen monto, fecha y comercio; otro LLM redacta las respuestas; todo lo determinista queda en código. Diseño: `docs/JEV_TYPESAFE_AI.md` |
+| Acceso a Jev | Decidida (26 sep) | Pedir acceso hoy (lista de espera en console.typesafe.ai); sin key, el extractor de respaldo (regex y palabras clave) es el default y el baseline |
+| Datos que ven Jev y los LLM | Decidida (26 sep) | Solo el mensaje enmascarado. Los LLM redactan con marcadores (`{monto}`, `{caso}`) y el código los rellena con datos verificados: ningún modelo ve registros del dataset |
 | Uso de datos en el despliegue y en el LLM | Abierta | Pregunta enviada a mentores en `#technical-help` |
 | Flujo de git | Decidida (26 sep) | Ramas y un commit por fase con la suite en verde |
 | `fraud_score` | Decidida (26 sep, por los datos) | Filtra la etiqueta: fuera del modelo y del baseline |
 | Workflow | Propuesta | Intake de disputas; alternativa: elegibilidad de crédito |
 | Crédito provisional | Propuesta | Solo marca de candidato para revisión humana (regla 8); el código aún lo trata como acción autónoma |
-| Política de disputas | Propuesta | Cláusulas y orden del brief v2.1 |
+| Política de disputas | Propuesta | Cláusulas y orden del brief v2.2 |
 | Techo de escalamiento de $500 | Propuesta | Mantenerlo y reportar el techo de contención de ~53% |
 | Baseline | Propuesta | El pipeline inicial del repo, medido en la misma suite |
 | Reconstruir o evolucionar | Propuesta | Evolucionar: conservar la estructura y construir el stack de disputas al lado |
 | Explicaciones de política | Propuesta | Política como código con ids de cláusula; RAG solo si sobra tiempo |
-| Componentes aprendidos | Propuesta | Modelo de fraude obligatorio; el clasificador de intención queda fuera (somos 2) |
+| Componentes aprendidos | Propuesta | LightGBM de fraude y Jev para intención, cada uno contra su baseline (reglas y palabras clave); la intención se evalúa con un set ES/PT etiquetado por ambos y un split de desarrollo para los umbrales |
 | Tamaño de la suite held-out | Propuesta | 150 casos con las mismas categorías y proporciones (somos 2); el brief dice 250 |
 | Profundidad en portugués | Propuesta | Solo mensajes y respuestas en PT, generados por el equipo |
 | UI y despliegue | Propuesta | Streamlit; Docker en Render o Fly.io con URL pública; qué datos lleva depende de la respuesta de mentores |
 | Confirmación del bloqueo preventivo | Abierta | ¿El cliente confirma antes del bloqueo? |
-| Cargo disputable y palabras de angustia | Abierta | Cláusulas `POL-DISP-TYPE` y `POL-ESC-DISTRESS` del brief |
+| Cargo disputable y angustia | Propuesta | `POL-DISP-TYPE` del brief; angustia con Jev Score >= 2 y palabras clave de respaldo (`POL-ESC-DISTRESS`) |
 
 ### Frentes de trabajo
 
@@ -71,8 +73,8 @@ Somos 2: un frente por persona, y los días 9 y 10 se trabajan juntos.
 
 | Frente | Entregables clave |
 | --- | --- |
-| A: datos, ML y evaluación | Contratos, hora local, tipo de cambio por fecha, muestra abril-junio, carga completa para ML, LightGBM sin `fraud_score`, MLflow, harness, suite y reporte de métricas |
-| B: agente, backend y UI | SQLite de operación, gateway con verificación, política v2.1, orquestador de cinco etapas, capa inicial y LLM de conversación, sesión JWT, guardas de entrada, Streamlit, despliegue |
+| A: datos, ML y evaluación | Contratos, hora local, tipo de cambio por fecha, muestra abril-junio, carga completa para ML, LightGBM sin `fraud_score`, MLflow, set ES/PT etiquetado con split de desarrollo, harness, suite y reporte de métricas |
+| B: agente, backend y UI | SQLite de operación, gateway con verificación, política v2.2, orquestador de cinco etapas, interfaz `IntentExtractor` (respaldo y Jev), extracción de slots, LLM de redacción, sesión JWT, guardas de entrada, Streamlit, despliegue |
 | Ambos (días 9 y 10) | README, reporte y slides en inglés, video, entrega |
 
 ## 3. Hoja de ruta
@@ -103,12 +105,12 @@ gantt
 
 | Día | Fecha | Frente A: datos, ML y evaluación | Frente B: agente, backend y UI | Listo cuando |
 | --- | --- | --- | --- | --- |
-| 2 | 26 sep | Confirmar el desfase horario en un CSV crudo; commitear el código sin trackear | Cerrar decisiones; enviar la pregunta a mentores | G0: cada decisión Propuesta confirmada o cambiada |
-| 3 | 27 sep | Contratos, hora local, tipo de cambio por fecha, muestra abril-junio, sondeo de duplicados y del prefijo de respaldo (máximo 2 h) | SQLite de operación con auditoría; guardas y valores del diccionario en el gateway; cláusulas v2.1 | Cada arreglo tiene un test que falló primero; la ingesta corre con los contratos en verde |
-| 4 | 28 sep | Carga de transacciones 2023-2026 y features; baseline de reglas sin `fraud_score` | Orquestador de cinco etapas y varios turnos detrás de FastAPI y la sesión JWT; capa inicial y extractor; búsqueda del cargo y aclaración; handoff | G1: una conversación en español recorre la API y termina en un caso verificado |
-| 5 | 29 sep | LightGBM contra baseline, split temporal, umbral por costo, MLflow; conectar el riesgo a la política | LLM de conversación ES/PT con marcadores; guardas de PII LATAM y etiquetas escapadas | El modelo supera al baseline en la ventana held-out; conversaciones ES y PT pasan por el LLM |
-| 6 | 30 sep | Harness de evaluación y los primeros 60 casos | Streamlit: chat ES/PT y consola HITL | G2: los tres tipos de caso corren en la UI en ambos idiomas |
-| 7 | 1 oct | Suite completa con procedencia; baseline contra propuesto, 3 repeticiones, cortes por idioma, segmento y país | Reintentos acotados, fallback seguro, simulación de fallas de herramientas, trazas | El reporte cubre cada métrica oficial con denominadores |
+| 2 | 26 sep | Confirmar el desfase horario en un CSV crudo; commitear el código sin trackear | Cerrar decisiones; enviar la pregunta a mentores; pedir acceso a Jev | G0: cada decisión Propuesta confirmada o cambiada |
+| 3 | 27 sep | Contratos, hora local, tipo de cambio por fecha, muestra abril-junio, sondeo de duplicados y del prefijo de respaldo (máximo 2 h) | SQLite de operación con auditoría; guardas y valores del diccionario en el gateway; cláusulas v2.2 | Cada arreglo tiene un test que falló primero; la ingesta corre con los contratos en verde |
+| 4 | 28 sep | Carga de transacciones 2023-2026 y features; baseline de reglas sin `fraud_score` | Orquestador de cinco etapas y varios turnos detrás de FastAPI y la sesión JWT; interfaz `IntentExtractor` con el extractor de respaldo; regex de monto y fecha; búsqueda del cargo y aclaración; handoff | G1: una conversación en español recorre la API y termina en un caso verificado |
+| 5 | 29 sep | LightGBM contra baseline, split temporal, umbral por costo, MLflow; conectar el riesgo a la política | Jev detrás de `IntentExtractor` si hay key; LLM de apoyo para slots y LLM de redacción ES/PT con marcadores; guardas de PII LATAM y etiquetas escapadas | El modelo supera al baseline en la ventana held-out; conversaciones ES y PT pasan por el LLM |
+| 6 | 30 sep | Harness de evaluación; etiquetar el split de desarrollo (acuerdo entre anotadores en una muestra) y los primeros 60 casos | Streamlit: chat ES/PT y consola HITL | G2: los tres tipos de caso corren en la UI en ambos idiomas |
+| 7 | 1 oct | Suite completa con procedencia; baseline contra propuesto y Jev contra palabras clave, 3 repeticiones, cortes por idioma, segmento y país | Reintentos acotados, fallback seguro, simulación de fallas de herramientas, trazas | El reporte cubre cada métrica oficial con denominadores |
 | 8 | 2 oct | Arreglar lo que falle y análisis de errores | Despliegue con los datos que aprueben los mentores | G3: una URL pública sirve la demo |
 | 9 | 3 oct | README, arquitectura y reporte en inglés; volver a correr el notebook | Limitaciones y ruta a producción en inglés | Cada afirmación de los docs coincide con el código y los datos |
 | 10 | 4-5 oct | Slides en inglés; video de 3 minutos | Repo público `factored-hackathon-2026-alterego`; correo de entrega | G4: entrega enviada a `hackathon.admin@factored.ai` |
@@ -122,4 +124,5 @@ Recortes ya aplicados por ser 2: el clasificador de intención y el texto de pol
 - [LATAM Bank Complete Data Dictionary (PDF)]([link to the organizer's data dictionary removed])
 - Slides del kickoff: `docs/Datathon_2026_Kickoff.pdf` (copia local, fuera de git)
 - `AGENTS.md`: reglas, hallazgos de datos verificados (sección 7) y brechas del código (sección 9)
-- `docs/TEAM_BRIEF_COMPLEMENTED.md` v2.1: especificación de la política, del handoff y de la evaluación
+- `docs/TEAM_BRIEF_COMPLEMENTED.md` v2.2: especificación de la política, del handoff y de la evaluación
+- `docs/JEV_TYPESAFE_AI.md`: diseño de la integración de Jev (señales, cláusulas, reparto de roles con los LLM)

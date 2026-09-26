@@ -143,10 +143,10 @@ Si el equipo aprueba los umbrales propuestos, se actualizan en el brief las line
 |---|---|---|
 | **Intencion, Robo y Angustia** | **Jev (System One)** | Recibe unicamente el mensaje del cliente enmascarado. Devuelve `Choice`, `Noul` y `Score`. |
 | **Extraccion de Entidades (Monto, Fecha, Comercio)** | **Regex + LLM de apoyo** | Regex determinista para formatos de moneda (COP, MXN, ARS, USD) y fechas relativas ("ayer", "12 de junio"), corriendo localmente sobre el mensaje original, antes del enmascarado (el masker actual convierte un monto COP de 7 digitos en `[REDACTED_PHONE]`). Si falla, un LLM extrae slots sobre el mensaje enmascarado. |
-| **Cruce con Datos del Banco** | **Codigo Python** | Busca candidatos en `silver_transactions` filtrando estrictamente por `customer_id` de la sesion. **Jev nunca ve registros del dataset**. |
+| **Cruce con Datos del Banco** | **Codigo Python** | Busca candidatos en `bank.transactions` de Supabase filtrando estrictamente por `customer_id` de la sesion. **Jev nunca ve registros del dataset**. |
 | **Politica y Permisos** | **Policy Engine (Python)** | Aplica las clausulas del brief v2.3 de forma determinista sobre las senales recibidas. |
 | **Acciones y Verificacion** | **Tool Gateway (Python)** | Escribe en el esquema `ops` de Supabase Postgres y verifica leyendo de regreso antes de confirmar; la app lee `bank` y nunca abre DuckDB (`docs/SUPABASE_VERCEL.md`). |
-| **Redaccion de Respuestas** | **Claude Haiku 4.5** | Redacta texto en ES/PT usando plantillas con marcadores (`{merchant}`, `{amount}`, `{complaint_id}`, `{clause_id}`) rellenados por codigo verificado. |
+| **Redaccion de Respuestas** | **Claude Haiku 4.5** | Redacta texto en ES/PT usando plantillas con marcadores (`{merchant}`, `{amount}`, `{case_id}`, `{clause_id}`) rellenados por codigo verificado. |
 
 **Contrato comun del clasificador (propuesta).** `IntentExtractor` devuelve siempre la misma respuesta tipada (opcion, probabilidades, `noul`, `score`, confianza, modelo), sea cual sea el motor. Hay cuatro implementaciones posibles detras de la misma interfaz, con el mismo orquestador y la misma politica: el extractor por palabras clave (baseline), Jev, SemIf (plan B, seccion 5) y Claude Haiku como clasificador. Esta ultima es un adaptador que le pide al LLM una probabilidad por opcion o por nivel, y no una etiqueta; la confianza se calcula en codigo. El adaptador del ejemplo de LangChain (`llm_classifier.py`) cubre `Score` y `Noul` pero no `Choice`, asi que para la intencion hay que extenderlo.
 

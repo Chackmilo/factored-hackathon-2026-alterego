@@ -37,6 +37,120 @@ Las quejas son el contacto más costoso del banco. Datos sintéticos del organiz
 
 **Supuestos.** "Hoy" es 2026-06-17, la fecha final del dataset. Todo el dataset es sintético. Los casos en portugués se etiquetan como generados por el equipo.
 
+### Arquitectura del sistema y flujo de componentes
+
+El sistema opera con **dos niveles de inteligencia (Sistema 1 y Sistema 2)** coordinados por un orquestador determinista, sobre el flujo canónico de cinco etapas: **Understand -> Decide -> Act -> Verify -> Escalate**. Lo marcado "(propuesta)" depende de filas Propuesta del registro de decisiones.
+
+```mermaid
+flowchart TD
+    subgraph Client["Canales de usuario"]
+        UserChat["Chat del cliente (ES / PT)"]
+        AgentConsole["Consola HITL (inglés, app_role = agent)"]
+    end
+
+    subgraph Edge["Identidad y guardas (FastAPI en Vercel)"]
+        AuthGuard["Supabase Auth (ES256 / JWKS)<br/>app_metadata.customer_id y app_role"]
+        PIIMasker["Máscara PII LATAM (DNI, CURP, CC, CPF)<br/>+ filtro de inyección de prompt"]
+    end
+
+    subgraph Stage1["1. Understand (Sistema 1 y extracción)"]
+        RegexExtractor["Extracción regex local (monto, fecha, comercio)"]
+        IntentFacade["IntentExtractor (fachada)"]
+        JevEngine["Jev (TypeSafe AI, Sistema 1)<br/>Choice + Noul + Score en un pase<br/>(solo el mensaje enmascarado)"]
+        BaselineEngine["Palabras clave y regex (baseline)<br/>(respaldo sin red y en CI)"]
+    end
+
+    subgraph Stage2["2. Decide (política y ML)"]
+        PolicyEngine["Motor de política determinista (cláusulas v2.3)<br/>POL-SEC-SESSION, POL-ESC-LEGAL, POL-CLARIFY,<br/>POL-DISP-TYPE, POL-WIN-60, POL-ESC-*, POL-AUT-*"]
+        MLRisk["Modelo de riesgo LightGBM, servido en ONNX<br/>(sin fraud_score, umbral por costo)"]
+    end
+
+    subgraph Stage3_4["3 y 4. Act y Verify (tool gateway)"]
+        ToolGateway["Tool gateway (rol app_gateway)"]
+        SupabaseBank[("Supabase bank<br/>(solo lectura, copia de servicio de gold)")]
+        SupabaseOps[("Supabase ops<br/>(conversations, dispute_cases, card_locks,<br/>handoffs, audit_log)")]
+        VerifyStep["Verificación obligatoria<br/>(lectura de vuelta tras escribir)"]
+    end
+
+    subgraph Stage5["5. Converse y Escalate (Sistema 2 y HITL)"]
+        ClaudeGen["Claude Haiku 4.5 (Sistema 2)<br/>(plantillas con marcadores verificados)"]
+        RAGExplainer["RAG explicativo de la política<br/>(embeddings ONNX locales)"]
+        HandoffGen["Handoff packet estructurado<br/>+ candidato a crédito simulado (regla 8)"]
+    end
+
+    %% Flujos de interacción
+    UserChat -->|Petición con token de Supabase| AuthGuard
+    AuthGuard --> PIIMasker
+    PIIMasker --> RegexExtractor
+    PIIMasker --> IntentFacade
+    IntentFacade -->|Con key de Jev| JevEngine
+    IntentFacade -->|Sin red, en CI o como respaldo| BaselineEngine
+
+    RegexExtractor --> PolicyEngine
+    JevEngine -->|Señales tipadas| PolicyEngine
+    BaselineEngine -->|Señales tipadas| PolicyEngine
+    ToolGateway -->|Candidatos del customer_id de la sesión| SupabaseBank
+    SupabaseBank -->|Historial de transacciones| MLRisk
+    MLRisk -->|Score de riesgo| PolicyEngine
+
+    PolicyEngine -->|Acción permitida| ToolGateway
+    ToolGateway -->|INSERT con idempotencia y auditoría| SupabaseOps
+    SupabaseOps -->|Lectura de vuelta| VerifyStep
+    VerifyStep -->|Hechos confirmados| ClaudeGen
+    ClaudeGen -->|Respuesta final| UserChat
+    RAGExplainer -.->|Cita de cláusulas| ClaudeGen
+
+    PolicyEngine -->|Legal, alto monto, riesgo, varios cargos o angustia| HandoffGen
+    HandoffGen -->|ops.handoffs| SupabaseOps
+    HandoffGen -->|Vía la API| AgentConsole
+```
+
+#### 1. Separación cognitiva: Sistema 1 (Jev) y Sistema 2 (Claude Haiku 4.5)
+
+- **Sistema 1 (Jev, TypeSafe AI):** decisiones rápidas, estructuradas y probabilísticas. Según TypeSafe: de 70 a 500 ms de latencia, $0,042 por millón de tokens de entrada, tokens de salida gratis y salidas que siempre cumplen el esquema (garantiza el formato, no el acierto, que se mide). Recibe **solo el mensaje enmascarado** del cliente (`masked_message`), nunca filas del dataset ni PII. En un único pase evalúa:
+  - `Choice` (hasta 255 opciones): intención (`cargo_no_reconocido`, `cobro_indebido`, `tarjeta_robada`, `consulta_general`, `fuera_de_alcance`). Decidido (brief v2.3): aclarar si la confianza de la intención es menor a 0,70. Propuesta: decidir por la masa de probabilidad sumada de las opciones de disputa y aclarar solo entre 0,30 y 0,70.
+  - `Noul` (0,0 a 1,0): probabilidad de tarjeta robada o perdida (`is_stolen_reported`). Decidido: el bloqueo preventivo se ofrece desde 0,80 y se aclara entre 0,40 y 0,60; el cliente siempre confirma con Sí o No. Propuesta: ofrecerlo desde 0,50, porque el cliente confirma.
+  - `Score` (0,0 a 3,0): valor esperado de angustia o vulnerabilidad (`customer_distress_score`). Decidido: `score >= 2` escala a revisión humana (`POL-ESC-DISTRESS`). Propuesta: bajar el umbral a 1,5.
+- **Sistema 2 (Claude Haiku 4.5):** redacta las respuestas en ES y PT sobre plantillas con marcadores (`{merchant}`, `{amount}`, `{case_id}`, `{clause_id}`) que el código rellena con datos ya verificados en la base. No toma decisiones de negocio ni aporta hechos.
+
+#### 2. Principio rector: "Jev interpreta, el código decide"
+
+- Jev emite juicios tipados con probabilidades que TypeSafe declara calibradas (entrenamiento RLCD, *Reinforcement Learning for Calibrated Decisions*). La calibración se mide por idioma en nuestro set de ES y PT.
+- El motor de política en Python gobierna las reglas de negocio, los umbrales con su razón de costo y los permisos de las herramientas. (Propuesta) Leer la masa de probabilidad combinada de las opciones de disputa evita pedir aclaración cuando el modelo duda entre dos subcategorías de disputa válidas.
+
+#### 3. Las cinco etapas en detalle
+
+1. **Entrada e identidad:**
+   - Supabase Auth: verificación ES256 contra el JWKS del proyecto. `customer_id` y `app_role` salen solo de `app_metadata`, nunca del cuerpo ni de `user_metadata`.
+   - Máscara de PII LATAM (DNI, CURP, cédula de ciudadanía, CPF). Monto y fecha se extraen por regex antes de enmascarar, para que un monto de 7 dígitos en COP o ARS no se confunda con un teléfono.
+2. **Understand:**
+   - Fachada desacoplada `IntentExtractor` (propuesta; contrato común en [`JEV_TYPESAFE_AI.md`, sección 4](JEV_TYPESAFE_AI.md#4-reparticion-de-roles-jev-vs-llm-vs-codigo)).
+   - `KeywordIntentExtractor`: baseline determinista por reglas y palabras clave; permite tests y CI sin costo ni dependencias externas.
+   - `JevIntentExtractor`: `typesafe-sdk==0.7.1` con el modelo fijo `jev-1.13.0` (propuesta, fila "Versiones de Jev").
+   - Extracción de slots (monto, fecha, comercio): regex determinista primero; si falla, un LLM de apoyo con salida estructurada (`json_schema`).
+3. **Decide:**
+   - Motor de política determinista en Python con las cláusulas del brief v2.3 en su orden canónico.
+   - Modelo de riesgo LightGBM entrenado sobre `transactions.is_fraud` sin la fuga `fraud_score`, con el umbral fijado por el costo asimétrico de una transferencia omitida. Se sirve exportado a ONNX (propuesta, fila "Runtime de inferencia").
+4. **Act y Verify (tool gateway):**
+   - El gateway escribe en Supabase Postgres con el rol restringido `app_gateway` (esquema `ops`: `conversations`, `dispute_cases`, `card_locks`, `handoffs`, `audit_log`) usando claves de idempotencia.
+   - Lee los cargos candidatos del `customer_id` de la sesión en `bank`, la copia de servicio de solo lectura publicada desde gold.
+   - **Verificación estricta:** antes de informar al cliente, el gateway lee de vuelta el registro creado en `ops`. El bloqueo preventivo exige confirmación explícita (Sí o No) del cliente.
+5. **Escalate y explicabilidad:**
+   - Handoff packet: JSON con la petición del cliente ya enmascarada, hechos verificados, evidencia, acciones tomadas, cláusulas aplicadas y, si aplica, la marca de candidato a crédito provisional simulado que un humano aprueba o rechaza (regla 8: nunca se mueve dinero).
+   - Consola HITL en inglés para operadores (`app_role = "agent"`), con visor de la auditoría append-only.
+   - RAG de explicaciones: embeddings multilingües locales (ONNX) sobre el texto de política en español escrito por el equipo. Explica y cita la cláusula, pero nunca cambia una decisión del código.
+
+#### 4. Patrones de LangGraph sin acoplarse al framework (propuesta, fila "LangGraph y LangSmith")
+
+Tomados del ejemplo de LangChain con Jev y de la documentación de TypeSafe (sección Fuentes):
+
+- **Sin la librería LangGraph:** protege la ruta crítica a G1 y la regla 7, porque la verdad del sistema vive en Supabase Postgres (`ops`) y no en memoria ni en checkpoints de LangGraph o LangSmith.
+- **Sus patrones sí se adoptan:**
+  - Ruteo como funciones puras sobre señales tipadas.
+  - Estados explícitos de espera en el orquestador (`awaiting_clarification`, `awaiting_confirmation`).
+  - Inyección de dependencias en el clasificador (cambio transparente entre baseline, Jev y mocks).
+  - Persistencia mínima: la auditoría y el estado de la conversación guardan ids y valores de señales tipadas, nunca el texto crudo. El handoff solo lleva la petición del cliente ya enmascarada (brief, sección 3.4).
+
 ### Registro de decisiones
 
 G0 se cerró el 26 de sep en una sesión de grilling. Se consulta al equipo antes de actuar sobre una fila Abierta, o antes de cambiar una Decidida. Al cerrar o cambiar una, se actualiza su estado aquí con la fecha.
@@ -61,7 +175,7 @@ G0 se cerró el 26 de sep en una sesión de grilling. Se consulta al equipo ante
 | Understand y conversación | Decidida (26 sep) | Jev (TypeSafe AI) da señales tipadas (intención, robo de tarjeta, angustia) sobre el mensaje enmascarado. Regex y un LLM de apoyo extraen monto, fecha y comercio. Claude redacta las respuestas con marcadores. Todo lo determinista queda en código. Diseño: `docs/JEV_TYPESAFE_AI.md` |
 | Acceso a Jev | Decidida (26 sep) | Pedir acceso (lista de espera en console.typesafe.ai). Sin key, el extractor de respaldo (regex y palabras clave) es el default y el baseline. Sin fecha límite |
 | Proveedor del LLM | Decidida (26 sep) | Claude Haiku 4.5 (`claude-haiku-4-5-20251001`); un mock en los tests |
-| Datos que ven los modelos | Decidida (26 sep) | Solo el mensaje enmascarado. Los LLM redactan con marcadores (`{monto}`, `{caso}`) y el código los rellena con datos verificados: ningún modelo ve registros del dataset |
+| Datos que ven los modelos | Decidida (26 sep) | Solo el mensaje enmascarado. Los LLM redactan con marcadores en inglés (`{amount}`, `{case_id}`; `{monto}` es el marcador sin rellenar de las transcripciones del dataset) y el código los rellena con datos verificados: ningún modelo ve registros del dataset |
 | Explicaciones de política | Decidida (26 sep) | Política como código con ids de cláusula, más RAG sobre un texto de política en español escrito por el equipo (unos 15 fragmentos, uno por cláusula). El RAG nunca cambia una decisión, cita la cláusula que recuperó y se abstiene si la similitud es baja |
 | Embeddings del RAG | Decidida (26 sep) | Modelo multilingüe local en ONNX, sin torch; respaldo: sentence-transformers con torch en una instancia paga. Los embeddings del corpus se calculan al construir la imagen. Ningún texto sale a un tercero |
 | Profundidad en portugués | Decidida (26 sep) | Solo para la interacción con el cliente; el texto de política queda en español |

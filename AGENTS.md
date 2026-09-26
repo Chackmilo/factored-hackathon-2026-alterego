@@ -245,7 +245,8 @@ Dataset rows stay out of any external model call: Understand sees only the maske
 | Stage / component | Responsibility | Tech (decided or proposed, see `docs/PLAN.md`) |
 | --- | --- | --- |
 | Identity + input guard | Mock OIDC/JWT test sessions with expiry; PII redaction; prompt-injection filter; language detection | FastAPI, JWT |
-| Understand | Extract `{intent, transaction_ref, amount_hint, date_hint, reason, language, missing_fields}` into a Pydantic schema | Deterministic ES/PT keyword and slot extractor now; an LLM with structured output plugs in behind the same interface later |
+| Understand | Extract `{intent, transaction_ref, amount_hint, date_hint, reason, language, missing_fields}` into a Pydantic schema | Initial layer ("Jev", to be clarified) plus the ES/PT keyword and slot extractor, which stays as fallback and baseline |
+| Converse | Manage the customer conversation in ES/PT: questions, clarifications, answers | An LLM writing with placeholders that code fills from verified records (proposed); it never decides or acts |
 | Decide | Synthetic dispute policy (brief v2.1 clause order) plus ML risk score | Policy-as-code, LightGBM |
 | Act | Tool gateway: per-state tool allowlist, idempotency keys, bounded retries | FastAPI tool layer writing to the SQLite ops store |
 | Verify | Read the created case or card status back from the system of record before telling the customer | SQLite ops store (`data/ops.sqlite`) |
@@ -277,7 +278,7 @@ this table tracks the gap to the plan. 24 tests pass.
 | Handoff packet | `src/domain/handoff.py` model | `customer_request`, `supporting_evidence`, `provisional_credit_recommendation`; nothing produces a packet yet |
 | Data pipeline | `src/data/ingestion.py` bronze/silver/gold, customer-aligned sample with 0 orphans | Contracts, local event time, FX by transaction date, dedup, late arrivals, full-history load for ML |
 | ML | Hand-tuned heuristic | LightGBM on all years without `fraud_score` |
-| Understand | Baseline English keyword matching | ES/PT keyword and slot extractor behind the Understand interface |
+| Understand and conversation | Baseline English keyword matching | Initial layer, ES/PT keyword and slot extractor, conversation LLM with placeholders |
 | Orchestrator | None for disputes | Multi-turn five-stage state machine behind FastAPI and `get_current_session` |
 | PII masker | Regex for cards, emails, US phones, SSN | LATAM documents (CURP, DNI, CC, CPF); stop masking amounts (a 7-digit COP amount becomes `[REDACTED_PHONE]`) |
 | UI, eval harness, deployment | None | Streamlit chat and console; 250-case suite; public URL |

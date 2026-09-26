@@ -38,7 +38,7 @@ This complemented document **proposes answers to 5 open decisions**, details the
 | **Operational System of Record** | **SQLite (`data/ops.sqlite`), decided 26-Sep** | DuckDB `silver_*`, Postgres | Dispute cases, card locks and the audit log live here. Ingestion never touches it, and it tolerates the API writing while analysts read the lakehouse. DuckDB allows one writer and ingestion recreates `silver_*`. |
 | **API & Gateway** | **FastAPI + Pydantic v2** | Flask / Django | Asynchronous, typed, auto-generates OpenAPI docs, built-in dependency injection for JWT security. |
 | **ML Models & Tracking** | **LightGBM / scikit-learn + MLflow** | XGBoost / Sagemaker | Extremely fast training, native handling of categorical features, low inference latency (< 5ms). |
-| **Understand stage** | **Deterministic ES/PT keyword and slot extractor behind a thin interface, decided 26-Sep** | LLM structured output now | No LLM key is configured. The extractor fills the same JSON schema an LLM would; a provider plugs in behind the interface later and is measured against the extractor. |
+| **Understand and conversation** | **Initial layer ("Jev", to be clarified), then an LLM that manages the customer conversation, decided 26-Sep** | LLM for every step | Every decision and action stays deterministic in code. The ES/PT keyword and slot extractor fills the same JSON schema, serves as fallback and is the baseline the LLM is measured against. Proposed: the LLM writes with placeholders that code fills from verified records, so it never sees dataset rows. |
 | **Policy explanations** | **Policy-as-code with clause ids (built)** | ChromaDB / SQLite-vec RAG | Clause ids already cite every decision; RAG only if time remains after the held-out evaluation. |
 | **Frontend UI** | **Streamlit (proposed)** | Vite + React | Fastest dual view: customer self-service chat + human-in-the-loop agent console. |
 | **Deployment** | **Docker + Docker Compose on Render or Fly.io (proposed)** | Kubernetes | 1-command reproducibility (`docker-compose up`) and the public URL the submission requires. |
@@ -139,7 +139,7 @@ Transactions carry no MXN: Mexican customers transact in USD. MXN appears only i
 | **AI & Backend** | *Engineer 3* | FastAPI gateway; JWT session auth; State Machine (Understand→Decide→Act→Verify→Escalate); Tool registry with read-back verification; SQLite ops store and audit log; Indirect prompt injection defenses. |
 | **Analytics & UI/Docs**| *Engineer 4* | Contact-reason EDA & business case charts; Data-quality findings report; Interactive Frontend (Client chat + HITL review console); Held-out benchmark harness; Slide deck & Video pitch script. |
 
-Owners are still unassigned; the `docs/PLAN.md` decision log tracks them.
+The team has 2 people (26-Sep): these lanes merge into two fronts in `docs/PLAN.md`.
 
 ---
 
@@ -360,7 +360,7 @@ A second root prefix, `data_backup_20260831/`, also exists; nothing ingests it y
 
 ## 7. Deliverables Checklist for October 5
 
-- [ ] **Public GitHub Repo**: `factored-hackathon-2026-[team-name]` with full commit history and Clean Architecture. The current remote is `Chackmilo/Factored_Hackaton`: rename or mirror before submitting.
+- [ ] **Public GitHub Repo**: `factored-hackathon-2026-[team-name]` with full commit history and Clean Architecture. Team AlterEgo: `factored-hackathon-2026-alterego`. The current remote is `Chackmilo/Factored_Hackaton`: rename or mirror before submitting.
 - [ ] **Repeatable Pipeline**: DuckDB ingestion + Pandera data contracts + unit tests (`pytest`).
 - [ ] **Data-Quality & Insights Report**: contact-reason evidence, the verified data traps (`AGENTS.md` section 7) and how each is handled.
 - [ ] **Learned Component**: LightGBM Fraud / Dispute risk model benchmarked against a baseline without `fraud_score`, tracked in MLflow.

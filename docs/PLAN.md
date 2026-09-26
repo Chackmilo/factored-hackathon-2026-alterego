@@ -41,8 +41,14 @@ Se consulta al equipo antes de actuar sobre una fila Propuesta o Abierta. Al cer
 
 | Decisión | Estado | Resolución o propuesta |
 | --- | --- | --- |
+| Equipo | Decidida (26 sep) | 2 personas: Frente A (datos, ML y evaluación) y Frente B (agente, backend y UI); falta nombrar quién toma cada uno |
+| Nombre del equipo y repo | Decidida (26 sep) | AlterEgo; repo público `factored-hackathon-2026-alterego` |
+| Idioma | Decidida (26 sep) | Inglés para los entregables (README, reporte, slides, video); el plan interno sigue en español |
+| Fuente canónica del plan | Decidida (26 sep) | Este archivo; Notion es la copia con la que el equipo se sincroniza |
 | Base de operación | Decidida (26 sep) | SQLite `data/ops.sqlite` para casos, bloqueos, sesiones y auditoría; DuckDB solo lectura para la app |
-| Etapa Understand | Decidida (26 sep) | Extractor determinista ES/PT por palabras clave ahora; un LLM después detrás de la misma interfaz |
+| Understand y conversación | Decidida (26 sep) | Capa inicial "Jev" (por aclarar qué es), luego un LLM que gestiona la conversación con el cliente; toda decisión y acción determinista queda en código. El extractor ES/PT por palabras clave queda como respaldo y como línea base |
+| Datos que ve el LLM | Propuesta | Solo el mensaje enmascarado. El LLM redacta con marcadores (`{monto}`, `{caso}`) y el código los rellena con datos verificados: no ve registros ni puede inventar hechos |
+| Uso de datos en el despliegue y en el LLM | Abierta | Pregunta enviada a mentores en `#technical-help` |
 | Flujo de git | Decidida (26 sep) | Ramas y un commit por fase con la suite en verde |
 | `fraud_score` | Decidida (26 sep, por los datos) | Filtra la etiqueta: fuera del modelo y del baseline |
 | Workflow | Propuesta | Intake de disputas; alternativa: elegibilidad de crédito |
@@ -52,24 +58,22 @@ Se consulta al equipo antes de actuar sobre una fila Propuesta o Abierta. Al cer
 | Baseline | Propuesta | El pipeline inicial del repo, medido en la misma suite |
 | Reconstruir o evolucionar | Propuesta | Evolucionar: conservar la estructura y construir el stack de disputas al lado |
 | Explicaciones de política | Propuesta | Política como código con ids de cláusula; RAG solo si sobra tiempo |
-| Componentes aprendidos | Propuesta | Modelo de fraude obligatorio; clasificador de intención opcional |
+| Componentes aprendidos | Propuesta | Modelo de fraude obligatorio; el clasificador de intención queda fuera (somos 2) |
+| Tamaño de la suite held-out | Propuesta | 150 casos con las mismas categorías y proporciones (somos 2); el brief dice 250 |
 | Profundidad en portugués | Propuesta | Solo mensajes y respuestas en PT, generados por el equipo |
-| UI y despliegue | Propuesta | Streamlit; Docker en Render o Fly.io con URL pública |
-| Tamaño del equipo y dueños | Abierta | Asignar un dueño por frente |
+| UI y despliegue | Propuesta | Streamlit; Docker en Render o Fly.io con URL pública; qué datos lleva depende de la respuesta de mentores |
 | Confirmación del bloqueo preventivo | Abierta | ¿El cliente confirma antes del bloqueo? |
 | Cargo disputable y palabras de angustia | Abierta | Cláusulas `POL-DISP-TYPE` y `POL-ESC-DISTRESS` del brief |
-| Idioma de la documentación | Abierta | Español o inglés |
 
 ### Frentes de trabajo
 
-Un dueño por frente.
+Somos 2: un frente por persona, y los días 9 y 10 se trabajan juntos.
 
 | Frente | Entregables clave |
 | --- | --- |
-| Datos | Contratos, hora local, tipo de cambio por fecha, duplicados y llegadas tardías, carga completa para ML |
-| ML y evaluación | LightGBM sin `fraud_score`, umbral por costo, MLflow, suite de 250 casos y reporte de métricas |
-| Agente y backend | Orquestador de cinco etapas, gateway con verificación, SQLite de operación, sesión JWT, guardas de entrada |
-| Analítica, UI y docs | Análisis de datos y calidad, Streamlit (chat y consola), README, slides y video |
+| A: datos, ML y evaluación | Contratos, hora local, tipo de cambio por fecha, muestra abril-junio, carga completa para ML, LightGBM sin `fraud_score`, MLflow, harness, suite y reporte de métricas |
+| B: agente, backend y UI | SQLite de operación, gateway con verificación, política v2.1, orquestador de cinco etapas, capa inicial y LLM de conversación, sesión JWT, guardas de entrada, Streamlit, despliegue |
+| Ambos (días 9 y 10) | README, reporte y slides en inglés, video, entrega |
 
 ## 3. Hoja de ruta
 
@@ -87,7 +91,7 @@ gantt
     Datos correctos, orquestador y API :f1, 2026-09-27, 2d
     G1 Conversación ES de punta a punta :crit, milestone, g1, 2026-09-28, 0d
     section Modelo y UI
-    LightGBM, guardas y Streamlit ES/PT :f2, 2026-09-29, 2d
+    LightGBM, capa LLM y Streamlit ES/PT :f2, 2026-09-29, 2d
     G2 Modelo supera al baseline :milestone, g2, 2026-09-30, 0d
     section Evaluación
     Suite de 250 casos, métricas y deploy :f3, 2026-10-01, 2d
@@ -97,19 +101,19 @@ gantt
     G4 Enviado :milestone, g4, 2026-10-05, 0d
 ```
 
-| Día | Fecha | Foco | Listo cuando |
-| --- | --- | --- | --- |
-| 2 | 26 sep | Auditoría, brief v2.1 y este plan; commitear el stack de disputas en una rama; confirmar el desfase horario en un CSV crudo | El equipo confirma o cambia cada decisión Propuesta |
-| 3 | 27 sep | Datos: contratos, hora local, tipo de cambio por fecha, sondeo de duplicados y del prefijo de respaldo (máximo 2 h), ampliar la muestra a abril-junio para tener cargos fuera de ventana. Backend: SQLite de operación con auditoría, guardas y valores del diccionario en el gateway, cláusulas v2.1 | Cada arreglo tiene un test que falló primero y la ingesta corre con los contratos en verde |
-| 4 | 28 sep | Orquestador de cinco etapas y varios turnos detrás de FastAPI y la sesión JWT; búsqueda del cargo y aclaración; generador de handoff | Una conversación en español recorre la API y termina en un caso verificado |
-| 5 | 29 sep | ML con todos los años, split temporal, LightGBM contra baseline, umbral por costo, MLflow; conectar el riesgo y el conteo de 48 h; guardas de PII LATAM y etiquetas escapadas | El modelo supera al baseline en la ventana held-out y la corrida queda registrada |
-| 6 | 30 sep | Streamlit: chat ES/PT y consola HITL; harness con los primeros 60 casos | Los tres tipos de caso corren en la UI en ambos idiomas |
-| 7 | 1 oct | Suite completa de 250 casos con procedencia; baseline contra propuesto, 3 repeticiones, cortes por idioma, segmento y país | El reporte cubre cada métrica oficial con denominadores |
-| 8 | 2 oct | Arreglar fallas; reintentos acotados, fallback seguro, trazas; despliegue | Una URL pública sirve la demo |
-| 9 | 3 oct | README, arquitectura, métricas, limitaciones y ruta a producción; volver a correr el notebook | Cada afirmación de los docs coincide con el código y los datos |
-| 10 | 4-5 oct | 4 a 6 slides, video de 3 minutos, renombrar el repo, correo de entrega | Entrega enviada a hackathon.admin@factored.ai |
+| Día | Fecha | Frente A: datos, ML y evaluación | Frente B: agente, backend y UI | Listo cuando |
+| --- | --- | --- | --- | --- |
+| 2 | 26 sep | Confirmar el desfase horario en un CSV crudo; commitear el código sin trackear | Cerrar decisiones; enviar la pregunta a mentores | G0: cada decisión Propuesta confirmada o cambiada |
+| 3 | 27 sep | Contratos, hora local, tipo de cambio por fecha, muestra abril-junio, sondeo de duplicados y del prefijo de respaldo (máximo 2 h) | SQLite de operación con auditoría; guardas y valores del diccionario en el gateway; cláusulas v2.1 | Cada arreglo tiene un test que falló primero; la ingesta corre con los contratos en verde |
+| 4 | 28 sep | Carga de transacciones 2023-2026 y features; baseline de reglas sin `fraud_score` | Orquestador de cinco etapas y varios turnos detrás de FastAPI y la sesión JWT; capa inicial y extractor; búsqueda del cargo y aclaración; handoff | G1: una conversación en español recorre la API y termina en un caso verificado |
+| 5 | 29 sep | LightGBM contra baseline, split temporal, umbral por costo, MLflow; conectar el riesgo a la política | LLM de conversación ES/PT con marcadores; guardas de PII LATAM y etiquetas escapadas | El modelo supera al baseline en la ventana held-out; conversaciones ES y PT pasan por el LLM |
+| 6 | 30 sep | Harness de evaluación y los primeros 60 casos | Streamlit: chat ES/PT y consola HITL | G2: los tres tipos de caso corren en la UI en ambos idiomas |
+| 7 | 1 oct | Suite completa con procedencia; baseline contra propuesto, 3 repeticiones, cortes por idioma, segmento y país | Reintentos acotados, fallback seguro, simulación de fallas de herramientas, trazas | El reporte cubre cada métrica oficial con denominadores |
+| 8 | 2 oct | Arreglar lo que falle y análisis de errores | Despliegue con los datos que aprueben los mentores | G3: una URL pública sirve la demo |
+| 9 | 3 oct | README, arquitectura y reporte en inglés; volver a correr el notebook | Limitaciones y ruta a producción en inglés | Cada afirmación de los docs coincide con el código y los datos |
+| 10 | 4-5 oct | Slides en inglés; video de 3 minutos | Repo público `factored-hackathon-2026-alterego`; correo de entrega | G4: entrega enviada a `hackathon.admin@factored.ai` |
 
-Si hay atraso se recorta, en este orden: el clasificador de intención, MLflow (queda un log JSON) y el texto de política en portugués. Nunca se recorta el flujo de punta a punta, la verificación de acciones, el handoff, la comparación con el baseline, el despliegue ni el video.
+Recortes ya aplicados por ser 2: el clasificador de intención y el texto de política en portugués; la suite baja a 150 casos si el equipo lo confirma. Si hay atraso, siguen: trazas con OpenTelemetry (queda el log de auditoría) y una consola HITL mínima. Nunca se recorta el flujo de punta a punta, la verificación de acciones, el handoff, la comparación con el baseline, el tracking del modelo, el despliegue ni el video.
 
 ## Fuentes
 

@@ -50,6 +50,7 @@ class BankingToolGateway:
                 SELECT 
                     transaction_id,
                     transaction_date,
+                    process_date,
                     amount,
                     currency,
                     amount_usd_normalized,
@@ -74,6 +75,8 @@ class BankingToolGateway:
                 r["merchant_name"] = f"<untrusted_merchant_data>{raw_merchant}</untrusted_merchant_data>"
                 if isinstance(r.get("transaction_date"), datetime):
                     r["transaction_date"] = r["transaction_date"].isoformat()
+                if isinstance(r.get("process_date"), datetime):
+                    r["process_date"] = r["process_date"].date().isoformat()
 
             return rows
         finally:
@@ -90,7 +93,6 @@ class BankingToolGateway:
                 SELECT 
                     customer_id,
                     full_name,
-                    email,
                     country,
                     segment,
                     account_age_days,

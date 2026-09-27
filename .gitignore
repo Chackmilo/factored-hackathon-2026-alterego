@@ -5,6 +5,14 @@ build/
 dist/
 wheels/
 *.egg-info
+.ruff_cache/
+.mypy_cache/
+
+# Coverage and testing
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
 
 # Virtual environments
 .venv
@@ -17,6 +25,8 @@ wheels/
 *.duckdb
 *.duckdb.wal
 *.parquet
+*.sqlite
+*.sqlite3
 data/bronze/
 data/silver/
 data/gold/
@@ -26,8 +36,7 @@ data/*.csv
 
 # Documentation binary files (contain credentials / large binaries)
 docs/*.pdf
+docs/**/*.pdf
 
 # IDE and tool caches
 .claude/
-.pytest_cache/
-

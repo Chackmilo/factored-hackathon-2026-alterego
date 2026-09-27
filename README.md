@@ -25,7 +25,7 @@ The full component diagram is in [`docs/PLAN.md`](docs/PLAN.md) ("Arquitectura d
 - **Dispute stack pieces**, not yet wired to the API: the dispute policy engine (`src/rules/dispute_policy.py`), the act-and-verify tool gateway over DuckDB (`src/tools/gateway.py`), JWT test sessions (`src/auth/session.py`, to be replaced by Supabase Auth) and the handoff packet model (`src/domain/handoff.py`).
 - **Data pipeline**: S3 CSVs into a local DuckDB lakehouse (bronze, silver, gold) over a customer-aligned sample of 25,000 customers (`src/data/ingestion.py`).
 - **Analysis notebook**: [`notebooks/01_problema_y_datos.ipynb`](notebooks/01_problema_y_datos.ipynb), the data behind the workflow choice.
-- **Tests**: 30 pass. The 6 in `tests/test_data_integrity.py` need a local `data/lakehouse.duckdb` and skip without it.
+- **Tests**: 36 pass. The 6 in `tests/test_data_integrity.py` need a local `data/lakehouse.duckdb` and skip without it.
 
 ## Quick start
 

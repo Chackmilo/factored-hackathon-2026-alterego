@@ -35,6 +35,29 @@ def test_dispute_policy_out_of_window_abstention():
     assert decision.action_required == "ABSTAIN"
     assert "60 días" in decision.explanation_es
 
+@pytest.mark.parametrize("transaction_date, expected_outcome", [
+    # 03:00 UTC belongs to the bank process day 2026-04-17: 61 days before 2026-06-17
+    (datetime(2026, 4, 18, 3, 0), "SAFE_POLICY_ABSTENTION"),
+    # 06:00 UTC opens the process day 2026-04-18: 60 days, still in window
+    (datetime(2026, 4, 18, 6, 0), "AUTONOMOUS_RESOLUTION"),
+])
+def test_dispute_policy_window_counts_bank_process_day(transaction_date, expected_outcome):
+    """POL-WIN-60 counts days from process_date = date(transaction_date - 6 h), not the UTC calendar date."""
+    p_input = DisputePolicyInput(
+        customer_id="CLI-TEST04",
+        customer_segment="Plus",
+        customer_country="Colombia",
+        account_age_days=300,
+        complaints_last_90d=0,
+        transaction_id="TRX-EDGE",
+        transaction_date=transaction_date,
+        transaction_amount=100.0,
+        transaction_currency="USD",
+        amount_usd=100.0,
+        current_date=date(2026, 6, 17)
+    )
+    assert DisputePolicyEngine.evaluate(p_input).policy_outcome == expected_outcome
+
 def test_dispute_policy_autonomous_provisional_credit():
     """Eligible <= $150 USD for Plus customer must receive simulated provisional credit (POL-AUT-150)."""
     p_input = DisputePolicyInput(
@@ -175,6 +198,24 @@ def fixture_db(tmp_path):
         )
     """)
     con.execute("""
+        CREATE TABLE gold_transactions (
+            transaction_id VARCHAR, transaction_date TIMESTAMP, process_date DATE, customer_id VARCHAR,
+            product_id VARCHAR, product_type VARCHAR, product_status VARCHAR, transaction_type VARCHAR,
+            amount DOUBLE, currency VARCHAR, amount_usd DOUBLE, amount_usd_normalized DOUBLE, channel VARCHAR,
+            merchant_name VARCHAR, merchant_category VARCHAR, transaction_country VARCHAR,
+            transaction_city VARCHAR, transaction_status VARCHAR, is_fraud BOOLEAN, fraud_score DOUBLE,
+            is_within_60_days BOOLEAN, days_since_transaction BIGINT
+        )
+    """)
+    # 03:15 UTC on 2026-06-10 belongs to the bank process day 2026-06-09
+    con.execute("""
+        INSERT INTO gold_transactions
+            (transaction_id, transaction_date, process_date, customer_id, product_id, amount, currency,
+             amount_usd_normalized, merchant_name, transaction_status, is_within_60_days, days_since_transaction)
+        VALUES ('TRX-FIX-002', TIMESTAMP '2026-06-10 03:15:00', DATE '2026-06-09', 'CLI-FIX-OWNER',
+                'PRD-FIX-OWNER', 80.0, 'USD', 80.0, 'Oxxo', 'Approved', true, 8)
+    """)
+    con.execute("""
         INSERT INTO silver_products (product_id, customer_id, product_type, product_status) VALUES
             ('PRD-FIX-OWNER', 'CLI-FIX-OWNER', 'Tarjeta de Credito', 'Active'),
             ('PRD-FIX-OTHER', 'CLI-FIX-OTHER', 'Tarjeta de Debito', 'Active')
@@ -222,6 +263,19 @@ def test_customer_profile_returns_stored_facts(fixture_db):
     profile = gateway.get_customer_profile(_session("CLI-FIX-OWNER"))
     assert profile["account_age_days"] == 250
     assert profile["complaints_last_90d"] == 2
+
+def test_customer_profile_exposes_no_contact_or_document_data(fixture_db):
+    """Minimization (rule 10): the profile carries only policy facts; bank.customers will not hold contacts or documents."""
+    gateway = BankingToolGateway(db_path=fixture_db)
+    profile = gateway.get_customer_profile(_session("CLI-FIX-OWNER"))
+    assert not {"email", "mobile_phone", "document_number"} & profile.keys()
+
+def test_search_returns_bank_process_day(fixture_db):
+    """The window counts from process_date, so the search must hand it over next to the UTC transaction_date."""
+    gateway = BankingToolGateway(db_path=fixture_db)
+    [row] = gateway.search_customer_transactions(_session("CLI-FIX-OWNER"))
+    assert row["transaction_date"] == "2026-06-10T03:15:00"
+    assert row["process_date"] == "2026-06-09"
 
 def test_lock_card_blocks_owned_card(fixture_db):
     gateway = BankingToolGateway(db_path=fixture_db)

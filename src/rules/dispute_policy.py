@@ -12,7 +12,7 @@ Rule Clauses:
 - POL-ESC-LEGAL: Mandatory HITL escalation if customer cites regulators (CONDUSEF, SFC, BCRA, PROCON) or legal action.
 """
 from dataclasses import dataclass, field
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import List, Optional
 import re
 
@@ -59,8 +59,8 @@ class DisputePolicyEngine:
 
     @classmethod
     def evaluate(cls, policy_input: DisputePolicyInput) -> DisputePolicyDecision:
-        # Calculate days since transaction relative to current_date
-        tx_date = policy_input.transaction_date.date() if isinstance(policy_input.transaction_date, datetime) else policy_input.transaction_date
+        # Calculate days since the bank process day (process_date = date(transaction_date - 6 h)) relative to current_date
+        tx_date = (policy_input.transaction_date - timedelta(hours=6)).date() if isinstance(policy_input.transaction_date, datetime) else policy_input.transaction_date
         days_diff = (policy_input.current_date - tx_date).days
 
         # 1. FILING WINDOW CHECK (POL-WIN-60)

@@ -146,7 +146,8 @@ ARS, USD with daily USD conversion. **All text is Spanish** (Mexican, Colombian,
 accents). **No Portuguese anywhere.**
 
 Storage: S3 `us-east-2`, CSV, fact tables partitioned `year=/month=/day=` (about 5.3 GB, about
-7.7k objects). A `data_backup_20260831/` prefix also exists.
+7.7k objects). A `data_backup_20260831/` prefix also exists: a different, partial generation of
+the data, not a copy (see "Verified findings"). Never union it with `data/`.
 
 ### Tables
 
@@ -173,14 +174,25 @@ call_transcripts, satisfaction_surveys and complaints.
 
 ### Intentional quality traps
 
-- About 2% duplicates across tables (documented). **Unresolved:** ID-level and business-key dedup
-  both find 0 in June 2026 transactions and 2026 complaints. Next steps: brief section 4.
+- About 2% duplicates across tables (documented). **Not found (26-Sep):** 0 duplicates by ID,
+  exact row, the brief's business key, or looser keys (same customer, product and rounded amount
+  within 10 minutes or the same hour) in June 2026 and July 2023 transactions; 0 in all 150,000
+  customers (ID, `document_number`, name plus birth date plus country) and all 67,095 complaints
+  (ID, business key). Only 6 repeated `product_number` values among 400,000 products. Report the
+  trap as not observed.
 - About 5% nulls in non-mandatory fields.
 - Late-arriving partitions. Observed row counts are below documented totals (686k vs 800k
-  interactions, 67k vs 80k complaints). June 2026 holds 0 transactions processed more than 3 days
-  late; the unexplored `data_backup_20260831/` prefix may hold them.
-- Schema evolution across partitions. Value drift already seen: see "Verified findings" below.
-- A small share of orphaned foreign keys on purpose.
+  interactions, 67k vs 80k complaints; about 121k transactions per month suggests about 4.4M vs 5M).
+  **Not found (26-Sep):** in June 2026 and July 2023 (main and backup), `process_date` always equals
+  the partition day and never lags the event day. Demonstrate late-arrival handling with a labeled
+  fixture instead.
+- Schema evolution across partitions. The transactions header is identical (25 columns) in every
+  year, main and backup; the drift is in values only (see "Verified findings").
+- A small share of orphaned foreign keys on purpose. **Found (26-Sep):** only
+  `customers.registration_branch_id` (149,995 of 150,000 point to no branch; each customer has a
+  unique id). Transactions to customers, products and branches (four sampled months, 486k rows),
+  products, interactions and complaints to customers, and complaints to branches and agents all
+  have 0 orphans. None of the orphans touch the dispute workflow.
 
 ### Profiling findings (2025-03 sample for transactions and transcripts; full load for interactions and complaints)
 
@@ -221,7 +233,7 @@ Implications: the dataset's intent labels are unusable, so any intent classifier
 team-labeled ES/PT utterance set with inter-annotator agreement on a sample. Portuguese test cases
 are team-generated and must be labeled as such.
 
-### Verified findings (profiles of 2026-09-26: June 2026 lakehouse sample, 2026 complaints, April to June S3 probe)
+### Verified findings (profiles of 2026-09-26: June 2026 lakehouse sample, 2026 complaints, April to June S3 probe; S3 trap probes of July 2023, one January per year, all complaints and full dimensions)
 
 Each finding changes a design choice. Re-check against the full load before quoting it as final.
 
@@ -232,11 +244,12 @@ Each finding changes a design choice. Re-check against the full load before quot
 | Amounts are high | Median about $470. Of the 8,967 disputable charges in the June customer sample, 39.5% exceed $500, 5.4% are `POL-AUT-150` candidates and 55.1% go to plain intake | The $500 ceiling caps containment at 60.5% of disputable charges, an upper bound before ML-risk, legal, multi-charge and clarification escalations; justify the threshold in the report |
 | Merchant rarely known | `merchant_name` NULL in 77% of rows; names are generic ("Super Ahorro", "Cine Premium") | Charge matching leans on amount and date; merchant is a weak hint |
 | Some rows cannot be disputed | 23.4% of the June customer sample fails `POL-DISP-TYPE` (Deposit or Adjustment, or not Approved) | The policy needs the disputable-charge rule (brief clause `POL-DISP-TYPE`) |
-| Complaint product link is unreliable | 82% of non-null `complaints.affected_product_id` point outside the complainant's own products | Never infer the complained product from that column |
+| Complaint links are broken | Across all 67,095 complaints, each of the 44,570 non-null `affected_product_id` values is another customer's product (0 belong to the complainant); `origin_interaction_id` is empty on every row, so complaints never link to calls | Never infer the complained product from that column, and never join complaints to interactions |
 | Name and enum drift | `transaction_country` holds "México" and "Mexico"; `product_type` values are Spanish ("Tarjeta Crédito") while the dictionary lists English; complaint `status` has no `INTAKE_RECEIVED`, `category` has no `Fraud`, `reception_channel` has no `Chat` | Normalize names; write only dictionary values |
 | Repeat flag exists natively | `complaints.is_repeat_complainer` is true on 15% of complaints | Use or reconcile it instead of hardcoding false |
 | Claim currency often missing | `complaints.currency` NULL on 68% of rows | Claimed amounts need a currency rule before any sum |
 | S3 layout | Dimensions are flat CSVs under `data/`; facts are partitioned `year=/month=/day=`; a second root `data_backup_20260831/` exists | There is no `data/complaints.csv` |
+| The backup is another generation | `data_backup_20260831/` shares only 3.2% of July 2023 transaction ids (3,878 of about 121k) and 2.7% of customer ids with `data/`, and shared ids carry different amounts and dates. It is partial: transactions for 184 days of 2023 and 269 of 2024 only, and no transcripts or surveys | Not a source of duplicates, late arrivals or corrections; ingest only `data/` |
 | Suite patterns are uneven (read-only S3 probe, 1 Apr to 17 Jun 2026) | 54,157 transactions of 18,756 sampled customers; 32,109 disputable in window, 9,358 real out-of-window (61 to 77 days). Only 1 same-customer pair with the same amount within 7 days; 1,629 customers with 2+ disputable charges in 48 h; 70 with 3+; 429 foreign Web or App charges; 42 `is_fraud` rows (17 Apr, 16 May, 9 to 17 Jun), 22 disputable in window | Ambiguous cases come from vague date or merchant hints over several candidates, not equal amounts; fraud cases sit at the cap of 20. Closes the H12 check of the adversarial review |
 | `amount_usd` null on 5% of non-USD rows | 514 ARS and 755 COP rows (5.15%) from April to June; the daily FX rate for their `process_date` exists for all 1,269; where both exist, native `amount_usd` differs from the daily rate by up to 2.1% | Fill from the daily rate and record the source; fail the load when no rate exists (gold's `1.0` fallback would treat pesos as dollars) |
 
@@ -284,10 +297,10 @@ Supabase and Vercel decisions yet: the team is still in planning.
 | --- | --- | --- |
 | Baseline pipeline | Single-shot orchestrator, English keyword rules, hand-tuned "ML" sigmoid, always-succeeding mock tools, in-memory HITL queue | Keep as the reference baseline (the main baseline is our own architecture in rules-only mode). It runs only in the harness, through an adapter: its in-memory queue cannot work on stateless Vercel functions. The crash at `src/agents/orchestrator.py:130` (`and`/`or` precedence) was fixed in commit 8632e96; connect it to the harness via an adapter. Its card lock on "cargo no reconocido" and its refund promise count as unsafe outcomes in the report |
 | Identity | `src/auth/session.py` HS256 JWT | Replace with Supabase Auth verification (decided 26-Sep): JWKS and ES256, claims from `app_metadata`, a local issuer for tests only. Today no endpoint uses it and `JWT_SECRET` falls back to a hardcoded default |
-| Dispute policy | `src/rules/dispute_policy.py`, brief v2.0 clause order | Brief v2.3 clauses (session, clarify, disputable charge, distress, Jev signals, lock confirmation); legal before window; provisional credit as a candidate flag; the "hace -1 días" message on future-dated charges |
-| Tool gateway | `src/tools/gateway.py` act-and-verify on DuckDB `silver_*`, fixture tests | Reads `bank` and the live policy-fact views, writes the Supabase `ops` schema (card locks go to `ops.card_locks`, never to `bank.products`), dictionary enums as CHECK constraints, card type and status guards, idempotency keys, audit log in the same transaction, escaped untrusted tags; tests move to a Postgres fixture |
+| Dispute policy | `src/rules/dispute_policy.py`, brief v2.0 clause order | Brief v2.3 clauses (session, clarify, disputable charge, distress, Jev signals, lock confirmation); legal before window; provisional credit as a candidate flag; the "hace -1 días" message on future-dated charges; the window counts days from `transaction_date.date()` (the plain cast, off by one day on 24% of rows) instead of `process_date` |
+| Tool gateway | `src/tools/gateway.py` act-and-verify on DuckDB `silver_*`, fixture tests | Reads `bank` and the live policy-fact views, writes the Supabase `ops` schema (card locks go to `ops.card_locks`, never to `bank.products`), dictionary enums as CHECK constraints, card type and status guards, idempotency keys, audit log in the same transaction, escaped untrusted tags; tests move to a Postgres fixture. Today the transaction search returns `transaction_date` but not `process_date`, so a caller cannot give the window its right date, and `get_customer_profile` reads `email`, which `bank.customers` will not publish |
 | Handoff packet | `src/domain/handoff.py` model | `customer_request`, `supporting_evidence`, `provisional_credit_recommendation`; nothing produces a packet yet |
-| Data pipeline | `src/data/ingestion.py` bronze/silver/gold, customer-aligned sample with 0 orphans | Contracts, local event time, FX by transaction date, dedup, late arrivals, full-history load for ML; `publish_serving` from gold to Supabase `bank` with parity contracts |
+| Data pipeline | `src/data/ingestion.py` bronze/silver/gold, customer-aligned sample with 0 orphans (June 2026 only: 9 fraud rows, no out-of-window charges) | Contracts, local event time, FX by transaction date, dedup, late arrivals, full-history load for ML (`sample_only=False` still reads only 2026 transactions); `publish_serving` from gold to Supabase `bank` with parity contracts |
 | ML | Hand-tuned heuristic | LightGBM on all years without `fraud_score`, exported to ONNX for serving (proposed) |
 | Understand and conversation | Baseline English keyword matching | `IntentExtractor` with the fallback extractor and Jev, slot regex plus helper LLM, Claude replies with placeholders, RAG over the policy text |
 | Orchestrator | None for disputes | Multi-turn five-stage state machine behind FastAPI and `get_current_session` |

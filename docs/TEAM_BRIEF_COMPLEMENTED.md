@@ -295,16 +295,16 @@ ROW_NUMBER() OVER (
 ```
 Records where `duplicate_rank > 1` are logged to `quarantine_duplicate_transactions` and pruned from feature stores.
 
-**Status (26-Sep): the trap is not resolved yet.** This key, a per-second key, the IDs, `document_number` and `product_number` all find **0 duplicates** in the June 2026 transactions and the 2026 complaints. Next: profile all years and the `data_backup_20260831/` prefix, then try looser keys (rounded amount, a few minutes of timestamp tolerance). Report the outcome honestly whichever way it lands.
+**Status (26-Sep): the trap is not observed.** This key, a per-second key, looser keys (same customer, product and rounded amount within 10 minutes or the same hour), the IDs, `document_number` and `product_number` find **0 duplicates** in June 2026 and July 2023 transactions, all 150,000 customers and all 67,095 complaints (only 6 repeated `product_number` values among 400,000 products). The `data_backup_20260831/` prefix is a different generation of the data, not a copy, so it holds no duplicates of `data/`. Keep the quarantine step and report the trap as not observed.
 
 ### Late-Arrival Partition Reconciliation
-Partitions arriving with `process_date > transaction_date + 3 days` are flagged with `is_late_arrival = True` and merged via an idempotent upsert into DuckDB Silver tables. **Status (26-Sep):** not built; the June 2026 sample holds 0 such rows. Check all years and `data_backup_20260831/` before building it, and demonstrate it with a labeled test fixture if the data has none.
+Partitions arriving with `process_date > transaction_date + 3 days` are flagged with `is_late_arrival = True` and merged via an idempotent upsert into DuckDB Silver tables. **Status (26-Sep):** not built. June 2026 and July 2023 (main and backup) hold 0 such rows: `process_date` always equals the partition day. Demonstrate it with a labeled test fixture.
 
 ### Event-Time Normalization
 Confirmed on raw CSVs (26-Sep): timestamps carry no offset, and each daily partition spans 06:00 to 05:59 of the next day, so `process_date` = date(`transaction_date` - 6 h) on 100% of June rows. Window and velocity logic uses `process_date`, the bank's processing day (UTC-6). It is not the customer's local day (Colombia UTC-5, Argentina UTC-3).
 
 ### Sampling
-`sample_only=True` samples customers first and keeps only their products, complaints and transactions, so foreign keys line up (0 orphans verified on 26-Sep). The dataset's intentional orphan-FK trap shows only in the full load.
+`sample_only=True` samples customers first and keeps only their products, complaints and transactions, so foreign keys line up (0 orphans verified on 26-Sep). The full data also has 0 orphans on every foreign key the workflow uses; the dataset's orphan trap is `customers.registration_branch_id` (149,995 of 150,000 point to no branch), which the workflow never reads.
 
 ---
 
@@ -375,7 +375,7 @@ SET s3_secret_access_key='...';
 -- marketing_campaigns, daily_exchange_rates); fact tables are partitioned year=/month=/day=.
 SELECT * FROM read_csv_auto('s3://factored-datathon-2026-s3-157725502942-us-east-2-an/data/complaints/year=2026/month=06/*/*.csv') LIMIT 10;
 ```
-A second root prefix, `data_backup_20260831/`, also exists; nothing ingests it yet.
+A second root prefix, `data_backup_20260831/`, also exists. It is a different, partial generation of the data (3% of ids shared with `data/`), not a backup copy: never ingest or union it.
 
 ---
 

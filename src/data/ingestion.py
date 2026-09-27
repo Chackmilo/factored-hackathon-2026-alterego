@@ -14,6 +14,10 @@ console = Console()
 # Reference anchor date for hackathon dataset: 2026-06-17 (UTC-6 process_date)
 ANCHOR_DATE = "2026-06-17"
 
+def transactions_glob(root: str, sample_only: bool) -> str:
+    """Partition glob for transactions under root (e.g. s3://<bucket>/data): June 2026 for the sample, every year for the full load."""
+    return f"{root}/transactions/year=2026/month=06/*/*.csv" if sample_only else f"{root}/transactions/*/*/*/*.csv"
+
 def run_ingestion_pipeline(sample_only: bool = True):
     """
     Executes the Lakehouse ingestion pipeline:
@@ -79,7 +83,7 @@ def run_ingestion_pipeline(sample_only: bool = True):
     
     # Transactions (Active window 2026)
     console.print("Ingesting Transactions...")
-    trx_path = f"s3://{bucket}/data/transactions/year=2026/month=06/*/*.csv" if sample_only else f"s3://{bucket}/data/transactions/year=2026/*/*/*.csv"
+    trx_path = transactions_glob(f"s3://{bucket}/data", sample_only)
     con.execute(f"""
         CREATE OR REPLACE TABLE bronze_transactions AS 
         SELECT * FROM read_csv_auto('{trx_path}'){sample_filter};

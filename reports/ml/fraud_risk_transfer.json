@@ -1,0 +1,134 @@
+{
+  "run_at": "2026-09-30T00:52:00",
+  "commit": "f7c0eb5",
+  "competition": "data/kaggle",
+  "contract_version": "1.1",
+  "features": [
+    "amount_usd",
+    "log_amount_usd",
+    "amount_has_cents",
+    "hour_sin",
+    "hour_cos",
+    "day_of_week",
+    "card_kind_credit",
+    "card_kind_debit",
+    "days_since_prev_tx_card",
+    "tx_count_card_1d",
+    "tx_count_card_7d",
+    "tx_count_card_30d",
+    "tx_sum_card_7d",
+    "amount_mean_card_hist",
+    "amount_std_card_hist",
+    "amount_zscore_card",
+    "ratio_to_historical_avg",
+    "address_distance_bucket",
+    "consistency_matches"
+  ],
+  "not_deployable_excluded": {
+    "card_age_days": "bank product opening dates are independent of the charges (18.71% of charges predate them, AGENTS.md section 7), so the value at scoring time is noise"
+  },
+  "fraud_score_used": false,
+  "algorithm": "sklearn.HistGradientBoostingClassifier on per-source percentile ranks (LightGBM stand-in, TQ-022)",
+  "split": {
+    "by": "competition day",
+    "days": 182,
+    "test_from_day_index": 146,
+    "train_rows": 487837,
+    "test_rows": 102703,
+    "train_positives": 17150,
+    "test_positives": 3513
+  },
+  "model": {
+    "cost_threshold": 0.0925,
+    "train": {
+      "n": 487837,
+      "positives": 17150,
+      "threshold": 0.0925,
+      "true_positives": 9266,
+      "false_positives": 34688,
+      "missed_fraud": 7884,
+      "recall": 0.5402915451895044,
+      "precision": 0.21081130272557674,
+      "cost": 113528.0,
+      "roc_auc": 0.858755971863,
+      "pr_auc": 0.3384578066897055
+    },
+    "test": {
+      "n": 102703,
+      "positives": 3513,
+      "threshold": 0.0925,
+      "true_positives": 1420,
+      "false_positives": 6644,
+      "missed_fraud": 2093,
+      "recall": 0.40421292342727017,
+      "precision": 0.17609126984126985,
+      "cost": 27574.0,
+      "roc_auc": 0.8169699071445402,
+      "pr_auc": 0.16498760260395878
+    }
+  },
+  "ablations": {
+    "without_card_aggregates": {
+      "dropped": [
+        "days_since_prev_tx_card",
+        "tx_count_card_1d",
+        "tx_count_card_7d",
+        "tx_count_card_30d",
+        "tx_sum_card_7d",
+        "amount_mean_card_hist",
+        "amount_std_card_hist",
+        "amount_zscore_card",
+        "ratio_to_historical_avg"
+      ],
+      "test": {
+        "roc_auc": 0.785036379358256,
+        "pr_auc": 0.145438052199407
+      }
+    },
+    "without_discrete_block": {
+      "dropped": [
+        "amount_has_cents",
+        "day_of_week",
+        "card_kind_credit",
+        "card_kind_debit",
+        "address_distance_bucket",
+        "consistency_matches"
+      ],
+      "test": {
+        "roc_auc": 0.7548463677334947,
+        "pr_auc": 0.0899383780633425
+      }
+    }
+  },
+  "bank_calibration": {
+    "lakehouse": "data/lakehouse_full.duckdb",
+    "anchor": "2026-06-17",
+    "window_days": 60,
+    "channels": [
+      "Web",
+      "App"
+    ],
+    "charges_scored": 75366,
+    "percentile": 98.0,
+    "threshold": 0.0669208379203132,
+    "share_above_threshold": 0.020009022636202002,
+    "is_fraud_positives": 73,
+    "is_fraud_agreement": {
+      "roc_auc": 0.5071743466483176,
+      "pr_auc": 0.0010620429821979205
+    },
+    "score_quantiles": {
+      "50": 0.01015331934809287,
+      "90": 0.027086573182100504,
+      "95": 0.038363073101181505,
+      "98": 0.0669208379203132,
+      "99": 0.0948743766522327
+    }
+  },
+  "threshold": 0.0669208379203132,
+  "threshold_kind": "percentile",
+  "caveats": [
+    "The competition holds card-not-present rows only: the score is served on Web and App charges, the rules baseline covers the rest.",
+    "The bank label is random (discussion doc sections 5 and 6); its agreement is reported, never optimized."
+  ]
+}

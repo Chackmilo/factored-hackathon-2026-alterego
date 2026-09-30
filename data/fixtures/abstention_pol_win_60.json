@@ -28,6 +28,7 @@
     "policy_outcome": "SAFE_POLICY_ABSTENTION",
     "action_required": "ABSTAIN",
     "cited_clauses": [
+      "POL-DISP-TYPE",
       "POL-WIN-60"
     ],
     "case_opened": false,

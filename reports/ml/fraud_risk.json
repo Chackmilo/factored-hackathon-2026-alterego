@@ -1,0 +1,113 @@
+{
+  "run_at": "2026-09-27T20:35:19",
+  "source": "data/lakehouse.duckdb",
+  "commit": "ab413e6",
+  "algorithm": "sklearn.HistGradientBoostingClassifier (LightGBM stand-in, TQ-022)",
+  "features": [
+    "amount_usd",
+    "log_amount_usd",
+    "velocity_24h_count",
+    "velocity_24h_sum",
+    "velocity_7d_count",
+    "velocity_7d_sum",
+    "ratio_to_historical_avg",
+    "is_foreign_country",
+    "hour_sin",
+    "hour_cos",
+    "account_age_days",
+    "card_not_present",
+    "channel_POS",
+    "channel_ATM",
+    "channel_Web",
+    "channel_App",
+    "channel_Branch",
+    "channel_Transfer",
+    "merchant_Food",
+    "merchant_Services",
+    "merchant_Other",
+    "merchant_Transport",
+    "merchant_Entertainment",
+    "merchant_Health",
+    "merchant_Retail",
+    "merchant_Travel",
+    "merchant_Unknown"
+  ],
+  "fraud_score_used": false,
+  "split": {
+    "by": "process_date",
+    "train_days": [
+      "2026-06-01",
+      "2026-06-01"
+    ],
+    "test_from": "2026-06-12",
+    "train_rows": 7625,
+    "test_rows": 4078,
+    "train_positives": 6,
+    "test_positives": 3
+  },
+  "cost_weights": {
+    "missed_fraud": 10.0,
+    "unnecessary_verification": 1.0
+  },
+  "model": {
+    "threshold": 0.9999,
+    "train": {
+      "n": 7625,
+      "positives": 6,
+      "threshold": 0.9999,
+      "true_positives": 6,
+      "false_positives": 0,
+      "missed_fraud": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "cost": 0.0,
+      "roc_auc": 1.0,
+      "pr_auc": 1.0
+    },
+    "test": {
+      "n": 4078,
+      "positives": 3,
+      "threshold": 0.9999,
+      "true_positives": 0,
+      "false_positives": 0,
+      "missed_fraud": 3,
+      "recall": 0.0,
+      "precision": null,
+      "cost": 30.0,
+      "roc_auc": 0.6244171779141104,
+      "pr_auc": 0.0012356437189769598
+    }
+  },
+  "rules_baseline": {
+    "threshold": 1.0,
+    "train": {
+      "n": 7625,
+      "positives": 6,
+      "threshold": 1.0,
+      "true_positives": 0,
+      "false_positives": 4,
+      "missed_fraud": 6,
+      "recall": 0.0,
+      "precision": 0.0,
+      "cost": 64.0,
+      "roc_auc": 0.4099291245570285,
+      "pr_auc": 0.0007235482567536365
+    },
+    "test": {
+      "n": 4078,
+      "positives": 3,
+      "threshold": 1.0,
+      "true_positives": 0,
+      "false_positives": 11,
+      "missed_fraud": 3,
+      "recall": 0.0,
+      "precision": 0.0,
+      "cost": 41.0,
+      "roc_auc": 0.556278118609407,
+      "pr_auc": 0.0009149930797015125
+    }
+  },
+  "caveats": [
+    "Only 9 fraud rows in the source; the numbers are a pipeline check, not a result. Train on the full 2023 to 2026 history (TQ-013)."
+  ]
+}

@@ -1,7 +1,8 @@
-from typing import Dict, Any, List, Optional
 import math
-from src.domain.schemas import TransactionContext, MLScoringResult
+
 from src.domain.enums import RiskLevel
+from src.domain.schemas import MLScoringResult, TransactionContext
+
 
 class MLFraudDetector:
     """
@@ -13,7 +14,7 @@ class MLFraudDetector:
     def __init__(self, model_version: str = "v1.2.0-baseline"):
         self.model_version = model_version
 
-    def extract_features(self, transaction: Optional[TransactionContext], customer_tier: str) -> Dict[str, float]:
+    def extract_features(self, transaction: TransactionContext | None, customer_tier: str) -> dict[str, float]:
         if not transaction:
             return {"amount": 0.0, "ratio_to_avg": 1.0, "is_card_present": 1.0, "tier_weight": 1.0}
 
@@ -34,7 +35,7 @@ class MLFraudDetector:
             "tier_weight": tier_weight
         }
 
-    def predict_risk(self, transaction: Optional[TransactionContext], customer_tier: str = "standard") -> MLScoringResult:
+    def predict_risk(self, transaction: TransactionContext | None, customer_tier: str = "standard") -> MLScoringResult:
         if not transaction:
             return MLScoringResult(
                 fraud_probability=0.05,
@@ -45,7 +46,7 @@ class MLFraudDetector:
             )
 
         features = self.extract_features(transaction, customer_tier)
-        
+
         # Logistic sigmoid scoring based on feature weights
         # z = w0 + w1*amount_scaled + w2*ratio + w3*card_not_present + w4*foreign
         z = -3.5  # Base log-odds (low base fraud rate)
@@ -59,7 +60,7 @@ class MLFraudDetector:
         prob = round(prob, 4)
 
         # Explainability & Risk Factor attribution
-        risk_factors: List[str] = []
+        risk_factors: list[str] = []
         if features["ratio_to_avg"] > 3.0:
             risk_factors.append(f"Transaction amount is {features['ratio_to_avg']:.1f}x higher than customer average.")
         if features["foreign_transaction"] > 0:

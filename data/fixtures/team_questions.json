@@ -1,0 +1,457 @@
+{
+  "provenance": "team-generated",
+  "note": "Open questions for the team, filed from the 27-Sep sessions. Answered in the HITL console (Questions tab) or by editing this file; the API seeds missing ids on startup and never overwrites an answered question.",
+  "questions": [
+    {
+      "question_id": "TQ-001",
+      "topic": "Data: amount_usd cleaning",
+      "question": "Column names for the amount_usd cleaning step: amount_usd (filled), amount_usd_legacy (raw), amount_usd_source (flag), optional amount_usd_fx_rate?",
+      "context": "docs/technical-discuss-points.md section 1.4. 291 COP and ARS rows (5 percent) lack amount_usd; every one has a daily rate; USD rows are null by design.",
+      "options": [
+        "Names as proposed",
+        "Other names (say which)"
+      ],
+      "recommendation": "Names as proposed",
+      "source": "docs/technical-discuss-points.md 1.6 item 1",
+      "status": "answered",
+      "answer": "Names as proposed: amount_usd (fixed), amount_usd_legacy (raw), amount_usd_source, amount_usd_fx_rate. Implemented at silver on 27-Sep.",
+      "answered_by": "team (chat, 27-Sep)",
+      "answered_at": "2026-09-27T21:00:00"
+    },
+    {
+      "question_id": "TQ-002",
+      "topic": "Data: amount_usd cleaning",
+      "question": "When a non-USD row has no exchange rate for its process day: fail the load, or quarantine the row with amount_usd_source = unresolved?",
+      "context": "No such row exists in 2026; AGENTS.md section 7 already says fail the load when no rate exists.",
+      "options": [
+        "Fail the load (recommended)",
+        "Quarantine"
+      ],
+      "recommendation": "Fail the load",
+      "source": "docs/technical-discuss-points.md 1.6 item 2"
+    },
+    {
+      "question_id": "TQ-003",
+      "topic": "Data: amount_usd cleaning",
+      "question": "Where does the fill live: in silver (one filled column every downstream table reads) or stay in gold with the flag and legacy columns added there?",
+      "context": "Today gold_transactions.amount_usd_normalized fills silently with a 1.0 fallback.",
+      "options": [
+        "Silver (recommended)",
+        "Gold"
+      ],
+      "recommendation": "Silver",
+      "source": "docs/technical-discuss-points.md 1.6 item 3",
+      "status": "answered",
+      "answer": "Silver. Gold carries only the needed values with amount_usd already fixed (amount_usd and amount_usd_source). Implemented on 27-Sep.",
+      "answered_by": "team (chat, 27-Sep)",
+      "answered_at": "2026-09-27T21:00:00"
+    },
+    {
+      "question_id": "TQ-004",
+      "topic": "Policy: null amount_usd guard",
+      "question": "Ratify: a null amount_usd reaching the policy engine escalates to a human with the gap named (implemented as DATA_GAP_AMOUNT_USD), rather than abstaining.",
+      "context": "Implemented on 27-Sep in src/rules/dispute_policy.py with test_pol_disp_type_missing_amount_usd_is_data_gap.",
+      "options": [
+        "Ratify escalation",
+        "Change to abstention"
+      ],
+      "recommendation": "Ratify escalation",
+      "source": "docs/technical-discuss-points.md 1.5"
+    },
+    {
+      "question_id": "TQ-005",
+      "topic": "Policy: resolutions P1 to P7",
+      "question": "Ratify the 27-Sep resolutions as Decidida in docs/PLAN.md: secondary clauses in the decision, case memory feeding POL-ESC-DISTRESS in both modes, closed out-of-scope category list with the confidence guardrail, lock recommended on any outcome under POL-AUT-LOCK, action authentication matrix, keyword fallback lists.",
+      "context": "All are in code with tests (114 policy tests); definitions in docs/technical-discuss-points.md section 2.",
+      "options": [
+        "Ratify all",
+        "Ratify with changes (say which)"
+      ],
+      "recommendation": "Ratify all",
+      "source": "docs/PLAN.md row 'Resoluciones de la spec de política (P1 a P7)'",
+      "status": "answered",
+      "answer": "Ratify all (team reply 't06 ratify all' read as the ratification of the resolutions).",
+      "answered_by": "team (chat, 27-Sep)",
+      "answered_at": "2026-09-27T21:00:00"
+    },
+    {
+      "question_id": "TQ-006",
+      "topic": "Scope: card unlock",
+      "question": "Is a card unlock a third real action? Proposed: console only, high risk, fresh login plus agent approval with audit, never from the chat.",
+      "context": "The 26-Sep decision allows two real actions (open case, preventive lock). ACTION_AUTH_MATRIX already declares UNLOCK_CARD = STEP_UP_AND_AGENT but nothing builds it until this is Decidida.",
+      "options": [
+        "Yes, as proposed",
+        "No, out of scope for the hackathon"
+      ],
+      "recommendation": "Yes, as proposed",
+      "source": "docs/PLAN.md row 'Desbloqueo de tarjeta como acción de consola'",
+      "status": "answered",
+      "answer": "Ratify all (team reply 't06 ratify all'): the card unlock as a console action, high risk, never from the chat.",
+      "answered_by": "team (chat, 27-Sep)",
+      "answered_at": "2026-09-27T21:00:00"
+    },
+    {
+      "question_id": "TQ-007",
+      "topic": "Proposal: customer profile",
+      "question": "'An agent for each customer': persistent per-customer profile state computed by code (proposed), or a live agent instance per customer?",
+      "context": "docs/specs/customer-profile-risk-explanation-spec.docx section 9, Q1.",
+      "options": [
+        "Profile state (recommended)",
+        "Live agent per customer"
+      ],
+      "recommendation": "Profile state",
+      "source": "customer-profile-risk-explanation-spec.docx Q1",
+      "status": "answered",
+      "answer": "An agent per customer that uses the available data for that customer, with a differentiation between shareable and non-shareable information.",
+      "answered_by": "team (chat, 27-Sep)",
+      "answered_at": "2026-09-27T21:00:00"
+    },
+    {
+      "question_id": "TQ-008",
+      "topic": "Proposal: customer profile",
+      "question": "What should Jev categorize for the profile: dataset rows (blocked until the mentors answer, mostly templates) or the customer's own conversation history in ops (proposed)?",
+      "context": "Decided row 'Datos que ven los modelos' allows only masked messages.",
+      "options": [
+        "Conversation history in ops (recommended)",
+        "Dataset rows after the mentors' answer"
+      ],
+      "recommendation": "Conversation history in ops",
+      "source": "customer-profile-risk-explanation-spec.docx Q2",
+      "status": "answered",
+      "answered_by": "team (chat, 27-Sep)",
+      "answered_at": "2026-09-27T22:00:00",
+      "answer": "Jev categorizes the customer's purposes in the chat (typed signals over the masked conversation messages). A smart agent decides, per turn, whether to use Jev or another API key (Claude) for the response, or the offline path."
+    },
+    {
+      "question_id": "TQ-009",
+      "topic": "Proposal: risk explanation",
+      "question": "SHAP explanations to the human agent only (recommended), or also to the customer?",
+      "context": "Feature phrases shown to a customer would teach a fraudster what to avoid and count as an unauthorized disclosure.",
+      "options": [
+        "Human agent only (recommended)",
+        "Also the customer"
+      ],
+      "recommendation": "Human agent only",
+      "source": "customer-profile-risk-explanation-spec.docx Q3",
+      "status": "answered",
+      "answer": "Only the human agent and the AI agent see the risk explanation; never the customer.",
+      "answered_by": "team (chat, 27-Sep)",
+      "answered_at": "2026-09-27T21:00:00"
+    },
+    {
+      "question_id": "TQ-010",
+      "topic": "Proposal: priority",
+      "question": "Profile, SHAP pipeline, tool loop and console panel: after G1 as drawn in the roadmap figure (days 5 to 8), or now?",
+      "context": "G1 (Spanish conversation end to end, verified in Supabase) is due 28 Sep.",
+      "options": [
+        "After G1 (recommended)",
+        "Now"
+      ],
+      "recommendation": "After G1",
+      "source": "customer-profile-risk-explanation-spec.docx Q4",
+      "status": "answered",
+      "answer": "OK: after G1, days 5 to 8.",
+      "answered_by": "team (chat, 27-Sep)",
+      "answered_at": "2026-09-27T21:00:00"
+    },
+    {
+      "question_id": "TQ-011",
+      "topic": "Proposal: model keys",
+      "question": "The second model key is Claude Haiku 4.5 as decided (one key for reply drafting and tool proposals), or a different provider?",
+      "context": "Decision log row 'Proveedor del LLM'.",
+      "options": [
+        "Claude Haiku 4.5 (decided)",
+        "Other provider"
+      ],
+      "recommendation": "Claude Haiku 4.5",
+      "source": "customer-profile-risk-explanation-spec.docx Q5",
+      "status": "answered",
+      "answer": "OK: Claude Haiku 4.5, one key for reply drafting and tool proposals.",
+      "answered_by": "team (chat, 27-Sep)",
+      "answered_at": "2026-09-27T21:00:00"
+    },
+    {
+      "question_id": "TQ-012",
+      "topic": "Proposal: console",
+      "question": "Suggested questions for the human agent: from a rule table in code (auditable, recommended) or generated by Claude?",
+      "context": "Rule 9: explanations come from rules and records, not model reasoning.",
+      "options": [
+        "Rule table (recommended)",
+        "Claude"
+      ],
+      "recommendation": "Rule table",
+      "source": "customer-profile-risk-explanation-spec.docx Q6",
+      "status": "answered",
+      "answer": "OK: rule table in code.",
+      "answered_by": "team (chat, 27-Sep)",
+      "answered_at": "2026-09-27T21:00:00"
+    },
+    {
+      "question_id": "TQ-013",
+      "topic": "Data: full history load",
+      "question": "Run the full 2023 to 2026 transactions load (about 800 MB from S3, all customers) on this machine now, or leave it to front A on day 4? It rewrites data/lakehouse.duckdb, which the API and the data-integrity tests read, and it is needed to train LightGBM without fraud_score.",
+      "context": "The sample load took 9 minutes; the full load has no separate output path today (src/data/ingestion.py writes DEFAULT_DB_PATH).",
+      "options": [
+        "Run now to a separate file (needs a small ingestion change)",
+        "Front A on day 4"
+      ],
+      "recommendation": "Run now to a separate file",
+      "source": "27-Sep loop, iteration 1",
+      "status": "answered",
+      "answer": "OK: run the full 2023 to 2026 load now to a separate file (data/lakehouse_full.duckdb).",
+      "answered_by": "team (chat, 27-Sep)",
+      "answered_at": "2026-09-27T21:00:00"
+    },
+    {
+      "question_id": "TQ-014",
+      "topic": "Data use: Supabase",
+      "question": "Mentors' written answer on publishing dataset rows to Supabase bank: has the question been sent in #technical-help, and what did they answer?",
+      "context": "Until answered, alterego-dev and alterego-demo load team-generated fixtures with the same schema (Propuesta 'Datos del organizador en Supabase').",
+      "options": [
+        "Sent, answer pending",
+        "Answered yes",
+        "Answered no"
+      ],
+      "recommendation": "Send today; fixtures meanwhile",
+      "source": "docs/PLAN.md row 'Uso de datos en el despliegue y en los modelos' (Abierta)",
+      "status": "answered",
+      "answer": "Yes.",
+      "answered_by": "team (chat, 27-Sep)",
+      "answered_at": "2026-09-27T21:00:00"
+    },
+    {
+      "question_id": "TQ-015",
+      "topic": "Keys and budget",
+      "question": "Who owns the Anthropic and TypeSafe keys, and what is the total and daily budget?",
+      "context": "The app works without both keys (templates and the keyword extractor); the keys improve, they do not enable.",
+      "options": [
+        "Owner and cap decided (say which)",
+        "No keys for the hackathon"
+      ],
+      "recommendation": "One owner per key, small daily cap, consumption logged in ops",
+      "source": "docs/PLAN.md row 'Keys y presupuesto' (Abierta)",
+      "status": "answered",
+      "answer": "Max 2 USD per day.",
+      "answered_by": "team (chat, 27-Sep)",
+      "answered_at": "2026-09-27T21:00:00"
+    },
+    {
+      "question_id": "TQ-016",
+      "topic": "Tests",
+      "question": "Without data/lakehouse.duckdb, tests/test_data_integrity.py errors instead of skipping (CLAUDE.md says it skips). Make it skip with a clear reason, or keep the error so a green run without data is impossible?",
+      "context": "Found on 27-Sep; six tests are affected.",
+      "options": [
+        "Skip with reason",
+        "Keep the error"
+      ],
+      "recommendation": "Skip with reason, and print a warning in the summary",
+      "source": "27-Sep session follow-up"
+    },
+    {
+      "question_id": "TQ-017",
+      "topic": "Jev access",
+      "question": "Jev key status before the 29 Sep 12:00 cutoff: received, pending, or give up and keep the keyword extractor as the only Understand engine?",
+      "context": "Without a key the keyword extractor is the default and the baseline (decided 26-Sep).",
+      "options": [
+        "Received",
+        "Pending",
+        "Give up"
+      ],
+      "recommendation": "Keep building on the keyword extractor either way",
+      "source": "docs/PLAN.md row 'Acceso a Jev'",
+      "status": "answered",
+      "answer": "Received (27-Sep). The SDK is pinned to typesafe-sdk 0.7.1 and the model to jev-1.13.0; the adapter is wired and verified with real calls.",
+      "answered_by": "team (chat, 27-Sep)",
+      "answered_at": "2026-09-28T01:30:00"
+    },
+    {
+      "question_id": "TQ-018",
+      "topic": "Evaluation: development split",
+      "question": "The 18-case development split in data/eval/dev_cases.jsonl was written by the agent from the fixture patterns (team-generated). Who reviews the labels, and do we double-label a sample for Cohen's kappa before the 30-Sep freeze?",
+      "context": "Decision log row 'Suite de evaluación': labeling split among the four members with kappa on 50 double-labeled cases. The dev split feeds threshold tuning; the 250 held-out cases still have to be written.",
+      "options": [
+        "Front A reviews, everyone labels held-out on days 5 and 6",
+        "Other plan (say which)"
+      ],
+      "recommendation": "Front A reviews the 18 now; the held-out suite follows the brief's mix",
+      "source": "27-Sep loop, iteration 3"
+    },
+    {
+      "question_id": "TQ-019",
+      "topic": "Evaluation: report placement",
+      "question": "Evaluation reports are written to reports/eval_dev.md and .json by `uv run python -m src.eval.run`. Keep them committed in the repo (reproducible from the suite) or generate them only in CI and attach to the submission?",
+      "context": "The reference baseline scores 0 of 9 safe resolutions and 11 of 18 unsafe outcomes on the dev split; the proposed stack 9 of 9 and 0 of 18. These are dev-split numbers, not the held-out result.",
+      "options": [
+        "Commit the reports",
+        "Generate in CI only"
+      ],
+      "recommendation": "Commit the dev report; the held-out report goes in the final submission",
+      "source": "27-Sep loop, iteration 3"
+    },
+    {
+      "question_id": "TQ-020",
+      "topic": "Identity: Supabase project",
+      "question": "Supabase project details needed to switch the API from the local issuer to real tokens: SUPABASE_URL of alterego-dev, and the personas (customer ids) to create with app_metadata.customer_id and app_role.",
+      "context": "src/auth/session.py already verifies ES256 against <SUPABASE_URL>/auth/v1/.well-known/jwks.json; the front still logs in through the local issuer.",
+      "options": [
+        "Project created, URL shared",
+        "Not yet"
+      ],
+      "recommendation": "Daniel creates alterego-dev and shares the URL; personas from data/fixtures/team_questions.json owner list",
+      "source": "27-Sep loop, iteration 2",
+      "status": "answered",
+      "answer": "Project created, URL shared: SUPABASE_URL=https://lrddokaihdwrdtwfiale.supabase.co (Daniel, 29-Sep). Its JWKS at /auth/v1/.well-known/jwks.json serves one ES256 P-256 signing key (kid 3ebd1a7b-b0fa-4dd9-87e0-0525eae1400a), which is what SessionVerifier expects. Pending: create the personas with app_metadata.customer_id and app_role, and switch the front from the local issuer to supabase-js.",
+      "answered_by": "Kmilo (chat, 29-Sep); project by Daniel",
+      "answered_at": "2026-09-29T21:00:00"
+    },
+    {
+      "question_id": "TQ-021",
+      "topic": "ML: experiment tracking",
+      "question": "Track fraud-model runs with MLflow (decided in the brief) or keep the JSON and Markdown report per run that src/ml/fraud_risk.py writes to reports/ml/?",
+      "context": "MLflow adds a heavy dependency and a local server; the JSON report already records commit, split, features, threshold, metrics and caveats.",
+      "options": [
+        "MLflow",
+        "JSON report per run (recommended for the hackathon)"
+      ],
+      "recommendation": "JSON report per run, MLflow only if a judge asks",
+      "source": "27-Sep loop, iteration 7",
+      "status": "answered",
+      "answer": "MLflow. Track each fraud-model run with MLflow on a local file store (mlruns/, no server), keeping the JSON and Markdown report per run as the human-readable artifact logged to the run.",
+      "answered_by": "Kmilo (chat, 29-Sep)",
+      "answered_at": "2026-09-29T20:00:00"
+    },
+    {
+      "question_id": "TQ-022",
+      "topic": "ML: algorithm and serving",
+      "question": "The pipeline uses scikit-learn's HistGradientBoostingClassifier as a stand-in for LightGBM (no new dependency; the macOS LightGBM wheel needs libomp). Switch to LightGBM plus ONNX export for Vercel once the full history is loaded, or keep the scikit-learn model served from a joblib file?",
+      "context": "docs/PLAN.md row 'Runtime de inferencia' proposes ONNX; the risk explanation in the console uses ablation contributions today, SHAP would need the LightGBM booster.",
+      "options": [
+        "LightGBM plus ONNX (as proposed)",
+        "Keep scikit-learn and joblib"
+      ],
+      "recommendation": "Decide after TQ-013; the swap is one line in train()",
+      "source": "27-Sep loop, iteration 7"
+    },
+    {
+      "question_id": "TQ-023",
+      "topic": "ML: the fraud label has no behavioral signal",
+      "question": "On the full 2023 to 2026 history the leak-free model and the rules baseline both score ROC AUC 0.50 on 1.5 million held-out rows: is_fraud is flat across every feature and only the leaked fraud_score separates it. How do we present the learned component? (a) Report the negative result with the pipeline as evidence; (b) train the same pipeline on a proxy target with real structure, if we find one; (c) keep the rules baseline as the risk signal and say why.",
+      "context": "docs/technical-discuss-points.md section 5 and reports/ml_full/fraud_risk.md. Hypothesis 3 of the plan cannot be confirmed on this dataset without using the leak. Experiment notebook: notebooks/02_risk_model_experiment.ipynb (variables, fraud rate per variable, mutual information, model versus baseline versus the leak, permutation importance, and a synthetic-label sanity check that the pipeline learns when a signal exists). Cross-table search: notebooks/03_fraud_signal_search.ipynb (customers, products, complaints, interactions, transcripts categorized by the real Jev (all consulta_general, flat distress), digital events, campaign sends, surveys): 140 bins, none lifts the fraud rate by 1.5x with 1,000 rows of support. Country, segment, tenure and transaction type were added to the model on request: held-out ROC AUC 0.497.",
+      "options": [
+        "(a) Report the negative result",
+        "(b) Proxy target (say which)",
+        "(c) Rules baseline as the signal"
+      ],
+      "recommendation": "(a), and probe (b) on the development days; never (leak)",
+      "source": "27-Sep loop, full-history training"
+    },
+    {
+      "question_id": "TQ-024",
+      "topic": "Policy: reading Jev's intent confidence",
+      "question": "With the real Jev, a message that mixes a stolen card with an unrecognized charge came back as tarjeta_robada with confidence 0.55 (probabilities: tarjeta_robada 0.55, cargo_no_reconocido 0.43), so POL-CLARIFY asked a clarification question instead of opening the case and offering the lock. The plan's proposal 'Lectura de las señales de Jev' reads the summed mass of the dispute intents (0.98 here) and clarifies only between 0.30 and 0.70. Adopt the dispute-mass reading (a spec change to POL-CLARIFY), or keep the brief's per-option confidence?",
+      "context": "Verified 27-Sep on the fixture with jev-1.13.0. The per-option rule costs a turn whenever the customer states two dispute reasons at once, which is common (stolen card plus unrecognized charge). Changing it touches docs/specs/dispute-policy-v2.3.md criterion 8 and the router.",
+      "options": [
+        "Adopt the dispute-mass reading (recommended)",
+        "Keep the per-option confidence"
+      ],
+      "recommendation": "Adopt the dispute-mass reading",
+      "source": "27-Sep, real Jev smoke test",
+      "status": "answered",
+      "answer": "Keep the per-option confidence; do not adopt the dispute-mass reading. The intents stay independent, always: when a message carries several intents (for example stolen card plus unrecognized charge), the clarification lists each detected intent to the customer and asks them to clarify each one separately. The policy never merges intents into a single mass.",
+      "answered_by": "Kmilo (chat, 29-Sep)",
+      "answered_at": "2026-09-29T20:30:00"
+    },
+    {
+      "question_id": "TQ-025",
+      "topic": "Data: fraud claims, fraud flags and call transcripts are independent",
+      "question": "Over 2023 to 2026 there are 12,297 unrecognized-charge complaints against 4,316 is_fraud flags, and the two never meet: a flagged charge is followed by a claim no more often than an unflagged one (0.35 vs 0.45 percent in 60 days, Fisher p 0.40), claims carry a prior flag at the same rate as branch or service complaints (0.12 percent, chi-square p 0.86), the 3 claims that name the product of a flagged charge match neither amount nor currency, and the 171,321 call transcripts are 42 customer templates with zero fraud, theft or unrecognized words and the same topic mix near flagged and unflagged charges. Can the mentors confirm that the label, the complaints and the transcripts are synthetic and mutually independent, or point us to the linkage we missed (for example an id that ties a complaint to a transaction)?",
+      "context": "docs/technical-discuss-points.md section 6 and notebooks/04_claims_vs_flags_and_transcript_nlp.ipynb (charts 16 and 17). Closes the search for a learnable fraud signal together with TQ-023: the leak-free model sits at ROC AUC 0.50 because nothing in the data moves with is_fraud. The report presents the independence as a data-quality finding next to the fraud_score leak; no metric of the dispute stack depends on the label.",
+      "options": [
+        "Confirm the independence; the report states it as a data-quality finding (recommended)",
+        "There is a linkage we missed; the mentors point to it and notebook 04 reruns"
+      ],
+      "recommendation": "Confirm the independence; the report states it as a data-quality finding",
+      "source": "28-Sep, team question in chat"
+    },
+    {
+      "question_id": "TQ-026",
+      "topic": "ML: fraud risk score transferred from the IEEE-CIS Fraud Detection competition",
+      "question": "is_fraud is random and fraud_score derives from it (TQ-023, TQ-025), so POL-ESC-ML-RISK has no trainable target in the bank data. The proposal (docs/specs/fraud-risk-model-v1-ieee-cis.md) trains the risk model on the public IEEE-CIS competition data (590,540 labeled card-not-present transactions, 3.5 percent fraud) using only a feature contract we can compute on our charges (amount in USD, processing-clock time, credit or debit, card age, days since the previous charge, counts per card and customer in 1, 7 and 30 days, per-card amount mean, std and z-score, address distance bucket, consistency checks, email domain frequency), validates it on the competition's time split with an adversarial check of the domain gap, and serves it through the unchanged RiskScorer with a percentile threshold computed on our serving window (top 2 percent of disputable charges) instead of the absolute 0.70. The identity table has no counterpart: digital_events cannot be tied to a charge (170 of 205,943 Web and App charges of 2026 have an event within an hour, none on the same product). Do the mentors accept the transfer as the model of record, the competition data licence (competition and non-commercial use) for the submission, and the percentile threshold?",
+      "context": "Replaces the training recipe of brief decision 3, keeps its feature discipline and the leakage guards (no is_fraud, no fraud_score, no post-authorization column). Card-not-present limitation: on POS, ATM and Branch charges the model extrapolates and the rules baseline stays as the second opinion. Until the answer the policy keeps ml_risk_score = 0.0 by default. Notebook 05 (29-Sep) results: the contract is computable on both sources; five features keep as they are, four as per-source ranks, eleven go to the ablation, two are dropped. Raw values separate the sources with adversarial AUC 1.000; on per-source percentile ranks it is 1.000 as well: the gap cannot be transformed away, so only the percentile threshold makes the score usable here. Jev homologated the categorical levels (61 typed answers): credit and debit map at 0.99, the card network and the product codes have no equivalent; the serving rule is Web and App charges only (30 percent of charges, Jev coverage 0.69 and 0.60), rules baseline elsewhere. Levels for the mentors to decide: ProductCD W (0.63 no equivalent versus 0.31 Purchase), DeviceType mobile, Windows, Linux. Trained on 29-Sep with the 19 deployable features (card age excluded: opening dates are independent of the charges): holdout ROC AUC 0.817, PR AUC 0.165; threshold 0.0669 = percentile 98 of 75,366 Web and App charges; agreement with is_fraud 0.507. Wired behind POL-ESC-ML-RISK with the threshold read from the input.",
+      "options": [
+        "Accept the IEEE-CIS transfer with the percentile threshold (recommended)",
+        "Accept the transfer but keep the absolute 0.70 threshold from the brief",
+        "Reject external data; report the negative result of TQ-023 and leave POL-ESC-ML-RISK without a model"
+      ],
+      "recommendation": "Accept the IEEE-CIS transfer with the percentile threshold",
+      "source": "28-Sep, team proposal in chat",
+      "status": "answered",
+      "answer": "Accept the IEEE-CIS transfer. POL-ESC-ML-RISK escalates to HITL by the percentile threshold computed on the serving window; the fixed 0.70 threshold is not used. The model of record uses only the homologated (deployable) variables. Follow-up process: cherry-pick, among the roughly 400 competition variables left out, the ones the agent can consume so the fraud score improves after the interview with the customer (candidates in reports/ml/ieee_cis_feature_importance.md). The mentors' answer on the competition data licence stays pending.",
+      "answered_by": "Kmilo (chat, 29-Sep)",
+      "answered_at": "2026-09-29T20:30:00"
+    },
+    {
+      "question_id": "TQ-027",
+      "topic": "Understand: should explicit dispute language win over products other than the statement?",
+      "question": "Since 30-Sep (held-out finding 1, pr/8), a dispute keyword plus a named charge wins over a mention of the statement: \"En mi extracto hay una compra que no hice\" opens the dispute instead of abstaining as saldo_o_extracto. The other out-of-scope categories still win: \"No reconozco el cobro de la cuota del préstamo\" abstains as prestamo_o_credito and \"No reconozco un cargo del seguro de vida\" as inversion_o_seguro. Should a disputed charge tied to a loan, an insurance policy or a card-support fee also go through the dispute flow?",
+      "context": "The brief (Decision 4, POL-DISP-TYPE) names loans and other products as out of scope, so the fix keeps them there. The keyword lists are broad substrings, which is why the statement precedence now needs a charge word next to the dispute keyword (\"¿Cuál es mi saldo? Ya pregunté dos veces\" keeps abstaining). On the Jev path Jev's own intent decides and this rule does not apply.",
+      "options": [
+        "Keep it: only the statement yields to dispute language (recommended)",
+        "Extend it to insurance and card-support charges",
+        "Extend it to every out-of-scope category"
+      ],
+      "recommendation": "Keep it: only the statement yields to dispute language",
+      "source": "30-Sep, held-out fixes (pr/8)"
+    },
+    {
+      "question_id": "TQ-028",
+      "topic": "Orchestrator: bank outages (reason code, retries, a missed lock offer)",
+      "question": "When a bank read fails or times out, the turn now goes to a human with the new escalation reason SYSTEM_OF_RECORD_UNAVAILABLE and confirms nothing (brief section 5, pr/8). Three decisions: (1) keep the new code, which the labeling README now lists, or fold it into ACTION_VERIFICATION_FAILED; (2) add bounded retries before the handoff, as brief section 3.3 proposes (2 retries), and a Postgres statement timeout (today only a 5-second connect timeout); (3) when the card list fails while offering the lock to a customer who reported a stolen card, the offer is dropped and audited as LOCK_NOT_OFFERED and the verified case number still reaches the customer: should a human also get a handoff to offer the lock?",
+      "context": "ops_handoffs.escalation_reason has no CHECK, so the new code needs no migration; the console shows the reason as text. A lock that times out after the customer's yes already takes the pending-lock path with ACTION_VERIFICATION_FAILED, because the write may or may not have happened. Failures of the ops store itself are not handled yet.",
+      "options": [
+        "Keep the new code, add 2 bounded retries in the gateways and hand off the missed lock offer (recommended)",
+        "Keep the new code and today's behavior",
+        "Fold the outage into ACTION_VERIFICATION_FAILED"
+      ],
+      "recommendation": "Keep the new code, add 2 bounded retries in the gateways and hand off the missed lock offer",
+      "source": "30-Sep, held-out fixes (pr/8)"
+    },
+    {
+      "question_id": "TQ-029",
+      "topic": "Orchestrator: what a lost-card report asks after the lock answer",
+      "question": "A lost or stolen card report now gets the lock offer first; after the yes or the no the conversation asks the deferred POL-CLARIFY question with its generic texts (\"No encontramos un cargo que coincida con su descripción\" or \"Encontramos varios cargos que podrían coincidir\"), written for a customer who described a charge. Should a loss-only report get a question of its own (for example \"¿Reconoce estos movimientos recientes?\"), or end after the lock answer? Should the day of the loss bound the candidates (charges on or after it)? The lock-refused reply also says \"Quedó registrado en su caso\" when no case exists yet.",
+      "context": "Today the day of the loss is ignored as a charge hint (it can only widen the candidates, so the worst case is a clarification). A new question or reason is a policy text change, so it needs the team and a spec update.",
+      "options": [
+        "Add a question for loss-only reports and reword the refused reply (recommended)",
+        "Keep the generic texts",
+        "End the conversation after the lock answer"
+      ],
+      "recommendation": "Add a question for loss-only reports and reword the refused reply",
+      "source": "30-Sep, held-out fixes (pr/8)"
+    },
+    {
+      "question_id": "TQ-030",
+      "topic": "ML: a missing USD value scores as 0.0 at serving time, as in training",
+      "question": "rows_to_canonical read the local amount as USD when amount_usd was None, so a 480,000 COP charge would enter the features as 480,000 USD, while training (load_bank_canonical) reads amount_usd as stored and the feature builder fills a missing value with 0.0. Since d81ef41 (pr/8) serving passes the stored value through, so a missing value scores as 0.0, as in training. Confirm?",
+      "context": "Until pr/8 the DuckDB gateway returned NaN for a NULL amount_usd, and NaN scored as 0.0; once the gateway returns None, as Postgres does, the old fallback would have read the local amount as USD. On Postgres bank.transactions.amount_usd is NOT NULL (0003_bank.sql), so the fallback never ran there. Gold holds no NULL amount_usd after the silver fix (spec S9), so only data defects reach this path, and POL-DISP-TYPE escalates such a charge with DATA_GAP_AMOUNT_USD whatever the score.",
+      "options": [
+        "Confirm: score a missing USD value as 0.0 (recommended)",
+        "Restore the local-amount fallback"
+      ],
+      "recommendation": "Confirm: score a missing USD value as 0.0",
+      "source": "30-Sep, held-out fixes (pr/8)"
+    },
+    {
+      "question_id": "TQ-031",
+      "topic": "Policy: the fallback keyword lists of S8 match substrings and miss common phrasings",
+      "question": "The stolen-card and distress fallbacks (STOLEN_CARD_KEYWORDS, DISTRESS_KEYWORDS in dispute_policy.py) match substrings, so \"lo aprobaron ayer\" contains \"robaron\" and gets a lock recommendation, while \"perdí mi tarjeta\", \"tarjeta robada\", \"cartão roubado\" and \"furtaram\" are not detected at all. Should the policy match whole words and extend the lists on the development split, as S8 foresees?",
+      "context": "pr/8 already reads loss words on word boundaries where it decides a charge date, but the policy's own lock recommendation still uses substrings. Changing the policy lists changes outcomes, so it needs the team and the traceability matrix.",
+      "options": [
+        "Match whole words and extend the lists on the development split (recommended)",
+        "Keep the lists as they are"
+      ],
+      "recommendation": "Match whole words and extend the lists on the development split",
+      "source": "30-Sep, review of the held-out fixes (pr/8)"
+    }
+  ]
+}

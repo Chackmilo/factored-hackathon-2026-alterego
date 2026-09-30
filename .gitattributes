@@ -1,0 +1,3 @@
+# The frozen evaluation suites keep LF endings on every OS, so their recorded SHA-256 holds everywhere.
+data/eval/*.jsonl text eol=lf
+data/eval/*.sha256 text eol=lf

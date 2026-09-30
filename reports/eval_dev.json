@@ -1,0 +1,1427 @@
+{
+  "meta": {
+    "suite": "dev_cases.jsonl",
+    "n_cases": 18,
+    "mix": "adversarial_or_security: 1, ambiguous: 2, high_value_or_multi_charge: 4, incorrect_or_missing_data: 2, normal_150_500: 2, normal_le_150: 4, out_of_window_or_unsupported: 3",
+    "repeats": 3,
+    "repeat_spread": {
+      "baseline_starter": {
+        "min": 0.0,
+        "max": 0.0,
+        "p50_min": 0.027916976250708103,
+        "p50_max": 0.03358395770192146
+      },
+      "proposed": {
+        "min": 1.0,
+        "max": 1.0,
+        "p50_min": 37.995791994035244,
+        "p50_max": 40.062000043690205
+      }
+    },
+    "provenance": "team-generated",
+    "versions": "commit b8ba68a; extractor keyword-v1; policy v2.3; no ML model, no LLM"
+  },
+  "metrics": {
+    "baseline_starter": {
+      "n_cases": 18,
+      "safe_automated_resolution": {
+        "numerator": 0,
+        "denominator": 9,
+        "rate": 0.0
+      },
+      "attempted_automation_share": {
+        "numerator": 15,
+        "denominator": 18,
+        "rate": 0.8333333333333334
+      },
+      "containment": {
+        "numerator": 15,
+        "denominator": 18,
+        "rate": 0.8333333333333334
+      },
+      "escalation_precision": {
+        "numerator": 1,
+        "denominator": 3,
+        "rate": 0.3333333333333333
+      },
+      "escalation_recall": {
+        "numerator": 1,
+        "denominator": 5,
+        "rate": 0.2
+      },
+      "missed_transfers": 4,
+      "unnecessary_transfers": 2,
+      "unsafe_outcomes": {
+        "numerator": 11,
+        "denominator": 18,
+        "rate": 0.6111111111111112
+      },
+      "unsafe_reasons": {
+        "unverified_action": 3,
+        "materially_incorrect_outcome": 8
+      },
+      "outcome_accuracy": {
+        "numerator": 8,
+        "denominator": 18,
+        "rate": 0.4444444444444444
+      },
+      "reply_language_accuracy": {
+        "numerator": 5,
+        "denominator": 10,
+        "rate": 0.5
+      },
+      "latency_ms": {
+        "p50": 0.027916976250708103,
+        "p95": 0.05320797208696604,
+        "mean": 0.030965292050192755
+      },
+      "crashes": 0,
+      "slices": {
+        "language": {
+          "es": {
+            "n": 13,
+            "safe_automated_resolution": {
+              "numerator": 0,
+              "denominator": 6,
+              "rate": 0.0
+            },
+            "unsafe_outcomes": {
+              "numerator": 8,
+              "denominator": 13,
+              "rate": 0.6153846153846154
+            },
+            "outcome_accuracy": {
+              "numerator": 6,
+              "denominator": 13,
+              "rate": 0.46153846153846156
+            }
+          },
+          "pt": {
+            "n": 5,
+            "safe_automated_resolution": {
+              "numerator": 0,
+              "denominator": 3,
+              "rate": 0.0
+            },
+            "unsafe_outcomes": {
+              "numerator": 3,
+              "denominator": 5,
+              "rate": 0.6
+            },
+            "outcome_accuracy": {
+              "numerator": 2,
+              "denominator": 5,
+              "rate": 0.4
+            }
+          }
+        },
+        "segment": {
+          "Basic": {
+            "n": 6,
+            "safe_automated_resolution": {
+              "numerator": 0,
+              "denominator": 2,
+              "rate": 0.0
+            },
+            "unsafe_outcomes": {
+              "numerator": 5,
+              "denominator": 6,
+              "rate": 0.8333333333333334
+            },
+            "outcome_accuracy": {
+              "numerator": 1,
+              "denominator": 6,
+              "rate": 0.16666666666666666
+            }
+          },
+          "Plus": {
+            "n": 10,
+            "safe_automated_resolution": {
+              "numerator": 0,
+              "denominator": 6,
+              "rate": 0.0
+            },
+            "unsafe_outcomes": {
+              "numerator": 4,
+              "denominator": 10,
+              "rate": 0.4
+            },
+            "outcome_accuracy": {
+              "numerator": 6,
+              "denominator": 10,
+              "rate": 0.6
+            }
+          },
+          "Premium": {
+            "n": 2,
+            "safe_automated_resolution": {
+              "numerator": 0,
+              "denominator": 1,
+              "rate": 0.0
+            },
+            "unsafe_outcomes": {
+              "numerator": 2,
+              "denominator": 2,
+              "rate": 1.0
+            },
+            "outcome_accuracy": {
+              "numerator": 1,
+              "denominator": 2,
+              "rate": 0.5
+            }
+          }
+        },
+        "country": {
+          "Argentina": {
+            "n": 5,
+            "safe_automated_resolution": {
+              "numerator": 0,
+              "denominator": 3,
+              "rate": 0.0
+            },
+            "unsafe_outcomes": {
+              "numerator": 3,
+              "denominator": 5,
+              "rate": 0.6
+            },
+            "outcome_accuracy": {
+              "numerator": 2,
+              "denominator": 5,
+              "rate": 0.4
+            }
+          },
+          "Colombia": {
+            "n": 9,
+            "safe_automated_resolution": {
+              "numerator": 0,
+              "denominator": 5,
+              "rate": 0.0
+            },
+            "unsafe_outcomes": {
+              "numerator": 4,
+              "denominator": 9,
+              "rate": 0.4444444444444444
+            },
+            "outcome_accuracy": {
+              "numerator": 5,
+              "denominator": 9,
+              "rate": 0.5555555555555556
+            }
+          },
+          "M\u00e9xico": {
+            "n": 4,
+            "safe_automated_resolution": {
+              "numerator": 0,
+              "denominator": 1,
+              "rate": 0.0
+            },
+            "unsafe_outcomes": {
+              "numerator": 4,
+              "denominator": 4,
+              "rate": 1.0
+            },
+            "outcome_accuracy": {
+              "numerator": 1,
+              "denominator": 4,
+              "rate": 0.25
+            }
+          }
+        }
+      }
+    },
+    "proposed": {
+      "n_cases": 18,
+      "safe_automated_resolution": {
+        "numerator": 9,
+        "denominator": 9,
+        "rate": 1.0
+      },
+      "attempted_automation_share": {
+        "numerator": 9,
+        "denominator": 18,
+        "rate": 0.5
+      },
+      "containment": {
+        "numerator": 13,
+        "denominator": 18,
+        "rate": 0.7222222222222222
+      },
+      "escalation_precision": {
+        "numerator": 5,
+        "denominator": 5,
+        "rate": 1.0
+      },
+      "escalation_recall": {
+        "numerator": 5,
+        "denominator": 5,
+        "rate": 1.0
+      },
+      "missed_transfers": 0,
+      "unnecessary_transfers": 0,
+      "unsafe_outcomes": {
+        "numerator": 0,
+        "denominator": 18,
+        "rate": 0.0
+      },
+      "unsafe_reasons": {},
+      "outcome_accuracy": {
+        "numerator": 18,
+        "denominator": 18,
+        "rate": 1.0
+      },
+      "reply_language_accuracy": {
+        "numerator": 10,
+        "denominator": 10,
+        "rate": 1.0
+      },
+      "latency_ms": {
+        "p50": 37.995791994035244,
+        "p95": 77.00408401433378,
+        "mean": 49.657657444994484
+      },
+      "crashes": 0,
+      "slices": {
+        "language": {
+          "es": {
+            "n": 13,
+            "safe_automated_resolution": {
+              "numerator": 6,
+              "denominator": 6,
+              "rate": 1.0
+            },
+            "unsafe_outcomes": {
+              "numerator": 0,
+              "denominator": 13,
+              "rate": 0.0
+            },
+            "outcome_accuracy": {
+              "numerator": 13,
+              "denominator": 13,
+              "rate": 1.0
+            }
+          },
+          "pt": {
+            "n": 5,
+            "safe_automated_resolution": {
+              "numerator": 3,
+              "denominator": 3,
+              "rate": 1.0
+            },
+            "unsafe_outcomes": {
+              "numerator": 0,
+              "denominator": 5,
+              "rate": 0.0
+            },
+            "outcome_accuracy": {
+              "numerator": 5,
+              "denominator": 5,
+              "rate": 1.0
+            }
+          }
+        },
+        "segment": {
+          "Basic": {
+            "n": 6,
+            "safe_automated_resolution": {
+              "numerator": 2,
+              "denominator": 2,
+              "rate": 1.0
+            },
+            "unsafe_outcomes": {
+              "numerator": 0,
+              "denominator": 6,
+              "rate": 0.0
+            },
+            "outcome_accuracy": {
+              "numerator": 6,
+              "denominator": 6,
+              "rate": 1.0
+            }
+          },
+          "Plus": {
+            "n": 10,
+            "safe_automated_resolution": {
+              "numerator": 6,
+              "denominator": 6,
+              "rate": 1.0
+            },
+            "unsafe_outcomes": {
+              "numerator": 0,
+              "denominator": 10,
+              "rate": 0.0
+            },
+            "outcome_accuracy": {
+              "numerator": 10,
+              "denominator": 10,
+              "rate": 1.0
+            }
+          },
+          "Premium": {
+            "n": 2,
+            "safe_automated_resolution": {
+              "numerator": 1,
+              "denominator": 1,
+              "rate": 1.0
+            },
+            "unsafe_outcomes": {
+              "numerator": 0,
+              "denominator": 2,
+              "rate": 0.0
+            },
+            "outcome_accuracy": {
+              "numerator": 2,
+              "denominator": 2,
+              "rate": 1.0
+            }
+          }
+        },
+        "country": {
+          "Argentina": {
+            "n": 5,
+            "safe_automated_resolution": {
+              "numerator": 3,
+              "denominator": 3,
+              "rate": 1.0
+            },
+            "unsafe_outcomes": {
+              "numerator": 0,
+              "denominator": 5,
+              "rate": 0.0
+            },
+            "outcome_accuracy": {
+              "numerator": 5,
+              "denominator": 5,
+              "rate": 1.0
+            }
+          },
+          "Colombia": {
+            "n": 9,
+            "safe_automated_resolution": {
+              "numerator": 5,
+              "denominator": 5,
+              "rate": 1.0
+            },
+            "unsafe_outcomes": {
+              "numerator": 0,
+              "denominator": 9,
+              "rate": 0.0
+            },
+            "outcome_accuracy": {
+              "numerator": 9,
+              "denominator": 9,
+              "rate": 1.0
+            }
+          },
+          "M\u00e9xico": {
+            "n": 4,
+            "safe_automated_resolution": {
+              "numerator": 1,
+              "denominator": 1,
+              "rate": 1.0
+            },
+            "unsafe_outcomes": {
+              "numerator": 0,
+              "denominator": 4,
+              "rate": 0.0
+            },
+            "outcome_accuracy": {
+              "numerator": 4,
+              "denominator": 4,
+              "rate": 1.0
+            }
+          }
+        }
+      }
+    }
+  },
+  "results": {
+    "baseline_starter": [
+      {
+        "case_id": "DEV-001",
+        "system": "baseline_starter",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.059125013649463654,
+        "replies": [
+          "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": false,
+          "credit_candidate": false,
+          "lock_status": true,
+          "reply_language": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-002",
+        "system": "baseline_starter",
+        "final_outcome": "MANDATORY_HITL_ESCALATION",
+        "escalation_reason": null,
+        "escalated": true,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.05320797208696604,
+        "replies": [
+          "Hemos detectado una actividad inusual en esta transacci\u00f3n y la hemos pausado temporalmente. Un agente humano especializado te contactar\u00e1 en breve."
+        ],
+        "unverified_actions": 1,
+        "unsafe_reasons": [
+          "unverified_action"
+        ],
+        "checks": {
+          "outcome": false,
+          "escalation": false,
+          "case_opened": false,
+          "credit_candidate": true,
+          "lock_status": true,
+          "reply_language": false
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-003",
+        "system": "baseline_starter",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.027916976250708103,
+        "replies": [
+          "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": false,
+          "reply_language": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-004",
+        "system": "baseline_starter",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.030084047466516495,
+        "replies": [
+          "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [
+          "materially_incorrect_outcome"
+        ],
+        "checks": {
+          "outcome": false,
+          "escalation": true,
+          "escalation_reason": false,
+          "case_opened": true,
+          "reply_language": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-005",
+        "system": "baseline_starter",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.025999965146183968,
+        "replies": [
+          "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [
+          "materially_incorrect_outcome"
+        ],
+        "checks": {
+          "outcome": false,
+          "escalation": true,
+          "escalation_reason": false,
+          "case_opened": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-006",
+        "system": "baseline_starter",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.02254103310406208,
+        "replies": [
+          "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [
+          "materially_incorrect_outcome"
+        ],
+        "checks": {
+          "outcome": false,
+          "escalation": true,
+          "escalation_reason": false,
+          "case_opened": true,
+          "reply_language": false
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-007",
+        "system": "baseline_starter",
+        "final_outcome": "MANDATORY_HITL_ESCALATION",
+        "escalation_reason": null,
+        "escalated": true,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.03458303399384022,
+        "replies": [
+          "Hemos detectado una actividad inusual en esta transacci\u00f3n y la hemos pausado temporalmente. Un agente humano especializado te contactar\u00e1 en breve."
+        ],
+        "unverified_actions": 1,
+        "unsafe_reasons": [
+          "unverified_action"
+        ],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "escalation_reason": false,
+          "case_opened": true,
+          "lock_status": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-008",
+        "system": "baseline_starter",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.023417058400809765,
+        "replies": [
+          "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [
+          "materially_incorrect_outcome"
+        ],
+        "checks": {
+          "outcome": false,
+          "escalation": false,
+          "escalation_reason": false,
+          "lock_status": false
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-009",
+        "system": "baseline_starter",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.030374969355762005,
+        "replies": [
+          "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": false,
+          "lock_status": false,
+          "reply_language": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-010",
+        "system": "baseline_starter",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.031083007343113422,
+        "replies": [
+          "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": false,
+          "lock_status": false,
+          "reply_language": false
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-011",
+        "system": "baseline_starter",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.02604199107736349,
+        "replies": [
+          "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [
+          "materially_incorrect_outcome"
+        ],
+        "checks": {
+          "outcome": false,
+          "escalation": false,
+          "escalation_reason": false,
+          "case_opened": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-012",
+        "system": "baseline_starter",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.035958015359938145,
+        "replies": [
+          "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [
+          "materially_incorrect_outcome"
+        ],
+        "checks": {
+          "outcome": false,
+          "escalation": false,
+          "escalation_reason": false,
+          "case_opened": true,
+          "reply_language": false
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-013",
+        "system": "baseline_starter",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.025250017642974854,
+        "replies": [
+          "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": false,
+          "reply_language": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-014",
+        "system": "baseline_starter",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.02337503246963024,
+        "replies": [
+          "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [
+          "materially_incorrect_outcome"
+        ],
+        "checks": {
+          "outcome": false,
+          "escalation": false,
+          "escalation_reason": false,
+          "case_opened": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-015",
+        "system": "baseline_starter",
+        "final_outcome": "MANDATORY_HITL_ESCALATION",
+        "escalation_reason": null,
+        "escalated": true,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.03400002606213093,
+        "replies": [
+          "Hemos detectado una actividad inusual en esta transacci\u00f3n y la hemos pausado temporalmente. Un agente humano especializado te contactar\u00e1 en breve."
+        ],
+        "unverified_actions": 1,
+        "unsafe_reasons": [
+          "unverified_action"
+        ],
+        "checks": {
+          "outcome": false,
+          "escalation": false,
+          "case_opened": false,
+          "credit_candidate": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-016",
+        "system": "baseline_starter",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.021417043171823025,
+        "replies": [
+          "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": false,
+          "reply_language": false
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-017",
+        "system": "baseline_starter",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.023707980290055275,
+        "replies": [
+          "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [
+          "materially_incorrect_outcome"
+        ],
+        "checks": {
+          "outcome": false,
+          "escalation": true,
+          "escalation_reason": false,
+          "case_opened": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-018",
+        "system": "baseline_starter",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.029292074032127857,
+        "replies": [
+          "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": false,
+          "credit_candidate": false
+        },
+        "safe_resolution": false,
+        "error": null
+      }
+    ],
+    "proposed": [
+      {
+        "case_id": "DEV-001",
+        "system": "proposed",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": true,
+        "credit_candidate": true,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 37.42424992378801,
+        "replies": [
+          "Su solicitud de disputa por el cargo de 80.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-7A1430F74F96."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": true,
+          "credit_candidate": true,
+          "lock_status": true,
+          "reply_language": true
+        },
+        "safe_resolution": true,
+        "error": null
+      },
+      {
+        "case_id": "DEV-002",
+        "system": "proposed",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": true,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "pt",
+        "turns": 1,
+        "latency_ms": 39.79299997445196,
+        "replies": [
+          "Sua solicita\u00e7\u00e3o de contesta\u00e7\u00e3o da cobran\u00e7a de 300.00 USD foi registrada e est\u00e1 em an\u00e1lise. Voc\u00ea receber\u00e1 resposta formal em 3 a 5 dias \u00fateis. N\u00famero do caso: CASE-DA5E245A181A."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": true,
+          "credit_candidate": true,
+          "lock_status": true,
+          "reply_language": true
+        },
+        "safe_resolution": true,
+        "error": null
+      },
+      {
+        "case_id": "DEV-003",
+        "system": "proposed",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": true,
+        "credit_candidate": true,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 2,
+        "latency_ms": 77.00408401433378,
+        "replies": [
+          "Encontramos varios cargos que podr\u00edan coincidir. \u00bfCu\u00e1l de ellos desea disputar? Estos son los movimientos recientes: 1) 2026-06-13, 35.00 USD, Tienda Norte 2) 2026-06-11, 35.00 USD, Tienda Sur Responda con el n\u00famero del movimiento.",
+          "Su solicitud de disputa por el cargo de 35.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-3C140501B2E9."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": true,
+          "reply_language": true
+        },
+        "safe_resolution": true,
+        "error": null
+      },
+      {
+        "case_id": "DEV-004",
+        "system": "proposed",
+        "final_outcome": "SAFE_POLICY_ABSTENTION",
+        "escalation_reason": "OUT_OF_POLICY_WINDOW",
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 37.10108296945691,
+        "replies": [
+          "La transacci\u00f3n ocurri\u00f3 hace 90 d\u00edas, superando el plazo de 60 d\u00edas para disputas autom\u00e1ticas. Por favor ac\u00e9rquese a una sucursal."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "escalation_reason": true,
+          "case_opened": true,
+          "reply_language": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-005",
+        "system": "proposed",
+        "final_outcome": "SAFE_POLICY_ABSTENTION",
+        "escalation_reason": "NOT_DISPUTABLE_CHARGE",
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 36.829708027653396,
+        "replies": [
+          "El movimiento es de tipo Purchase en estado Declined, por lo que no puede disputarse por este canal. Solo se disputan compras, pagos, retiros y transferencias aprobadas."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "escalation_reason": true,
+          "case_opened": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-006",
+        "system": "proposed",
+        "final_outcome": "SAFE_POLICY_ABSTENTION",
+        "escalation_reason": "OUT_OF_SCOPE_INTENT",
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "pt",
+        "turns": 1,
+        "latency_ms": 36.93900001235306,
+        "replies": [
+          "Este canal atende contesta\u00e7\u00f5es de cobran\u00e7as em seus cart\u00f5es e contas. Sua solicita\u00e7\u00e3o sobre empr\u00e9stimos e cr\u00e9ditos \u00e9 atendida pela central de atendimento ou pela se\u00e7\u00e3o correspondente do aplicativo."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "escalation_reason": true,
+          "case_opened": true,
+          "reply_language": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-007",
+        "system": "proposed",
+        "final_outcome": "MANDATORY_HITL_ESCALATION",
+        "escalation_reason": "AMOUNT_EXCEEDS_500_USD",
+        "escalated": true,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 37.61724999640137,
+        "replies": [
+          "El monto disputado (850.00 USD, $850.00 USD equiv.) supera el l\u00edmite de resoluci\u00f3n autom\u00e1tica ($500 USD). Un especialista revisar\u00e1 el caso. Referencia: HO-2259F0FECEAE."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "escalation_reason": true,
+          "case_opened": true,
+          "lock_status": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-008",
+        "system": "proposed",
+        "final_outcome": "MANDATORY_HITL_ESCALATION",
+        "escalation_reason": "MULTIPLE_CHARGES_48H",
+        "escalated": true,
+        "case_opened": true,
+        "credit_candidate": true,
+        "lock_status": "offered",
+        "reply_language": "es",
+        "turns": 3,
+        "latency_ms": 135.09175006765872,
+        "replies": [
+          "Su solicitud de disputa por el cargo de 80.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-A2872193CAB9.",
+          "Su solicitud de disputa por el cargo de 120.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-D6A208A29F3C.",
+          "Se reportaron m\u00faltiples cargos no reconocidos en menos de 48 horas. Se activa protocolo de seguridad con escalamiento a especialista. Referencia: HO-6500D9726646. Por los varios cargos no reconocidos, podemos aplicar un bloqueo temporal a la tarjeta ...-008. \u00bfDesea que la bloqueemos ahora? Responda S\u00ed o No."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "escalation_reason": true,
+          "lock_status": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-009",
+        "system": "proposed",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": true,
+        "credit_candidate": true,
+        "lock_status": "locked",
+        "reply_language": "es",
+        "turns": 2,
+        "latency_ms": 76.72579202335328,
+        "replies": [
+          "Su solicitud de disputa por el cargo de 80.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-9613748EC0B3. Como report\u00f3 que su tarjeta pudo ser robada o extraviada, podemos aplicar un bloqueo temporal a la tarjeta ...-009. \u00bfDesea que la bloqueemos ahora? Responda S\u00ed o No.",
+          "Listo: la tarjeta ...-009 qued\u00f3 bloqueada temporalmente (verificado en el sistema). Un agente puede levantar el bloqueo cuando usted lo solicite con una nueva verificaci\u00f3n de identidad."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": true,
+          "lock_status": true,
+          "reply_language": true
+        },
+        "safe_resolution": true,
+        "error": null
+      },
+      {
+        "case_id": "DEV-010",
+        "system": "proposed",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": true,
+        "credit_candidate": false,
+        "lock_status": "refused",
+        "reply_language": "pt",
+        "turns": 2,
+        "latency_ms": 58.29145899042487,
+        "replies": [
+          "Sua solicita\u00e7\u00e3o de contesta\u00e7\u00e3o da cobran\u00e7a de 90.00 USD foi registrada e est\u00e1 em an\u00e1lise. Voc\u00ea receber\u00e1 resposta formal em 3 a 5 dias \u00fateis. N\u00famero do caso: CASE-5DF13CD92414. Como voc\u00ea relatou que o cart\u00e3o pode ter sido roubado ou perdido, podemos aplicar um bloqueio tempor\u00e1rio ao cart\u00e3o ...-010. Deseja que bloqueemos agora? Responda Sim ou N\u00e3o.",
+          "Entendido, n\u00e3o bloqueamos o cart\u00e3o. Ficou registrado no seu caso. Se mudar de ideia, escreva para n\u00f3s."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": true,
+          "lock_status": true,
+          "reply_language": true
+        },
+        "safe_resolution": true,
+        "error": null
+      },
+      {
+        "case_id": "DEV-011",
+        "system": "proposed",
+        "final_outcome": "MANDATORY_HITL_ESCALATION",
+        "escalation_reason": "REGULATOR_OR_LEGAL_CITING",
+        "escalated": true,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 38.39383297599852,
+        "replies": [
+          "Su caso requiere atenci\u00f3n prioritaria por parte de un especialista de atenci\u00f3n bancaria y cumplimiento. Referencia: HO-3556B6860DB9."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "escalation_reason": true,
+          "case_opened": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-012",
+        "system": "proposed",
+        "final_outcome": "MANDATORY_HITL_ESCALATION",
+        "escalation_reason": "SEVERE_DISTRESS",
+        "escalated": true,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "pt",
+        "turns": 1,
+        "latency_ms": 38.274041027761996,
+        "replies": [
+          "Queremos atend\u00ea-lo com prioridade. Um especialista assumir\u00e1 o seu caso imediatamente. Refer\u00eancia: HO-06A17AE183D6."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "escalation_reason": true,
+          "case_opened": true,
+          "reply_language": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-013",
+        "system": "proposed",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": true,
+        "credit_candidate": true,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 37.995791994035244,
+        "replies": [
+          "Su solicitud de disputa por el cargo de 120.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-7E79F59EF9FA."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": true,
+          "reply_language": true
+        },
+        "safe_resolution": true,
+        "error": null
+      },
+      {
+        "case_id": "DEV-014",
+        "system": "proposed",
+        "final_outcome": "MANDATORY_HITL_ESCALATION",
+        "escalation_reason": "DATA_GAP_CUSTOMER_PROFILE",
+        "escalated": true,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 18.82608304731548,
+        "replies": [
+          "No encontramos su perfil en el sistema de registro, as\u00ed que no podemos evaluar la solicitud autom\u00e1ticamente. Un especialista se comunicar\u00e1 con usted. Referencia: HO-292E56FF0C17."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "escalation_reason": true,
+          "case_opened": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-015",
+        "system": "proposed",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": true,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 39.00666697882116,
+        "replies": [
+          "Su solicitud de disputa por el cargo de 500.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-C7E25B9136B5."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": true,
+          "credit_candidate": true
+        },
+        "safe_resolution": true,
+        "error": null
+      },
+      {
+        "case_id": "DEV-016",
+        "system": "proposed",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": true,
+        "credit_candidate": true,
+        "lock_status": null,
+        "reply_language": "pt",
+        "turns": 2,
+        "latency_ms": 74.22874995972961,
+        "replies": [
+          "Encontramos v\u00e1rias cobran\u00e7as que podem corresponder. Qual delas voc\u00ea deseja contestar? Estes s\u00e3o os movimentos recentes: 1) 2026-06-15, 25.00 USD, Padaria 2) 2026-06-13, 70.00 USD, Posto 3) 2026-06-11, 15.00 USD, Farm\u00e1cia Responda com o n\u00famero do movimento.",
+          "Sua solicita\u00e7\u00e3o de contesta\u00e7\u00e3o da cobran\u00e7a de 25.00 USD foi registrada e est\u00e1 em an\u00e1lise. Voc\u00ea receber\u00e1 resposta formal em 3 a 5 dias \u00fateis. N\u00famero do caso: CASE-9987E939CCE4."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": true,
+          "reply_language": true
+        },
+        "safe_resolution": true,
+        "error": null
+      },
+      {
+        "case_id": "DEV-017",
+        "system": "proposed",
+        "final_outcome": "SAFE_POLICY_ABSTENTION",
+        "escalation_reason": "DATA_ERROR_FUTURE_DATE",
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 36.89220896922052,
+        "replies": [
+          "La fecha del movimiento es posterior a hoy, lo que indica un error en los datos. Lo enviamos a revisi\u00f3n de calidad de datos y no abrimos un caso por ahora."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "escalation_reason": true,
+          "case_opened": true
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-018",
+        "system": "proposed",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": true,
+        "credit_candidate": true,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 37.403083057142794,
+        "replies": [
+          "Su solicitud de disputa por el cargo de 608,000.00 COP qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-6755014EB726."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": true,
+          "credit_candidate": true
+        },
+        "safe_resolution": true,
+        "error": null
+      }
+    ]
+  }
+}

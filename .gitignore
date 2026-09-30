@@ -40,3 +40,16 @@ docs/**/*.pdf
 
 # IDE and tool caches
 .claude/
+
+# Frontend (Vite)
+node_modules/
+
+# Trained models (regenerate with uv run python -m src.ml.fraud_risk)
+models/*.joblib
+
+# Kaggle competition data (IEEE-CIS), downloaded per docs/specs/fraud-risk-model-v1-ieee-cis.md
+data/kaggle/
+
+# MLflow local store (uv run python -m src.ml.fraud_risk_transfer tracks every run here, TQ-021)
+mlflow.db
+mlruns/

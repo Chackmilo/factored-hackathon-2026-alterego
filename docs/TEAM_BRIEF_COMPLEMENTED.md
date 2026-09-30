@@ -1,7 +1,9 @@
 # 🛡️ Factored Hackathon 2026: Team Brief (Complemented & Hardened)
 **Workflow Focus: Autonomous & Controlled Transaction-Dispute Intake System**  
-*Document Version: 2.4.0 | Date: 26-Sep-2026*
+*Document Version: 2.5.0 | Date: 27-Sep-2026*
 
+> **v2.5.0 (27-Sep-2026):** the policy engine implements v2.3 (`docs/specs/dispute-policy-v2.3.md`). Clause id `POL-AUT-LOCK` names the card-lock rule; decisions record `secondary_clauses`; the case memory feeds `POL-ESC-DISTRESS`; out-of-scope intents use a closed category list and abstain only with decisive confidence; a null `amount_usd` escalates; every action has a risk tier and an authentication level. Definitions: `docs/technical-discuss-points.md` section 2.
+>
 > **v2.4.0 (26-Sep-2026):** identity moves from a self-minted HS256 JWT to Supabase Auth, and the operational store from SQLite to Supabase Postgres (`ops` schema, with a read-only `bank` serving copy of gold), decided by the team. Deployment moves from Render to Vercel (decided the same day). Supabase and Vercel stay on free plans. Policy clauses and their order are unchanged. Design: `docs/SUPABASE_VERCEL.md`.
 >
 > **v2.3.0 (26-Sep-2026):** G0 closed (decision log in `docs/PLAN.md`). The customer confirms the card lock; human approval of credit candidates in the HITL console; Claude Haiku 4.5 writes replies; RAG over a team-written policy text with local multilingual embeddings; React + TypeScript served by FastAPI on Render; two baselines; held-out suite of 250 cases plus a 60-case development split, frozen before tuning. The clause order is unchanged from v2.2; only the card-lock confirmation is new.
@@ -79,7 +81,7 @@ The brief mandates that *"the conversational model must not invent eligibility r
 ```
                             DISPUTE INTAKE POLICY RULES (v2.3)
 Rules run in this order; the first rule that decides the case wins. Clause ids in brackets.
-"Today" is 2026-06-17, the dataset end date. (new) = added in v2.1, not yet in code.
+"Today" is 2026-06-17, the dataset end date. (new) = added in v2.1; in code since 27-Sep-2026.
 
 0. SESSION [POL-SEC-SESSION] (new):
    - Expired or invalid token -> 401, nothing disclosed.
@@ -115,7 +117,7 @@ Rules run in this order; the first rule that decides the case wins. Clause ids i
 6. AUTONOMOUS ACTIONS (agent authorized):
    - Search and match candidate charges for the session's customer_id (from the verified
      Supabase token's app_metadata only).
-   - Temporary card lock only when the customer claims a stolen card (Jev stolen-card probability
+   - Temporary card lock [POL-AUT-LOCK] only when the customer claims a stolen card (Jev stolen-card probability
      >= 0.80, or the keyword fallback) or multi-charge fraud,
      only on card products ('Tarjeta Crédito', 'Tarjeta Débito') in status 'Active'.
      The customer confirms the lock (Yes/No) first; a refusal is recorded in the case and the handoff.

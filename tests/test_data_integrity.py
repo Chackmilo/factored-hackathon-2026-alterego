@@ -95,14 +95,14 @@ def test_gold_transactions_currency_normalization(con):
     # All normalized amounts must be populated and positive
     bad_amounts = con.execute("""
         SELECT COUNT(*) FROM gold_transactions 
-        WHERE amount_usd_normalized IS NULL OR amount_usd_normalized <= 0;
+        WHERE amount_usd IS NULL OR amount_usd <= 0;
     """).fetchone()[0]
     assert bad_amounts == 0, f"Found {bad_amounts} transactions with invalid normalized USD amounts"
 
-    # USD transactions must equal amount_usd_normalized exactly
+    # USD transactions must equal amount_usd exactly
     usd_diff = con.execute("""
         SELECT COUNT(*) FROM gold_transactions
-        WHERE currency = 'USD' AND amount != amount_usd_normalized;
+        WHERE currency = 'USD' AND amount != amount_usd;
     """).fetchone()[0]
     assert usd_diff == 0, f"Found {usd_diff} USD transactions where amount != normalized amount"
 

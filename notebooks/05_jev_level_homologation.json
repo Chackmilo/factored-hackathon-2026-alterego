@@ -1,0 +1,820 @@
+{
+ "model": "jev-1.13.0",
+ "choices": {
+  "ProductCD||C": {
+   "choice": "no_equivalent",
+   "confidence": 0.83,
+   "probabilities": {
+    "Deposit": 0.0,
+    "Payment": 0.0,
+    "no_equivalent": 0.86,
+    "Transfer": 0.0,
+    "Adjustment": 0.0,
+    "Withdrawal": 0.0,
+    "Purchase": 0.14
+   },
+   "request_id": "req_01a0ed8c142075ab8852070a73b51f39",
+   "tokens_in": 539
+  },
+  "ProductCD||H": {
+   "choice": "no_equivalent",
+   "confidence": 0.81,
+   "probabilities": {
+    "Purchase": 0.16,
+    "Adjustment": 0.0,
+    "Transfer": 0.0,
+    "no_equivalent": 0.84,
+    "Deposit": 0.0,
+    "Withdrawal": 0.0,
+    "Payment": 0.0
+   },
+   "request_id": "req_01a0ed8c15037d27ae2e53d84190f709",
+   "tokens_in": 538
+  },
+  "ProductCD||R": {
+   "choice": "no_equivalent",
+   "confidence": 0.83,
+   "probabilities": {
+    "Payment": 0.0,
+    "Transfer": 0.0,
+    "Purchase": 0.13,
+    "no_equivalent": 0.86,
+    "Deposit": 0.0,
+    "Adjustment": 0.0,
+    "Withdrawal": 0.01
+   },
+   "request_id": "req_01a0ed8c15d17c66962d1b732798f5c1",
+   "tokens_in": 538
+  },
+  "ProductCD||S": {
+   "choice": "no_equivalent",
+   "confidence": 0.81,
+   "probabilities": {
+    "Purchase": 0.16,
+    "Withdrawal": 0.0,
+    "Transfer": 0.0,
+    "Payment": 0.0,
+    "Deposit": 0.0,
+    "Adjustment": 0.0,
+    "no_equivalent": 0.84
+   },
+   "request_id": "req_01a0ed8c16c972b2ad9c16b11339f047",
+   "tokens_in": 537
+  },
+  "ProductCD||W": {
+   "choice": "no_equivalent",
+   "confidence": 0.63,
+   "probabilities": {
+    "Withdrawal": 0.0,
+    "Payment": 0.0,
+    "Adjustment": 0.0,
+    "Deposit": 0.0,
+    "Transfer": 0.0,
+    "no_equivalent": 0.69,
+    "Purchase": 0.31
+   },
+   "request_id": "req_01a0ed8c17df73908b3cc5e8fcbf9846",
+   "tokens_in": 539
+  },
+  "card6||charge card": {
+   "choice": "no_equivalent",
+   "confidence": 0.88,
+   "probabilities": {
+    "Cuenta Corriente": 0.0,
+    "Préstamo Hipotecario": 0.0,
+    "Préstamo Personal": 0.0,
+    "Tarjeta Crédito": 0.11,
+    "Tarjeta Débito": 0.0,
+    "no_equivalent": 0.89,
+    "Cuenta Ahorro": 0.0,
+    "Seguro": 0.0,
+    "Inversión": 0.0
+   },
+   "request_id": "req_01a0ed8c189c714f8ea9fbc645023db8",
+   "tokens_in": 541
+  },
+  "card6||credit": {
+   "choice": "Tarjeta Crédito",
+   "confidence": 0.99,
+   "probabilities": {
+    "Préstamo Personal": 0.0,
+    "Préstamo Hipotecario": 0.0,
+    "Cuenta Corriente": 0.0,
+    "Tarjeta Crédito": 0.99,
+    "Tarjeta Débito": 0.0,
+    "no_equivalent": 0.01,
+    "Cuenta Ahorro": 0.0,
+    "Seguro": 0.0,
+    "Inversión": 0.0
+   },
+   "request_id": "req_01a0ed8c19647a9382bde775017517ff",
+   "tokens_in": 542
+  },
+  "card6||debit": {
+   "choice": "Tarjeta Débito",
+   "confidence": 0.99,
+   "probabilities": {
+    "Inversión": 0.0,
+    "Cuenta Corriente": 0.0,
+    "Préstamo Personal": 0.0,
+    "Cuenta Ahorro": 0.0,
+    "Seguro": 0.0,
+    "Préstamo Hipotecario": 0.0,
+    "no_equivalent": 0.0,
+    "Tarjeta Débito": 1.0,
+    "Tarjeta Crédito": 0.0
+   },
+   "request_id": "req_01a0ed8c1a517c1bb0c31b2e9e56d51f",
+   "tokens_in": 543
+  },
+  "card6||debit or credit": {
+   "choice": "no_equivalent",
+   "confidence": 0.74,
+   "probabilities": {
+    "Préstamo Personal": 0.0,
+    "Seguro": 0.0,
+    "Inversión": 0.0,
+    "Cuenta Corriente": 0.0,
+    "no_equivalent": 0.78,
+    "Tarjeta Débito": 0.16,
+    "Cuenta Ahorro": 0.0,
+    "Tarjeta Crédito": 0.06,
+    "Préstamo Hipotecario": 0.0
+   },
+   "request_id": "req_01a0ed8c1b22750d9d3d675a5e53548d",
+   "tokens_in": 544
+  },
+  "card4||visa": {
+   "choice": "no_equivalent",
+   "confidence": 0.84,
+   "probabilities": {
+    "Inversión": 0.0,
+    "Tarjeta Crédito": 0.14,
+    "Cuenta Corriente": 0.0,
+    "Préstamo Personal": 0.0,
+    "no_equivalent": 0.86,
+    "Tarjeta Débito": 0.0,
+    "Cuenta Ahorro": 0.0,
+    "Préstamo Hipotecario": 0.0,
+    "Seguro": 0.0
+   },
+   "request_id": "req_01a0ed8c1bd47fd58b3a691d4e05c033",
+   "tokens_in": 543
+  },
+  "card4||discover": {
+   "choice": "no_equivalent",
+   "confidence": 0.92,
+   "probabilities": {
+    "Seguro": 0.0,
+    "Inversión": 0.0,
+    "Préstamo Personal": 0.0,
+    "Tarjeta Crédito": 0.07,
+    "Cuenta Corriente": 0.0,
+    "Préstamo Hipotecario": 0.0,
+    "Cuenta Ahorro": 0.0,
+    "no_equivalent": 0.93,
+    "Tarjeta Débito": 0.0
+   },
+   "request_id": "req_01a0ed8c1ca47f4ba5d55fc8809a326a",
+   "tokens_in": 542
+  },
+  "card4||american express": {
+   "choice": "no_equivalent",
+   "confidence": 0.52,
+   "probabilities": {
+    "Tarjeta Crédito": 0.43,
+    "no_equivalent": 0.57,
+    "Cuenta Corriente": 0.0,
+    "Tarjeta Débito": 0.0,
+    "Inversión": 0.0,
+    "Préstamo Personal": 0.0,
+    "Seguro": 0.0,
+    "Cuenta Ahorro": 0.0,
+    "Préstamo Hipotecario": 0.0
+   },
+   "request_id": "req_01a0ed8c1d687fe4b5b95b5f0f033264",
+   "tokens_in": 543
+  },
+  "card4||mastercard": {
+   "choice": "no_equivalent",
+   "confidence": 0.85,
+   "probabilities": {
+    "Seguro": 0.0,
+    "Inversión": 0.0,
+    "Cuenta Corriente": 0.0,
+    "Préstamo Hipotecario": 0.0,
+    "Tarjeta Crédito": 0.13,
+    "Cuenta Ahorro": 0.0,
+    "no_equivalent": 0.87,
+    "Tarjeta Débito": 0.0,
+    "Préstamo Personal": 0.0
+   },
+   "request_id": "req_01a0ed8c1e257fab80676ef30652153a",
+   "tokens_in": 545
+  },
+  "DeviceType||mobile": {
+   "choice": "no_equivalent",
+   "confidence": 0.66,
+   "probabilities": {
+    "Mobile Web": 0.21,
+    "Desktop Web": 0.0,
+    "Android App": 0.01,
+    "iOS App": 0.05,
+    "no_equivalent": 0.73
+   },
+   "request_id": "req_01a0ed8c1eed7ca6b9786c1a91fd5124",
+   "tokens_in": 485
+  },
+  "DeviceType||desktop": {
+   "choice": "Desktop Web",
+   "confidence": 0.8,
+   "probabilities": {
+    "Desktop Web": 0.84,
+    "Mobile Web": 0.0,
+    "no_equivalent": 0.16,
+    "iOS App": 0.0,
+    "Android App": 0.0
+   },
+   "request_id": "req_01a0ed8c1fa175478173265ff7a4aa7d",
+   "tokens_in": 484
+  },
+  "id_30 (OS family)||other": {
+   "choice": "no_equivalent",
+   "confidence": 0.89,
+   "probabilities": {
+    "MacOS": 0.01,
+    "Windows": 0.02,
+    "no_equivalent": 0.91,
+    "iOS": 0.01,
+    "Linux": 0.03,
+    "Android": 0.02
+   },
+   "request_id": "req_01a0ed8c20ce7ffea6dd515af1a58030",
+   "tokens_in": 481
+  },
+  "id_30 (OS family)||Android": {
+   "choice": "Android",
+   "confidence": 0.76,
+   "probabilities": {
+    "Android": 0.81,
+    "iOS": 0.0,
+    "Linux": 0.0,
+    "MacOS": 0.0,
+    "Windows": 0.0,
+    "no_equivalent": 0.19
+   },
+   "request_id": "req_01a0ed8c21ac72649eea46af48df9d3f",
+   "tokens_in": 480
+  },
+  "id_30 (OS family)||Linux": {
+   "choice": "no_equivalent",
+   "confidence": 0.49,
+   "probabilities": {
+    "Windows": 0.0,
+    "iOS": 0.0,
+    "MacOS": 0.0,
+    "no_equivalent": 0.57,
+    "Linux": 0.42,
+    "Android": 0.01
+   },
+   "request_id": "req_01a0ed8c22727a8eb84ba268a9416ff2",
+   "tokens_in": 481
+  },
+  "id_30 (OS family)||iOS": {
+   "choice": "iOS",
+   "confidence": 0.89,
+   "probabilities": {
+    "MacOS": 0.0,
+    "iOS": 0.91,
+    "Windows": 0.0,
+    "no_equivalent": 0.09,
+    "Linux": 0.0,
+    "Android": 0.0
+   },
+   "request_id": "req_01a0ed8c231f7b2ba60d960d318086eb",
+   "tokens_in": 482
+  },
+  "id_30 (OS family)||Mac OS X": {
+   "choice": "MacOS",
+   "confidence": 0.81,
+   "probabilities": {
+    "iOS": 0.01,
+    "no_equivalent": 0.15,
+    "Linux": 0.0,
+    "Android": 0.0,
+    "Windows": 0.0,
+    "MacOS": 0.84
+   },
+   "request_id": "req_01a0ed8c23ea7ca291eb4e6e41e76a53",
+   "tokens_in": 484
+  },
+  "id_30 (OS family)||Windows": {
+   "choice": "Windows",
+   "confidence": 0.63,
+   "probabilities": {
+    "MacOS": 0.0,
+    "iOS": 0.0,
+    "Windows": 0.7,
+    "Android": 0.0,
+    "no_equivalent": 0.3,
+    "Linux": 0.0
+   },
+   "request_id": "req_01a0ed8c24a07b4790097090673005af",
+   "tokens_in": 482
+  },
+  "id_31 (browser family)||chrome": {
+   "choice": "Chrome",
+   "confidence": 0.95,
+   "probabilities": {
+    "Firefox": 0.0,
+    "Samsung Internet": 0.0,
+    "Chrome": 0.96,
+    "Safari": 0.0,
+    "Edge": 0.0,
+    "no_equivalent": 0.04
+   },
+   "request_id": "req_01a0ed8c255973dabcf09779b8561bbf",
+   "tokens_in": 496
+  },
+  "id_31 (browser family)||other": {
+   "choice": "no_equivalent",
+   "confidence": 0.92,
+   "probabilities": {
+    "Chrome": 0.04,
+    "Firefox": 0.01,
+    "Safari": 0.01,
+    "no_equivalent": 0.94,
+    "Samsung Internet": 0.0,
+    "Edge": 0.0
+   },
+   "request_id": "req_01a0ed8c26387024aa53dd098d37a668",
+   "tokens_in": 497
+  },
+  "id_31 (browser family)||edge": {
+   "choice": "Edge",
+   "confidence": 0.95,
+   "probabilities": {
+    "Firefox": 0.0,
+    "no_equivalent": 0.04,
+    "Chrome": 0.0,
+    "Safari": 0.0,
+    "Edge": 0.96,
+    "Samsung Internet": 0.0
+   },
+   "request_id": "req_01a0ed8c270871c9a6b882ac202b881d",
+   "tokens_in": 496
+  },
+  "id_31 (browser family)||internet explorer": {
+   "choice": "no_equivalent",
+   "confidence": 0.92,
+   "probabilities": {
+    "Samsung Internet": 0.0,
+    "Chrome": 0.0,
+    "Firefox": 0.0,
+    "no_equivalent": 0.94,
+    "Edge": 0.06,
+    "Safari": 0.0
+   },
+   "request_id": "req_01a0ed8c27e87375b7a5d93a6aa802ed",
+   "tokens_in": 496
+  },
+  "id_31 (browser family)||firefox": {
+   "choice": "Firefox",
+   "confidence": 0.97,
+   "probabilities": {
+    "Firefox": 0.97,
+    "Safari": 0.0,
+    "Chrome": 0.0,
+    "no_equivalent": 0.03,
+    "Samsung Internet": 0.0,
+    "Edge": 0.0
+   },
+   "request_id": "req_01a0ed8c28be7b49b74a38d77e97c7e7",
+   "tokens_in": 496
+  },
+  "id_31 (browser family)||safari": {
+   "choice": "Safari",
+   "confidence": 0.96,
+   "probabilities": {
+    "Chrome": 0.0,
+    "Safari": 0.96,
+    "Samsung Internet": 0.0,
+    "Firefox": 0.0,
+    "Edge": 0.0,
+    "no_equivalent": 0.04
+   },
+   "request_id": "req_01a0ed8c299073008c561b9fd73ba4c5",
+   "tokens_in": 499
+  },
+  "id_31 (browser family)||opera": {
+   "choice": "no_equivalent",
+   "confidence": 0.99,
+   "probabilities": {
+    "Chrome": 0.0,
+    "Edge": 0.0,
+    "Samsung Internet": 0.0,
+    "Safari": 0.0,
+    "Firefox": 0.0,
+    "no_equivalent": 1.0
+   },
+   "request_id": "req_01a0ed8c2a69770ba30d8d9a80874297",
+   "tokens_in": 497
+  },
+  "id_31 (browser family)||samsung browser": {
+   "choice": "Samsung Internet",
+   "confidence": 0.88,
+   "probabilities": {
+    "Chrome": 0.0,
+    "Safari": 0.0,
+    "Edge": 0.0,
+    "no_equivalent": 0.09,
+    "Firefox": 0.0,
+    "Samsung Internet": 0.91
+   },
+   "request_id": "req_01a0ed8c2b217078a52b03e099ac5047",
+   "tokens_in": 498
+  },
+  "P_emaildomain||gmail.com": {
+   "choice": "gmail.com",
+   "confidence": 1.0,
+   "probabilities": {
+    "protonmail.com": 0.0,
+    "hotmail.com": 0.0,
+    "gmail.com": 1.0,
+    "live.com": 0.0,
+    "no_equivalent": 0.0,
+    "yahoo.com": 0.0,
+    "outlook.com": 0.0,
+    "icloud.com": 0.0
+   },
+   "request_id": "req_01a0ed8c2bd57d83a365903af5cb5111",
+   "tokens_in": 550
+  },
+  "P_emaildomain||yahoo.com": {
+   "choice": "yahoo.com",
+   "confidence": 1.0,
+   "probabilities": {
+    "yahoo.com": 1.0,
+    "no_equivalent": 0.0,
+    "icloud.com": 0.0,
+    "protonmail.com": 0.0,
+    "gmail.com": 0.0,
+    "live.com": 0.0,
+    "hotmail.com": 0.0,
+    "outlook.com": 0.0
+   },
+   "request_id": "req_01a0ed8c2c8f748aa4f31f34014f2dc3",
+   "tokens_in": 551
+  },
+  "P_emaildomain||hotmail.com": {
+   "choice": "hotmail.com",
+   "confidence": 1.0,
+   "probabilities": {
+    "icloud.com": 0.0,
+    "live.com": 0.0,
+    "protonmail.com": 0.0,
+    "hotmail.com": 1.0,
+    "no_equivalent": 0.0,
+    "yahoo.com": 0.0,
+    "outlook.com": 0.0,
+    "gmail.com": 0.0
+   },
+   "request_id": "req_01a0ed8c2d5b7bb09c3f3e9d28bbb040",
+   "tokens_in": 548
+  },
+  "P_emaildomain||anonymous.com": {
+   "choice": "no_equivalent",
+   "confidence": 0.95,
+   "probabilities": {
+    "no_equivalent": 0.96,
+    "gmail.com": 0.01,
+    "protonmail.com": 0.03,
+    "live.com": 0.0,
+    "yahoo.com": 0.0,
+    "outlook.com": 0.0,
+    "icloud.com": 0.0,
+    "hotmail.com": 0.0
+   },
+   "request_id": "req_01a0ed8c2e2e76c587917c3d1bdb60bb",
+   "tokens_in": 549
+  },
+  "P_emaildomain||aol.com": {
+   "choice": "no_equivalent",
+   "confidence": 0.98,
+   "probabilities": {
+    "protonmail.com": 0.0,
+    "hotmail.com": 0.0,
+    "gmail.com": 0.0,
+    "live.com": 0.01,
+    "no_equivalent": 0.99,
+    "yahoo.com": 0.0,
+    "outlook.com": 0.0,
+    "icloud.com": 0.0
+   },
+   "request_id": "req_01a0ed8c2f1a7ee1a5b869c7bc9360a7",
+   "tokens_in": 549
+  },
+  "P_emaildomain||comcast.net": {
+   "choice": "no_equivalent",
+   "confidence": 1.0,
+   "probabilities": {
+    "hotmail.com": 0.0,
+    "outlook.com": 0.0,
+    "no_equivalent": 1.0,
+    "live.com": 0.0,
+    "protonmail.com": 0.0,
+    "yahoo.com": 0.0,
+    "icloud.com": 0.0,
+    "gmail.com": 0.0
+   },
+   "request_id": "req_01a0ed8c30047beab8c7444c96b508c6",
+   "tokens_in": 550
+  },
+  "P_emaildomain||icloud.com": {
+   "choice": "icloud.com",
+   "confidence": 1.0,
+   "probabilities": {
+    "no_equivalent": 0.0,
+    "protonmail.com": 0.0,
+    "gmail.com": 0.0,
+    "hotmail.com": 0.0,
+    "icloud.com": 1.0,
+    "outlook.com": 0.0,
+    "live.com": 0.0,
+    "yahoo.com": 0.0
+   },
+   "request_id": "req_01a0ed8c30d179cf843b487c89f6d10f",
+   "tokens_in": 550
+  },
+  "P_emaildomain||outlook.com": {
+   "choice": "outlook.com",
+   "confidence": 1.0,
+   "probabilities": {
+    "protonmail.com": 0.0,
+    "yahoo.com": 0.0,
+    "outlook.com": 1.0,
+    "no_equivalent": 0.0,
+    "gmail.com": 0.0,
+    "icloud.com": 0.0,
+    "hotmail.com": 0.0,
+    "live.com": 0.0
+   },
+   "request_id": "req_01a0ed8c31ad7540af401ed770c07ae8",
+   "tokens_in": 550
+  },
+  "P_emaildomain||msn.com": {
+   "choice": "hotmail.com",
+   "confidence": 0.26,
+   "probabilities": {
+    "outlook.com": 0.24,
+    "hotmail.com": 0.36,
+    "live.com": 0.11,
+    "yahoo.com": 0.0,
+    "no_equivalent": 0.29,
+    "gmail.com": 0.0,
+    "icloud.com": 0.0,
+    "protonmail.com": 0.0
+   },
+   "request_id": "req_01a0ed8c32947c05ab009cb1bc34525a",
+   "tokens_in": 549
+  },
+  "P_emaildomain||att.net": {
+   "choice": "no_equivalent",
+   "confidence": 0.86,
+   "probabilities": {
+    "outlook.com": 0.02,
+    "no_equivalent": 0.88,
+    "hotmail.com": 0.01,
+    "protonmail.com": 0.0,
+    "icloud.com": 0.0,
+    "live.com": 0.09,
+    "gmail.com": 0.0,
+    "yahoo.com": 0.0
+   },
+   "request_id": "req_01a0ed8c33857793a76739a056946cd0",
+   "tokens_in": 549
+  },
+  "P_emaildomain||live.com": {
+   "choice": "live.com",
+   "confidence": 0.99,
+   "probabilities": {
+    "live.com": 0.99,
+    "no_equivalent": 0.01,
+    "gmail.com": 0.0,
+    "yahoo.com": 0.0,
+    "hotmail.com": 0.0,
+    "icloud.com": 0.0,
+    "protonmail.com": 0.0,
+    "outlook.com": 0.0
+   },
+   "request_id": "req_01a0ed8c34517605afaa5918b8b02d36",
+   "tokens_in": 549
+  },
+  "P_emaildomain||sbcglobal.net": {
+   "choice": "no_equivalent",
+   "confidence": 0.99,
+   "probabilities": {
+    "gmail.com": 0.0,
+    "hotmail.com": 0.0,
+    "yahoo.com": 0.0,
+    "outlook.com": 0.0,
+    "live.com": 0.0,
+    "icloud.com": 0.0,
+    "protonmail.com": 0.0,
+    "no_equivalent": 1.0
+   },
+   "request_id": "req_01a0ed8c352e773dac4b79f9666a18ce",
+   "tokens_in": 550
+  },
+  "P_emaildomain||verizon.net": {
+   "choice": "no_equivalent",
+   "confidence": 1.0,
+   "probabilities": {
+    "gmail.com": 0.0,
+    "no_equivalent": 1.0,
+    "yahoo.com": 0.0,
+    "icloud.com": 0.0,
+    "outlook.com": 0.0,
+    "protonmail.com": 0.0,
+    "hotmail.com": 0.0,
+    "live.com": 0.0
+   },
+   "request_id": "req_01a0ed8c35fb7fa898a9129806b1351b",
+   "tokens_in": 550
+  },
+  "P_emaildomain||ymail.com": {
+   "choice": "no_equivalent",
+   "confidence": 0.66,
+   "probabilities": {
+    "gmail.com": 0.06,
+    "hotmail.com": 0.0,
+    "yahoo.com": 0.22,
+    "outlook.com": 0.0,
+    "live.com": 0.01,
+    "icloud.com": 0.0,
+    "protonmail.com": 0.0,
+    "no_equivalent": 0.71
+   },
+   "request_id": "req_01a0ed8c36c07c4bb3c6d8e8497f8f1c",
+   "tokens_in": 550
+  },
+  "P_emaildomain||bellsouth.net": {
+   "choice": "no_equivalent",
+   "confidence": 0.99,
+   "probabilities": {
+    "hotmail.com": 0.0,
+    "outlook.com": 0.0,
+    "icloud.com": 0.0,
+    "yahoo.com": 0.0,
+    "live.com": 0.0,
+    "gmail.com": 0.0,
+    "no_equivalent": 1.0,
+    "protonmail.com": 0.0
+   },
+   "request_id": "req_01a0ed8c376d7e85b897282098bad15a",
+   "tokens_in": 550
+  },
+  "P_emaildomain||yahoo.com.mx": {
+   "choice": "yahoo.com",
+   "confidence": 0.53,
+   "probabilities": {
+    "outlook.com": 0.0,
+    "icloud.com": 0.0,
+    "gmail.com": 0.0,
+    "hotmail.com": 0.0,
+    "no_equivalent": 0.4,
+    "protonmail.com": 0.0,
+    "yahoo.com": 0.6,
+    "live.com": 0.0
+   },
+   "request_id": "req_01a0ed8c38447741a0fc57d69c16e20e",
+   "tokens_in": 551
+  },
+  "P_emaildomain||me.com": {
+   "choice": "icloud.com",
+   "confidence": 0.68,
+   "probabilities": {
+    "no_equivalent": 0.27,
+    "protonmail.com": 0.0,
+    "gmail.com": 0.0,
+    "icloud.com": 0.73,
+    "hotmail.com": 0.0,
+    "outlook.com": 0.0,
+    "live.com": 0.0,
+    "yahoo.com": 0.0
+   },
+   "request_id": "req_01a0ed8c391077f38fb98a002f5468d4",
+   "tokens_in": 549
+  },
+  "P_emaildomain||cox.net": {
+   "choice": "no_equivalent",
+   "confidence": 0.98,
+   "probabilities": {
+    "no_equivalent": 0.98,
+    "live.com": 0.01,
+    "yahoo.com": 0.0,
+    "gmail.com": 0.0,
+    "protonmail.com": 0.0,
+    "hotmail.com": 0.0,
+    "icloud.com": 0.0,
+    "outlook.com": 0.01
+   },
+   "request_id": "req_01a0ed8c39fc751788a68fbf131b5ac9",
+   "tokens_in": 549
+  },
+  "P_emaildomain||optonline.net": {
+   "choice": "no_equivalent",
+   "confidence": 0.99,
+   "probabilities": {
+    "icloud.com": 0.0,
+    "protonmail.com": 0.0,
+    "hotmail.com": 0.0,
+    "no_equivalent": 1.0,
+    "gmail.com": 0.0,
+    "yahoo.com": 0.0,
+    "outlook.com": 0.0,
+    "live.com": 0.0
+   },
+   "request_id": "req_01a0ed8c3ad2782fbed9b156078905ff",
+   "tokens_in": 550
+  },
+  "P_emaildomain||charter.net": {
+   "choice": "no_equivalent",
+   "confidence": 0.99,
+   "probabilities": {
+    "protonmail.com": 0.0,
+    "yahoo.com": 0.0,
+    "outlook.com": 0.0,
+    "no_equivalent": 1.0,
+    "gmail.com": 0.0,
+    "icloud.com": 0.0,
+    "hotmail.com": 0.0,
+    "live.com": 0.0
+   },
+   "request_id": "req_01a0ed8c3ba4788398edf737a424ce9c",
+   "tokens_in": 550
+  }
+ },
+ "coverage": {
+  "channel||Web": {
+   "p_covered": 0.69,
+   "request_id": "req_01a0ed8c3ccb7084b9dd17dcf2be58b8",
+   "tokens_in": 382
+  },
+  "channel||App": {
+   "p_covered": 0.6,
+   "request_id": "req_01a0ed8c3e127ac88a0313cc6e6d1a73",
+   "tokens_in": 382
+  },
+  "channel||ATM": {
+   "p_covered": 0.03,
+   "request_id": "req_01a0ed8c3ef1780e967efa46b3379ad2",
+   "tokens_in": 382
+  },
+  "channel||POS": {
+   "p_covered": 0.04,
+   "request_id": "req_01a0ed8c3fc179feb498d45bbff8ef30",
+   "tokens_in": 382
+  },
+  "channel||Branch": {
+   "p_covered": 0.05,
+   "request_id": "req_01a0ed8c408870a59511ce2a6694dee4",
+   "tokens_in": 381
+  },
+  "channel||Transfer": {
+   "p_covered": 0.04,
+   "request_id": "req_01a0ed8c414373018dbd1039647390e3",
+   "tokens_in": 381
+  },
+  "transaction_type||Payment": {
+   "p_covered": 0.39,
+   "request_id": "req_01a0ed8c423a738abddc72f8355a2d85",
+   "tokens_in": 382
+  },
+  "transaction_type||Purchase": {
+   "p_covered": 0.43,
+   "request_id": "req_01a0ed8c432070839af63895fb928c44",
+   "tokens_in": 383
+  },
+  "transaction_type||Withdrawal": {
+   "p_covered": 0.05,
+   "request_id": "req_01a0ed8c440d772284c2944ebeb90f15",
+   "tokens_in": 385
+  },
+  "transaction_type||Deposit": {
+   "p_covered": 0.03,
+   "request_id": "req_01a0ed8c45507f5cb2050cbf3dd17a9c",
+   "tokens_in": 383
+  },
+  "transaction_type||Adjustment": {
+   "p_covered": 0.06,
+   "request_id": "req_01a0ed8c465a777c8e5d153c7bdf0b28",
+   "tokens_in": 384
+  },
+  "transaction_type||Transfer": {
+   "p_covered": 0.03,
+   "request_id": "req_01a0ed8c47227fb585ced0ea5266202b",
+   "tokens_in": 383
+  }
+ }
+}

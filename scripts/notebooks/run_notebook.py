@@ -2,13 +2,13 @@ import sys
 import nbformat
 from nbclient import NotebookClient
 
-notebook_path = "notebooks/01_problema_y_datos.ipynb"
+notebook_path = sys.argv[1] if len(sys.argv) > 1 else "notebooks/01_problema_y_datos.ipynb"
 print(f"Loading notebook: {notebook_path}")
 
 with open(notebook_path, "r", encoding="utf-8") as f:
     nb = nbformat.read(f, as_version=4)
 
-client = NotebookClient(nb, timeout=600, kernel_name="python3")
+client = NotebookClient(nb, timeout=1200, kernel_name="python3", resources={"metadata": {"path": "."}})
 
 print("Executing notebook...")
 try:

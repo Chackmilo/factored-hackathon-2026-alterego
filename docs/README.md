@@ -23,7 +23,7 @@ As established in `AGENTS.md` Section 2:
 | Document | Language | Purpose & Content |
 | :--- | :--- | :--- |
 | [**`PLAN.md`**](PLAN.md) | Spanish | **Canonical Master Plan.** Problem question, 5-stage architecture diagram, decision log with closed/open gates, team ownership lanes, and day-by-day roadmap. |
-| [**`TEAM_BRIEF_COMPLEMENTED.md`**](TEAM_BRIEF_COMPLEMENTED.md) | English | **Dispute Policy Specification (v2.4).** Exact clause IDs (`POL-WIN-60`, `POL-ESC-500`, etc.), data contracts, structured handoff packet, held-out evaluation suite design, and official metric formulas. |
+| [**`TEAM_BRIEF_COMPLEMENTED.md`**](TEAM_BRIEF_COMPLEMENTED.md) | English | **Dispute Policy Specification (v2.5).** Exact clause IDs (`POL-WIN-60`, `POL-ESC-500`, etc.), data contracts, structured handoff packet, held-out evaluation suite design, and official metric formulas. |
 | [**`SUPABASE_VERCEL.md`**](SUPABASE_VERCEL.md) | Spanish | **Identity, Data & Deployment Architecture.** Supabase Auth (ES256 JWKS), `bank` (read-only serving) & `ops` schemas, database security/RLS, Vercel Hobby deployment, and double canary design. |
 | [**`JEV_TYPESAFE_AI.md`**](JEV_TYPESAFE_AI.md) | Spanish | **Cognitive Separation (System 1 vs System 2).** Jev (TypeSafe AI) typed signals (`Choice`, `Noul`, `Score`), policy integration, and fallback keyword extractor baseline. |
 | [**`SECURITY_AUDIT_PLAN.md`**](SECURITY_AUDIT_PLAN.md) | Spanish | **Security & Compliance Audit.** Cloudflare methodology findings SEC-01 to SEC-10, zero-trust session checks, PII redaction, and prompt injection defense. |

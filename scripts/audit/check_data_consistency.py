@@ -147,15 +147,15 @@ def audit_lakehouse():
     for r in raw_rates_distinct:
         print(f"    {r[0]} -> {r[1]}: min={r[2]}, max={r[3]}, dates {r[4]} to {r[5]}")
 
-    # Check transactions currencies and amount_usd vs amount_usd_normalized
+    # Check transactions currencies and amount_usd vs amount_usd
     trx_curr = con.execute("""
         SELECT 
             t.currency,
             COUNT(*) as count,
             COUNT(s.amount_usd) as has_raw_amount_usd,
-            COUNT(t.amount_usd_normalized) as has_norm_amount_usd,
+            COUNT(t.amount_usd) as has_norm_amount_usd,
             MIN(t.amount), MAX(t.amount), AVG(t.amount),
-            MIN(t.amount_usd_normalized), MAX(t.amount_usd_normalized), AVG(t.amount_usd_normalized)
+            MIN(t.amount_usd), MAX(t.amount_usd), AVG(t.amount_usd)
         FROM gold_transactions t
         JOIN silver_transactions s ON t.transaction_id = s.transaction_id
         GROUP BY t.currency
@@ -166,12 +166,12 @@ def audit_lakehouse():
         print(f"      amount range: [{c[4]}, {c[5]}], avg={c[6]:.2f}")
         print(f"      norm_usd range: [{c[7]}, {c[8]}], avg={c[9]:.2f}")
 
-    # Check if any amount_usd_normalized is NULL or <= 0
+    # Check if any amount_usd is NULL or <= 0
     bad_amounts = con.execute("""
         SELECT COUNT(*) FROM gold_transactions 
-        WHERE amount_usd_normalized IS NULL OR amount_usd_normalized <= 0
+        WHERE amount_usd IS NULL OR amount_usd <= 0
     """).fetchone()[0]
-    print(f"  gold_transactions with invalid/null amount_usd_normalized: {bad_amounts}")
+    print(f"  gold_transactions with invalid/null amount_usd: {bad_amounts}")
 
     # 5. Dates, Timestamps, and Policy Window Check
     print("\n" + "="*50)

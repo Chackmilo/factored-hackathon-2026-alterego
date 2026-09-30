@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "934921e0-ba89-4226-9693-b45ea2c22bb1",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "D:\\Hackaton\\.archify\\architecture-alterego-20260929-222000\\candidate.json",
+  "output": "D:\\Hackaton\\.archify\\architecture-alterego-20260929-222000\\alterego-architecture.html",
+  "specification": {
+    "sha256": "0684f467b36927c3ee4bc7112867641c6543bfff253eeb3b01a480164ebea6b9",
+    "bytes": 10157
+  },
+  "artifact": {
+    "sha256": "f51f510719d25f0e0c800428e74142e0c2a44f1d22cc57a6d318f27e04246284",
+    "bytes": 784434
+  }
+}

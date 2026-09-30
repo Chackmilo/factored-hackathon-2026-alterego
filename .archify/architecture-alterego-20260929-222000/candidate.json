@@ -1,0 +1,374 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "AlterEgo: AI-First Banking Transaction-Dispute Architecture",
+    "output": ".archify/architecture-alterego-20260929-222000/alterego-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/Chackmilo/Factored_Hackaton",
+      "revision": "5812c8008cf1c357a9fc64c9d6f55f2903e27797"
+    }
+  },
+  "components": [
+    {
+      "id": "customer",
+      "type": "external",
+      "label": "Bank Customer",
+      "sublabel": "Web & Mobile Client",
+      "pos": [40, 230],
+      "size": [130, 60],
+      "icon": "person"
+    },
+    {
+      "id": "agent",
+      "type": "external",
+      "label": "Human Specialist",
+      "sublabel": "Dispute Operations",
+      "pos": [40, 410],
+      "size": [130, 60],
+      "icon": "briefcase"
+    },
+    {
+      "id": "supabase_auth",
+      "type": "security",
+      "label": "Supabase Auth",
+      "sublabel": "ES256 JWT & JWKS",
+      "tag": "SEC-03: Zero Shared Secret",
+      "pos": [290, 60],
+      "size": [140, 60],
+      "icon": "security"
+    },
+    {
+      "id": "frontend_chat",
+      "type": "frontend",
+      "label": "Customer Chat App",
+      "sublabel": "React + Vite (ES/PT)",
+      "tag": "Cards & Modal Lock",
+      "pos": [290, 230],
+      "size": [140, 60],
+      "icon": "frontend"
+    },
+    {
+      "id": "frontend_console",
+      "type": "frontend",
+      "label": "HITL Review Console",
+      "sublabel": "React + Vite (English)",
+      "tag": "app_role: agent",
+      "pos": [290, 410],
+      "size": [140, 60],
+      "icon": "frontend"
+    },
+    {
+      "id": "api_gateway",
+      "type": "backend",
+      "label": "FastAPI Gateway",
+      "sublabel": "Auth & Guardrails",
+      "tag": "PII Mask & XML Boundary",
+      "sources": [
+        { "path": "src/api/app.py", "line": 20, "label": "FastAPI Application" }
+      ],
+      "pos": [560, 230],
+      "size": [150, 60],
+      "icon": "backend"
+    },
+    {
+      "id": "router_understand",
+      "type": "backend",
+      "label": "Understand Router",
+      "sublabel": "Jev + ES/PT Keywords",
+      "tag": "Budget Cap $2.00/day",
+      "sources": [
+        { "path": "src/understand/router.py", "line": 25, "label": "Understand Router" }
+      ],
+      "pos": [800, 60],
+      "size": [160, 60],
+      "icon": "cloud"
+    },
+    {
+      "id": "orchestrator",
+      "type": "backend",
+      "label": "Dispute Orchestrator",
+      "sublabel": "5-Stage State Machine",
+      "tag": "Understand-Decide-Act-Verify",
+      "sources": [
+        { "path": "src/orchestrator/dispute_orchestrator.py", "line": 40, "label": "Dispute Orchestrator" }
+      ],
+      "pos": [800, 230],
+      "size": [160, 60],
+      "icon": "backend"
+    },
+    {
+      "id": "banking_gateway",
+      "type": "security",
+      "label": "Banking Tool Gateway",
+      "sublabel": "Act & Verify Protocol",
+      "tag": "app_gateway Least Privilege",
+      "sources": [
+        { "path": "src/tools/gateway_postgres.py", "line": 30, "label": "Banking Tool Gateway" }
+      ],
+      "pos": [800, 410],
+      "size": [160, 60],
+      "icon": "security"
+    },
+    {
+      "id": "ml_transfer_scorer",
+      "type": "backend",
+      "label": "Transfer Risk Scorer",
+      "sublabel": "IEEE-CIS LightGBM",
+      "tag": "P98 Threshold: 0.0669",
+      "sources": [
+        { "path": "src/ml/fraud_risk_transfer.py", "line": 60, "label": "Transfer Risk Scorer" }
+      ],
+      "pos": [1090, 60],
+      "size": [160, 60],
+      "icon": "backend"
+    },
+    {
+      "id": "policy_engine",
+      "type": "backend",
+      "label": "Dispute Policy v2.3",
+      "sublabel": "Deterministic Clauses",
+      "tag": "POL-WIN-60 / POL-ESC",
+      "sources": [
+        { "path": "src/rules/dispute_policy.py", "line": 150, "label": "Dispute Policy Engine" }
+      ],
+      "pos": [1090, 230],
+      "size": [160, 60],
+      "icon": "backend"
+    },
+    {
+      "id": "ops_store",
+      "type": "database",
+      "label": "Operational Store",
+      "sublabel": "Turn State & Handoffs",
+      "tag": "Append-Only Audit Log",
+      "sources": [
+        { "path": "src/ops/store.py", "line": 50, "label": "OpsStore" }
+      ],
+      "pos": [1090, 410],
+      "size": [160, 60],
+      "icon": "database"
+    },
+    {
+      "id": "lakehouse_duckdb",
+      "type": "database",
+      "label": "DuckDB Lakehouse",
+      "sublabel": "Bronze -> Silver -> Gold",
+      "tag": "4.4M Historical Tx",
+      "pos": [1340, 230],
+      "size": [160, 64],
+      "icon": "database"
+    },
+    {
+      "id": "db_postgres",
+      "type": "database",
+      "label": "Supabase Postgres",
+      "sublabel": "bank & ops schemas",
+      "tag": "RLS & Live Views",
+      "pos": [1340, 410],
+      "size": [160, 64],
+      "icon": "database"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Identity Provider: Supabase Auth",
+      "wraps": ["supabase_auth"]
+    },
+    {
+      "kind": "region",
+      "label": "Vercel Edge Platform: Frontend Apps",
+      "wraps": ["frontend_chat", "frontend_console"]
+    },
+    {
+      "kind": "security-group",
+      "label": "FastAPI Core Application Tier",
+      "wraps": [
+        "api_gateway",
+        "router_understand",
+        "orchestrator",
+        "banking_gateway",
+        "ml_transfer_scorer",
+        "policy_engine",
+        "ops_store"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Data Platform: Serving & Lakehouse",
+      "wraps": ["lakehouse_duckdb", "db_postgres"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "customer-to-auth",
+      "from": "customer",
+      "to": "supabase_auth",
+      "label": "Authenticate",
+      "fromSide": "top",
+      "toSide": "left",
+      "variant": "security"
+    },
+    {
+      "id": "customer-to-chat",
+      "from": "customer",
+      "to": "frontend_chat",
+      "label": "Interact (ES/PT)",
+      "fromSide": "right",
+      "toSide": "left",
+      "variant": "emphasis"
+    },
+    {
+      "id": "agent-to-console",
+      "from": "agent",
+      "to": "frontend_console",
+      "label": "Review Cases",
+      "fromSide": "right",
+      "toSide": "left",
+      "variant": "default"
+    },
+    {
+      "id": "auth-to-api",
+      "from": "supabase_auth",
+      "to": "api_gateway",
+      "label": "JWKS Verification",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "security"
+    },
+    {
+      "id": "chat-to-api",
+      "from": "frontend_chat",
+      "to": "api_gateway",
+      "label": "HTTPS / Bearer ES256",
+      "fromSide": "right",
+      "toSide": "left",
+      "variant": "emphasis"
+    },
+    {
+      "id": "console-to-api",
+      "from": "frontend_console",
+      "to": "api_gateway",
+      "label": "HTTPS / Agent Role",
+      "fromSide": "right",
+      "toSide": "bottom",
+      "variant": "default"
+    },
+    {
+      "id": "api-to-orch",
+      "from": "api_gateway",
+      "to": "orchestrator",
+      "label": "Dispute Turn",
+      "fromSide": "right",
+      "toSide": "left",
+      "variant": "emphasis"
+    },
+    {
+      "id": "orch-to-understand",
+      "from": "orchestrator",
+      "to": "router_understand",
+      "label": "Extract Signals",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "orch-to-gateway",
+      "from": "orchestrator",
+      "to": "banking_gateway",
+      "label": "Act & Verify",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "orch-to-policy",
+      "from": "orchestrator",
+      "to": "policy_engine",
+      "label": "Evaluate Policy",
+      "fromSide": "right",
+      "toSide": "left",
+      "variant": "emphasis"
+    },
+    {
+      "id": "policy-to-ml",
+      "from": "policy_engine",
+      "to": "ml_transfer_scorer",
+      "label": "Query Risk Score",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "orch-to-ops",
+      "from": "orchestrator",
+      "to": "ops_store",
+      "label": "Save Turn State",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
+      "id": "gateway-to-ops",
+      "from": "banking_gateway",
+      "to": "ops_store",
+      "label": "Record Lock & Audit",
+      "fromSide": "right",
+      "toSide": "left",
+      "variant": "security"
+    },
+    {
+      "id": "ops-to-db",
+      "from": "ops_store",
+      "to": "db_postgres",
+      "label": "Append-Only Audit Log",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "lakehouse-to-db",
+      "from": "lakehouse_duckdb",
+      "to": "db_postgres",
+      "label": "Publish Gold Serving",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Identity & Security (SEC-01..SEC-05)",
+      "items": [
+        "ES256 session tokens verified against Supabase JWKS with no shared secret in backend",
+        "customer_id extracted exclusively from verified session token (app_metadata)",
+        "LATAM document PII masking and XML merchant data boundaries prevent prompt injection"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Deterministic Policy & State Machine",
+      "items": [
+        "Understand -> Decide -> Act -> Verify -> Escalate 5-stage orchestration",
+        "DisputePolicyEngine v2.3 checks 10 policy clauses in strict, auditable order",
+        "Only two mutations allowed: open dispute case and customer-confirmed temporary card lock"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "ML Risk & Adaptive Thresholding",
+      "items": [
+        "LightGBM trained on 590k IEEE-CIS transactions (holdout ROC AUC 0.817)",
+        "19 deployable features homologated via FeatureContract v1.1",
+        "Percentile 98 threshold (0.0669) on Web/App window safely detonates POL-ESC-ML-RISK"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Postgres Serving & Lakehouse",
+      "items": [
+        "Supabase Postgres bank schema hosts read-only serving copy of gold tables",
+        "Postgres ops schema provides append-only audit trail and turn state",
+        "BankingToolGateway executes Act-and-Verify reads back from system of record"
+      ]
+    }
+  ]
+}

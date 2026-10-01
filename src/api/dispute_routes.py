@@ -2,8 +2,9 @@
 Dispute intake API: customer chat endpoints and the English HITL console (agent role).
 
 customer_id always comes from the verified session token, never from the body. Console endpoints need
-app_role == "agent" (SEC-01). The local test issuer only exists outside production (APP_ENV development
-or test); Supabase Auth replaces it (docs/SUPABASE_VERCEL.md section 3).
+app_role == "agent" (SEC-01). The local test issuer only exists in development and test; with Supabase Auth
+the front signs in through supabase-js, and both read the verified identity at /auth/me
+(docs/SUPABASE_VERCEL.md section 3).
 """
 from __future__ import annotations
 
@@ -110,6 +111,12 @@ def issue_test_session(payload: TestSessionRequest, orchestrator: DisputeOrchest
 def _ensure_local_issuer() -> None:
     if settings.app_env not in ("development", "test"):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found.")
+
+
+@router.get("/auth/me")
+def who_am_i(session: VerifiedSession = Depends(get_current_session)) -> dict[str, Any]:
+    """The identity as the API verified it; the front routes on it (chat or console). Answers in every APP_ENV."""
+    return {"app_role": session.app_role, "customer_id": session.customer_id}
 
 
 # ----------------------------------------------------------------- customer chat

@@ -1,6 +1,7 @@
 # Host-specific, generated or secret files never enter an image (a Windows or Mac node_modules would break the Linux build).
 .git
 .env
+personas.local.json
 .venv
 **/__pycache__
 frontend/node_modules

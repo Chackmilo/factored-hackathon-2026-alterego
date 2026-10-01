@@ -1,6 +1,6 @@
 # Spec: ingreso con Supabase Auth en la demo (v1)
 
-Estado: diseño aprobado por secciones en el chat el 2026-09-30; este documento lo fija para su revisión escrita. Rama: `feat/supabase-login`, desde `main` en `c1a9bfd`. Hallazgo: AUD-02 de la auditoría v3 (plan v3, ítem 6).
+Estado: diseño aprobado por secciones en el chat el 2026-09-30; este documento lo fija para su revisión escrita. Rama: `feat/supabase-login`, desde `main` en `c1a9bfd`. Hallazgo: AUD-02 de la auditoría v3 (plan v3, ítem 6). Enmendado el mismo día por el plan de implementación (`docs/specs/supabase-login-v1-plan.md`, sección final): `APP_ENV` en blanco u otro valor, la recarga de la página y el campo `message`.
 
 - **Porción:** ingreso con Supabase Auth en el front (`@supabase/supabase-js`), el endpoint `GET /api/v1/auth/me`, el script que crea las personas en Supabase Auth y un `APP_ENV` que falla cerrado, con una guarda de arranque.
 - **Manda:** `docs/SUPABASE_VERCEL.md` sección 3 (identidad, decidida el 26-Sep) y sección 7 (el desarrollo local no necesita cuenta de Supabase), AUD-02 en `docs/reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md` y TQ-020 (proyecto `alterego-dev`, `https://lrddokaihdwrdtwfiale.supabase.co`, una clave ES256 en su JWKS).
@@ -17,7 +17,7 @@ El problema contrario es peor. `APP_ENV` vale `development` cuando nadie lo defi
 
 | Id | Decisión | Descartado y por qué |
 | --- | --- | --- |
-| D1 | Sin `APP_ENV`, el código asume `production` | `development` por defecto: un olvido en el deploy abre el emisor local |
+| D1 | Sin `APP_ENV`, el código asume `production`; en blanco o con otro valor, también | `development` por defecto: un olvido en el deploy abre el emisor local |
 | D2 | Tres clientes, uno por escenario de la demo, y un agente | Los 6 del selector actual (sin curar: pueden no tener cargos disputables); un solo cliente (no muestra la demo) |
 | D3 | `supabase-js` en el navegador cuando el build trae las variables de Supabase; el selector de personas sin ellas | Ingreso a través del API (las contraseñas pasarían por nuestro API, la renovación quedaría a nuestro cargo y el límite de Auth por IP sumaría a todos los usuarios detrás de Vercel); solo `supabase-js` (el desarrollo local necesitaría una cuenta de Supabase, contra la sección 7 del diseño) |
 | D4 | El front se verifica sin framework de tests: `tsc` en CI más la verificación manual de la sección 5 | Agregar vitest para este lote. Playwright sigue pendiente (AUD-15) |
@@ -39,7 +39,7 @@ El agente recibe `{"app_role": "agent", "customer_id": null}`. Responde con cual
 - **Dependencia.** `@supabase/supabase-js` fijado en `2.117.2` (la última el 25-Sep), sin rango.
 - **`frontend/src/supabase.ts`.** Crea el cliente solo si el build trae `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`; si falta alguna, exporta `null` y el front queda en modo local. Opciones de `auth`: `storage: window.sessionStorage` (cerrar la pestaña cierra la sesión, como hoy), `persistSession: true`, `autoRefreshToken: true` y `detectSessionInUrl: false` (no hay magic links ni OAuth).
 - **`Login.tsx`.** En modo Supabase, un formulario de email y contraseña que llama a `signInWithPassword`; si falla, dice solo "Email or password is incorrect.". No hay registro ni recuperación de contraseña. En modo local, el selector de personas de hoy.
-- **Después del ingreso, en los dos modos,** el front llama a `/auth/me` y elige el chat o la consola con lo que responde. Si responde 403, cierra la sesión de Supabase y muestra el detalle del API. Al recargar la página, `App.tsx` recupera la sesión de Supabase y vuelve a llamar a `/auth/me`.
+- **Después del ingreso, en los dos modos,** el front llama a `/auth/me` y elige el chat o la consola con lo que responde. Si responde 403, cierra la sesión de Supabase y muestra el detalle del API. Al recargar la página, la sesión del front y la de Supabase siguen en `sessionStorage`; si el token ya no sirve, el primer 401 devuelve al ingreso.
 - **`api.ts`.** En modo Supabase, cada petición toma el token de `supabase.auth.getSession()`, que lo renueva si venció: el chat no se cae al cumplir la hora. En modo local, el token sigue en `sessionStorage` como hoy. Un 401 cierra la sesión en los dos modos (en Supabase, `signOut({ scope: 'local' })`).
 - **`Session` del front:** `{app_role, customer_id, label}`, más el token solo en modo local. `label` es el email en modo Supabase y el id de la persona en modo local; la consola muestra `label` porque el agente no tiene `customer_id`.
 - **Variables.** `frontend/.env.example` con las dos variables vacías; las reales en `frontend/.env.local`, que git ignora (`*.local` en `frontend/.gitignore`). Vite lee los `.env` de `frontend/`, no los de la raíz.
@@ -62,9 +62,9 @@ Opciones: `--personas` (por defecto `data/fixtures/personas.json`), `--out` (por
 
   ```json
   {"provenance": "team-generated", "personas": [
-    {"label": "cliente-hasta-150", "app_role": "customer", "customer_id": "CLI-...", "scenario": "..."},
-    {"label": "cliente-mas-de-500", "app_role": "customer", "customer_id": "CLI-...", "scenario": "..."},
-    {"label": "cliente-tarjeta-perdida", "app_role": "customer", "customer_id": "CLI-...", "scenario": "..."},
+    {"label": "cliente-hasta-150", "app_role": "customer", "customer_id": "CLI-...", "scenario": "...", "message": "..."},
+    {"label": "cliente-mas-de-500", "app_role": "customer", "customer_id": "CLI-...", "scenario": "...", "message": "..."},
+    {"label": "cliente-tarjeta-perdida", "app_role": "customer", "customer_id": "CLI-...", "scenario": "...", "message": "..."},
     {"label": "agente", "app_role": "agent", "customer_id": null, "scenario": "..."}
   ]}
   ```
@@ -92,14 +92,14 @@ Una consulta de solo lectura sobre la muestra del lakehouse (`data/lakehouse.duc
 | `cliente-tarjeta-perdida` | Una sola tarjeta activa y un cargo disputable en ventana de hasta $500 con monto único | Oferta de bloqueo (`POL-AUT-LOCK`); con el "sí", bloqueo y caso |
 | `agente` | Sin cliente | Consola: ve el handoff del caso de más de $500 |
 
-El cargo de `cliente-hasta-150` y el de `cliente-tarjeta-perdida` no son compras extranjeras por Web o App, para que `POL-ESC-ML-RISK` no cambie el camino cuando el deploy cargue el modelo; si el archivo del modelo está disponible, su puntaje queda además bajo el umbral del bundle. El `scenario` de cada persona trae el mensaje sugerido para la demo, con el monto y la moneda del cargo. Los ids se revisan en el PR.
+El cargo de `cliente-hasta-150` y el de `cliente-tarjeta-perdida` no son compras extranjeras por Web o App, para que `POL-ESC-ML-RISK` no cambie el camino cuando el deploy cargue el modelo; si el archivo del modelo está disponible, su puntaje queda además bajo el umbral del bundle. Cada cliente trae su `scenario` (el camino que muestra) y su `message` (el mensaje sugerido para la demo, con el monto y la moneda del cargo), que la verificación manda tal cual. Los ids se revisan en el PR.
 
 Los `customer_id` son del dataset y quedan guardados en Supabase Auth, así que dependen de la respuesta de los mentores (TQ-032). Si dicen que no, se cambian por clientes del fixture del equipo; el código no cambia. El lote de deploy debe publicar estos clientes en `bank` (`data/serving_customers.json`, sección 4.2.1 del diseño).
 
 ### 3.5 `APP_ENV` falla cerrado
 
-- `src/core/config.py` y `src/auth/session.py`: sin la variable, `production`. El emisor local, las rutas de personas y las del starter quedan apagados.
-- **Guarda de arranque.** Una función en `src/auth/session.py`, llamada al importar `src/api/app.py` junto a la guarda de SEC-03, levanta `RuntimeError` cuando `APP_ENV` es `production` y `SUPABASE_URL` está vacía, con el mensaje "APP_ENV=production needs SUPABASE_URL: without it no session token can be verified. Set SUPABASE_URL, or APP_ENV=development for local work." Sin esa URL nadie entra; mejor que el app no arranque a que responda 401 a todo.
+- `src/core/config.py` y `src/auth/session.py`: sin la variable, en blanco o con un valor distinto de `development` o `test`, `production`. El emisor local, las rutas de personas y las del starter quedan apagados.
+- **Guarda de arranque.** Una función en `src/auth/session.py`, llamada al importar `src/api/app.py` junto a la guarda de SEC-03, levanta `RuntimeError` cuando `APP_ENV` no es `development` ni `test` y `SUPABASE_URL` está vacía, con el mensaje "APP_ENV={valor} needs SUPABASE_URL: without it no session token can be verified. Set SUPABASE_URL, or APP_ENV=development for local work." Sin esa URL nadie entra; mejor que el app no arranque a que responda 401 a todo.
 
 | Dónde | Valor | Cambio |
 | --- | --- | --- |
@@ -130,7 +130,7 @@ Los `customer_id` son del dataset y quedan guardados en Supabase Auth, así que 
 **Automáticas.** Pares TDD (un commit `test` que falla y el `fix` que lo pone en verde, como en el lote A) para:
 
 - `/auth/me`: un cliente recibe su `customer_id`; el agente, null; sin token, 401; un cliente sin `customer_id`, 403; responde con `APP_ENV` `production`.
-- `APP_ENV`: sin la variable, el emisor local queda apagado; sin la variable, el app corre como `production` (subproceso fuera del repo, para que ningún `.env` lo contamine); con `production` y sin `SUPABASE_URL`, el app no arranca y el mensaje sale por stderr. El test actual `test_the_app_starts_in_production_without_the_local_issuer` pasa a darle `SUPABASE_URL`.
+- `APP_ENV`: sin la variable, en blanco o con otro valor (`preview`), el emisor local queda apagado; sin la variable o en blanco, el app corre como `production` (subproceso que anula `load_dotenv`, para que ningún `.env` lo contamine); con `production` o `preview` y sin `SUPABASE_URL`, el app no arranca y el mensaje sale por stderr. El test actual `test_the_app_starts_in_production_without_the_local_issuer` pasa a darle `SUPABASE_URL`.
 - Script (`httpx.MockTransport`, sin red): una cuenta nueva lleva `app_metadata` y `email_confirm`, nunca `user_metadata`; el agente queda con `customer_id` null; una existente recibe solo `app_metadata` y su contraseña no cambia sin `--reset-passwords`; la clave viaja solo en `apikey`; una clave, un archivo o un patrón sin `{label}` fallan antes de llamar; si Supabase falla a mitad de camino, las contraseñas de las cuentas ya creadas quedan en `--out`; ninguna contraseña sale por pantalla; `--dry-run` no escribe; avisa si el registro sigue encendido.
 
 Además: la suite completa en el contenedor `dev`, `ruff` en cada archivo tocado, el split de desarrollo sin cambios (18 de 18) y CI en verde, donde `tsc` revisa el código de los dos modos al compilar el front.

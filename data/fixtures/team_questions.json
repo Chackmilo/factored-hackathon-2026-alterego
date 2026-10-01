@@ -526,7 +526,11 @@
         "Same exposure levels, but leave the internal clauses out of the corpus"
       ],
       "recommendation": "Exposure levels as proposed, internal clauses indexed and answered with a fixed redirect",
-      "source": "30-Sep, review of the RAG roadmap"
+      "source": "30-Sep, review of the RAG roadmap",
+      "status": "answered",
+      "answer": "Exposure levels as proposed, internal clauses indexed and answered with a fixed redirect. Applied in data/policy_corpus.json (roadmap Task 1.1); the formal reply in 3 to 5 business days, which the intake text already states, joins the public parameters under the same rule.",
+      "answered_by": "Daniel (chat, 30-Sep)",
+      "answered_at": "2026-09-30T20:14:00"
     }
   ]
 }

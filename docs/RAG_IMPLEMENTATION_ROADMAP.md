@@ -1,6 +1,6 @@
 # Plan de Implementación y Roadmap: Motor RAG de Explicaciones de Política
 
-**Estado:** Aprobado con revisiones técnicas incorporadas. La Tarea 1.1 espera la respuesta a TQ-037 (exposición de cláusulas).  
+**Estado:** Aprobado con revisiones técnicas incorporadas. TQ-037 respondida el 30-Sep (opción 1); la Tarea 1.1 está hecha en `data/policy_corpus.json`.  
 **Fecha de Actualización:** 2026-09-30 (segunda revisión del mismo día; cambios y motivos en la sección 7)  
 **Basado en:** Hallazgos del Notebook *Augmented Generation* (`11d894be-6dd0-4680-ad7e-d9a2e8457d76`), reglas de [`AGENTS.md`](../AGENTS.md), especificación [`docs/specs/dispute-policy-v2.3.md`](specs/dispute-policy-v2.3.md), revisión tecnológica [`docs/reviews/2026-09-26-revision-tecnologica.md`](reviews/2026-09-26-revision-tecnologica.md), model card de [`intfloat/multilingual-e5-small`](https://huggingface.co/intfloat/multilingual-e5-small) y resolución de hallazgos **AUD-03 / AUD-15** de [`docs/reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md`](reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md).
 
@@ -13,7 +13,7 @@ En el sistema bancario de atención a reclamos de fraude y disputas (Hackathon F
 1. **El modelo propone, la política determinista dispone:** El motor de políticas como código (`src/rules/dispute_policy.py`) es la única autoridad que decide si un caso es elegible, si se escala a un agente humano (HITL) o si se recomienda bloqueo preventivo.
 2. **Rol exclusivo del RAG:** Responder preguntas informativas de los clientes sobre la política de disputas del banco en **Español y Portugués**, citar el identificador oficial de la cláusula (`[POL-XXX]`) y **abstenerse con seguridad** (`SAFE_POLICY_ABSTENTION`) cuando la pregunta escape al alcance normativo o carezca de fundamento. El RAG nunca cambia una decisión, no promete reembolsos ni mueve dinero, y no atiende turnos con señal de disputa, legal o de angustia: esos siguen el flujo actual (sección 4).
 3. **Política en español, respuesta en el idioma del cliente:** Conforme a [`docs/PLAN.md:181`](PLAN.md#L181), el texto de política se redacta en español y solo la interacción con el cliente va en ES o PT. Cada cláusula que el cliente puede leer lleva su respuesta en ES y en PT (`answer_es`, `answer_pt`); el contenido en portugués es siempre `team-generated` ([`AGENTS.md`](../AGENTS.md), sección 11). Ningún modelo redacta texto: la respuesta es una plantilla.
-4. **No todas las cláusulas se explican al cliente:** `POL-AUT-150` (el cliente nunca oye que se aplicó crédito: [spec, fila POL-AUT-150](specs/dispute-policy-v2.3.md#L30), y regla 8 de AGENTS.md), `POL-SEC-SESSION` (control de autenticación fuera de la política de disputas: [spec:8](specs/dispute-policy-v2.3.md#L8)) y `POL-ESC-ML-RISK` (umbral interno del modelo de fraude). Propuesta en TQ-037: se indexan, pero se responden con un texto fijo de redirección.
+4. **No todas las cláusulas se explican al cliente:** `POL-AUT-150` (el cliente nunca oye que se aplicó crédito: [spec, fila POL-AUT-150](specs/dispute-policy-v2.3.md#L30), y regla 8 de AGENTS.md), `POL-SEC-SESSION` (control de autenticación fuera de la política de disputas: [spec:8](specs/dispute-policy-v2.3.md#L8)) y `POL-ESC-ML-RISK` (umbral interno del modelo de fraude). Decidido en TQ-037 (30-Sep): se indexan, pero se responden con un texto fijo de redirección.
 5. **Restricción de infraestructura:** Despliegue en Vercel con un límite de bundle de **500 MB**, sin PyTorch. E5 se despliega en ONNX int8 solo si cabe (Tarea 2.0); si no, el motor es **BM25**, que ya es el respaldo decidido ([`docs/PLAN.md:211`](PLAN.md#L211)).
 
 ---
@@ -110,11 +110,11 @@ Reglas del desvío:
 
 ### Fase 1: Corpus Normativo y Banco de Preguntas
 
-- [ ] **Tarea 1.1:** Crear `data/policy_corpus.json` con las **13 cláusulas** de la política v2.3 ([spec](specs/dispute-policy-v2.3.md)), tras la respuesta a TQ-037:
+- [x] **Tarea 1.1:** Crear `data/policy_corpus.json` con las **13 cláusulas** de la política v2.3 ([spec](specs/dispute-policy-v2.3.md)), según TQ-037. Hecha el 30-Sep; falta que el equipo revise el portugués:
   - Cláusulas: `POL-SEC-SESSION`, `POL-ESC-LEGAL`, `POL-CLARIFY`, `POL-ESC-AMBIG`, `POL-DISP-TYPE`, `POL-WIN-60`, `POL-ESC-500`, `POL-ESC-ML-RISK`, `POL-ESC-MULTI`, `POL-ESC-DISTRESS`, `POL-AUT-LOCK`, `POL-AUT-INTAKE`, `POL-AUT-150`.
   - Estructura por entrada: `clause_id`, `exposure` (`public`, `public_generic` o `internal`), `title_es`, `title_pt`, `category`, `official_text_es`, `answer_es`, `answer_pt`, `keywords_es`, `keywords_pt`, `parameters`, `provenance` (`team-generated`).
-  - Exposición propuesta en TQ-037: `internal` para `POL-AUT-150`, `POL-SEC-SESSION` y `POL-ESC-ML-RISK`; `public_generic` (dice que un especialista revisa ciertos casos, sin listar los disparadores) para `POL-ESC-LEGAL` y `POL-ESC-DISTRESS`; `public` para el resto.
-  - Las respuestas solo dan los parámetros que la política ya dice al cliente: 60 días ([`dispute_policy.py:387`](../src/rules/dispute_policy.py#L387)), 500 USD ([L200](../src/rules/dispute_policy.py#L200)) y 48 horas ([L212](../src/rules/dispute_policy.py#L212)). Nunca 150 USD, el umbral de riesgo ni el comportamiento de autenticación; nunca mencionan crédito ni prometen reembolso o bloqueo.
+  - Exposición decidida en TQ-037: `internal` para `POL-AUT-150`, `POL-SEC-SESSION` y `POL-ESC-ML-RISK`; `public_generic` (dice que un especialista revisa ciertos casos, sin listar los disparadores) para `POL-ESC-LEGAL` y `POL-ESC-DISTRESS`; `public` para el resto.
+  - Las respuestas solo dan los parámetros que la política ya dice al cliente: 60 días ([`dispute_policy.py:387`](../src/rules/dispute_policy.py#L387)), 500 USD ([L200](../src/rules/dispute_policy.py#L200)), 48 horas ([L212](../src/rules/dispute_policy.py#L212)) y la respuesta formal en 3 a 5 días hábiles ([L186](../src/rules/dispute_policy.py#L186)). Nunca 150 USD, el umbral de riesgo ni el comportamiento de autenticación; nunca mencionan crédito ni prometen reembolso o bloqueo.
   - BM25 y E5 indexan el mismo texto (`official_text_es` + `keywords_es` + `keywords_pt`), para que la Hipótesis 5 no dependa de qué ve cada retriever.
 - [ ] **Tarea 1.2:** Crear el banco de preguntas de política en `data/eval/` (JSONL con LF, ya cubierto por `.gitattributes`):
   - `policy_questions_test.jsonl`: las ~30 preguntas decididas para el reporte ([`TEAM_BRIEF_COMPLEMENTED.md:73`](TEAM_BRIEF_COMPLEMENTED.md#L73)), 15 ES (variantes de México, Colombia, Argentina) y 15 PT, congeladas con commit y `policy_questions_test.sha256` antes de calibrar nada.
@@ -191,7 +191,7 @@ Entrega: 2026-10-05 ([`AGENTS.md`](../AGENTS.md), sección 3). La corrida RAG co
 
 | Tarea / Hito | Responsable | Estimación | Estado | Evidencia / Archivo |
 | :--- | :---: | :---: | :---: | :--- |
-| **1.1 Corpus (13 cláusulas con exposición, respuestas ES/PT)** | B | 2.0 h | Bloqueada por TQ-037 | `data/policy_corpus.json` |
+| **1.1 Corpus (13 cláusulas con exposición, respuestas ES/PT)** | B | 2.0 h | Hecha (falta revisar el portugués) | `data/policy_corpus.json` |
 | **1.2 Banco de preguntas (dev + test congelado)** | A / C (no B) | 2.5 h | Pendiente | `data/eval/policy_questions_{dev,test}.jsonl` |
 | **2.0 Prueba de bundle y arranque en frío** | B | 1.0 h | Pendiente | Nota en `reports/rag_evaluation_report.md` |
 | **2.1 Dependencias `pyproject.toml`** | B | 0.5 h | Pendiente | `pyproject.toml` |
@@ -228,3 +228,5 @@ Total: 19 h. El camino BM25 de punta a punta (1.1, 2.1, 2.2, 3.1, 3.2, 3.3, 5.1)
 | Autores distintos para corpus y preguntas; regla de decisión previa | El vocabulario compartido favorece a BM25; una pregunta vale 6.7 puntos por idioma | Tareas 1.2 y 4.2 |
 | Sin detector de idioma propio | Understand ya fija el idioma de la conversación | [dispute_orchestrator.py:155](../src/orchestrator/dispute_orchestrator.py#L155) |
 | Benchmark en `src/eval/` y preguntas en `data/eval/` | El harness vive en `src/eval/` y las suites en `data/eval/` | `CLAUDE.md` |
+
+**Después, el mismo 30-Sep:** TQ-037 se respondió con la opción 1 y la Tarea 1.1 quedó en `data/policy_corpus.json`. La respuesta formal en 3 a 5 días hábiles, que el texto de registro ya da al cliente, entra en los parámetros públicos por la misma regla de TQ-037.

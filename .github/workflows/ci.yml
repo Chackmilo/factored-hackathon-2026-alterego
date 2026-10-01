@@ -29,7 +29,7 @@ jobs:
       - name: Install
         run: uv sync --frozen
       - name: Lint the files the dispute stack owns
-        run: uvx ruff check src/rules/dispute_policy.py src/ops src/understand src/orchestrator src/auth src/api/dispute_routes.py src/eval tests/test_dispute_policy.py tests/test_dispute_orchestrator.py tests/test_dispute_api.py tests/test_ops_store.py tests/test_session_verifier.py tests/test_eval_harness.py tests/test_heldout_suite.py tests/test_labeling.py tests/test_keyword_extractor.py
+        run: uvx ruff check src/rules/dispute_policy.py src/ops src/understand src/orchestrator src/auth src/api/dispute_routes.py src/eval tests/test_dispute_policy.py tests/test_dispute_orchestrator.py tests/test_dispute_api.py tests/test_ops_store.py tests/test_session_verifier.py tests/test_eval_harness.py tests/test_heldout_suite.py tests/test_labeling.py tests/test_keyword_extractor.py src/rag tests/test_policy_rag.py
       - name: Tests (ops round trip on the Postgres service, data-integrity tests need the lakehouse and are deselected)
         env:
           APP_ENV: test

@@ -8,7 +8,8 @@ in the API (SEC-03): HS256 and `alg: none` tokens get 401.
 
 A local issuer signs the same claims with an ES256 key pair generated per process. It exists only when
 APP_ENV is `test` or `development`; without APP_ENV, or with any other value, the app runs as production,
-and configuring the issuer there makes the app refuse to start.
+and configuring the issuer there makes the app refuse to start. Outside development and test the app also
+refuses to start without SUPABASE_URL: no session token could be verified.
 """
 from __future__ import annotations
 

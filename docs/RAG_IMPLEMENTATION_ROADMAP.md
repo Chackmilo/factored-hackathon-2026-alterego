@@ -42,7 +42,7 @@ El análisis de las 29 fuentes del notebook deja lecciones que guían el diseño
 | **3. Modelo de Embeddings** | `intfloat/multilingual-e5-small`, artefacto oficial `onnx/model_qint8_avx512_vnni.onnx` (118 MB) con `onnx/tokenizer.json` (17 MB), fijado por commit y SHA-256; prefijos `"query: "` / `"passage: "`; average pooling y normalización L2 (model card). | No hay archivos `.onnx`. `.gitignore` solo ignora `models/*.joblib`, y el modelo supera el límite de 100 MB por archivo de GitHub: un commit accidental rompe el push. | Script de descarga en el build con commit y SHA-256, carpeta del modelo en `.gitignore`, embeddings del corpus precomputados (`data/policy_embeddings.npy`). |
 | **4. Baseline Comparativo** | Baseline BM25 obligatorio para contrastar `Recall@3` contra los embeddings ([Hipótesis 5](PLAN.md#L26)). | No existe implementación ni archivo de benchmarking de BM25. | Falta `src/rag/bm25_retriever.py` con tokenización ES/PT. |
 | **5. Evaluación y Métrica** | Banco de preguntas de política con split dev (calibración) y test (reporte, congelado con SHA-256), cláusula esperada y acción esperada (`answer`, `clarify`, `abstain`). | No existe. `data/eval/dev_cases.jsonl` tiene 18 casos de disputa sin cláusula esperada: no sirve para calibrar el RAG. | Faltan `data/eval/policy_questions_dev.jsonl`, `data/eval/policy_questions_test.jsonl` y `src/eval/rag_benchmark.py`. |
-| **6. Enrutamiento del Orquestador** | Intent `consulta_politica` que no secuestre `consulta_general` ni se salte las escalaciones. | `consulta_general` cubre saldos y extractos ([`jev_extractor.py:29`](../src/understand/jev_extractor.py#L29)) y es el valor por defecto de palabras clave ([`keyword_extractor.py:123`](../src/understand/keyword_extractor.py#L123)). POL-ESC-LEGAL y POL-ESC-DISTRESS se evalúan dentro de `DisputePolicyEngine.evaluate` ([`dispute_policy.py:282`](../src/rules/dispute_policy.py#L282)), y el ajuste que convierte en disputa un mensaje con monto o cargo solo actúa sobre `consulta_general` ([`keyword_extractor.py:193`](../src/understand/keyword_extractor.py#L193)). | Intent nuevo con precedencia de la disputa y desvío al RAG solo sin señal de disputa, legal ni de angustia (sección 4). |
+| **6. Enrutamiento del Orquestador** | Intent `consulta_politica` que no secuestre `consulta_general` ni se salte las escalaciones. | `consulta_general` cubre saldos y extractos ([`jev_extractor.py:29`](../src/understand/jev_extractor.py#L29)) y es el valor por defecto de palabras clave ([`keyword_extractor.py:127`](../src/understand/keyword_extractor.py#L127)). POL-ESC-LEGAL y POL-ESC-DISTRESS se evalúan dentro de `DisputePolicyEngine.evaluate` ([`dispute_policy.py:282`](../src/rules/dispute_policy.py#L282)), y el ajuste que convierte en disputa un mensaje con monto o cargo solo actúa sobre `consulta_general` ([`keyword_extractor.py:199`](../src/understand/keyword_extractor.py#L199)). | Intent nuevo con precedencia de la disputa y desvío al RAG solo sin señal de disputa, legal ni de angustia (sección 4). |
 
 ---
 
@@ -93,7 +93,7 @@ Reglas del desvío:
 
 - **Precedencia de la disputa:** un monto, una palabra de cargo, una cláusula que disputa un cargo o una tarjeta robada mantienen el intent de disputa; `consulta_politica` solo aplica sin ninguna de esas señales. "¿Cuánto plazo tengo para el cargo de 300 que no reconozco?" es una disputa.
 - **Escalaciones primero:** si POL-ESC-LEGAL o POL-ESC-DISTRESS dispararían, el turno sigue el flujo de disputa. La guarda reutiliza la detección de `dispute_policy.py` (`REGULATOR_OR_LEGAL_KEYWORDS`, `_severe_distress`) en vez de copiar listas.
-- **Solo en estado `new`** (`closed` y `escalated` ya vuelven a `new`: [`dispute_orchestrator.py:166`](../src/orchestrator/dispute_orchestrator.py#L166)). En `awaiting_clarification` y `awaiting_lock_confirmation` sigue el flujo actual; responder ahí queda para después del MVP.
+- **Solo en estado `new`** (`closed` y `escalated` ya vuelven a `new`: [`dispute_orchestrator.py:172`](../src/orchestrator/dispute_orchestrator.py#L172)). En `awaiting_clarification` y `awaiting_lock_confirmation` sigue el flujo actual; responder ahí queda para después del MVP.
 - **Cláusula `internal` recuperada:** texto fijo de redirección, sin contenido ni parámetros de la cláusula (TQ-037).
 - **Datos y auditoría:** el retriever ve solo el mensaje enmascarado ([`docs/PLAN.md:178`](PLAN.md#L178)). La respuesta deja la conversación en `new`, no abre caso y se registra en `ops.audit_log` (retriever, commit del modelo, ids y scores del top 3, banda de la compuerta).
 - **Un retriever en producción:** el que elija la Tarea 4.2; el benchmark corre ambos. No hay fusión híbrida.
@@ -134,7 +134,7 @@ Reglas del desvío:
   - `rank-bm25` (baseline léxico, siempre).
   - `onnxruntime` y `tokenizers`, solo si la Tarea 2.0 pasa (`onnxruntime` no tokeniza). Sin torch ni `transformers`.
 - [ ] **Tarea 2.2:** Implementar `src/rag/bm25_retriever.py`:
-  - Tokenización ES/PT con stopwords y el `_strip_accents` de [`keyword_extractor.py:94`](../src/understand/keyword_extractor.py#L94).
+  - Tokenización ES/PT con stopwords y el `_strip_accents` de [`keyword_extractor.py:97`](../src/understand/keyword_extractor.py#L97).
   - Índice en RAM al instanciar.
 - [ ] **Tarea 2.3:** Implementar `src/rag/onnx_retriever.py`:
   - Modelo `intfloat/multilingual-e5-small`: `onnx/model_qint8_avx512_vnni.onnx` (118 MB) y `onnx/tokenizer.json`, descargados en el build a `models/e5-small/` (carpeta git-ignorada) con el commit del repo y el SHA-256 de cada archivo.
@@ -175,7 +175,7 @@ Reglas del desvío:
 ### Fase 5: Integración con el Sistema y Cierre de Auditoría
 
 - [ ] **Tarea 5.1:** Conectar `PolicyExplainer` al orquestador conversacional:
-  - Agregar `consulta_politica` a `INTENT_CRITERIA` ([`jev_extractor.py:25`](../src/understand/jev_extractor.py#L25)) y a `INTENT_KEYWORDS` ([`keyword_extractor.py:23`](../src/understand/keyword_extractor.py#L23)), con la precedencia de la disputa de la sección 4 (extender a la clase nueva el ajuste de [`keyword_extractor.py:193`](../src/understand/keyword_extractor.py#L193)). `consulta_general` queda para saldos y movimientos.
+  - Agregar `consulta_politica` a `INTENT_CRITERIA` ([`jev_extractor.py:25`](../src/understand/jev_extractor.py#L25)) y a `INTENT_KEYWORDS` ([`keyword_extractor.py:23`](../src/understand/keyword_extractor.py#L23)), con la precedencia de la disputa de la sección 4 (extender a la clase nueva el ajuste de [`keyword_extractor.py:199`](../src/understand/keyword_extractor.py#L199)). `consulta_general` queda para saldos y movimientos.
   - Desviar al explicador desde `_handle_dispute_turn` en `src/orchestrator/dispute_orchestrator.py` solo cuando la guarda de la sección 4 lo permite, con el mensaje enmascarado.
   - La clase nueva entra al set etiquetado de Jev contra palabras clave (componente aprendido 2, [`AGENTS.md`](../AGENTS.md) sección 8).
 - [ ] **Tarea 5.2:** Verificar el bundle real en Vercel cuando exista el deploy (< 500 MB); la medida temprana es la Tarea 2.0.
@@ -216,7 +216,7 @@ Total: 19 h. El camino BM25 de punta a punta (1.1, 2.1, 2.2, 3.1, 3.2, 3.3, 5.1)
 | :--- | :--- | :--- |
 | Exposición por cláusula; `POL-AUT-150`, `POL-SEC-SESSION` y `POL-ESC-ML-RISK` se responden con redirección | El cliente nunca oye que se aplicó crédito; la autenticación y el umbral de riesgo son internos | [spec:30](specs/dispute-policy-v2.3.md#L30), [spec:8](specs/dispute-policy-v2.3.md#L8), regla 8 de AGENTS.md, TQ-037 |
 | Respuestas `answer_es` y `answer_pt` por cláusula | La política queda en español, pero la interacción va en el idioma del cliente | [PLAN:181](PLAN.md#L181) |
-| Desvío solo en `new` y sin señal de disputa, legal ni de angustia | POL-ESC-LEGAL y POL-ESC-DISTRESS viven dentro de `evaluate`; el ajuste a disputa solo cubre `consulta_general` | [dispute_policy.py:282](../src/rules/dispute_policy.py#L282), [keyword_extractor.py:193](../src/understand/keyword_extractor.py#L193) |
+| Desvío solo en `new` y sin señal de disputa, legal ni de angustia | POL-ESC-LEGAL y POL-ESC-DISTRESS viven dentro de `evaluate`; el ajuste a disputa solo cubre `consulta_general` | [dispute_policy.py:282](../src/rules/dispute_policy.py#L282), [keyword_extractor.py:199](../src/understand/keyword_extractor.py#L199) |
 | Banco propio con split dev y test congelado | El split de desarrollo existente son 18 casos de disputa sin cláusula esperada | `data/eval/dev_cases.jsonl` |
 | Umbrales por retriever, sin semillas | E5 concentra el coseno entre 0.7 y 1.0; BM25 no tiene escala fija | Model card de E5, FAQ 3 |
 | Métricas de compuerta | `Recall@k` y `MRR` no miden la abstención | Tarea 4.1 |
@@ -226,7 +226,7 @@ Total: 19 h. El camino BM25 de punta a punta (1.1, 2.1, 2.2, 3.1, 3.2, 3.3, 5.1)
 | CRAG, CAG y Self-RAG descritos como inspiración | La respuesta es una plantilla; declarar técnicas no implementadas repetiría AUD-03 | Auditoría, AUD-03 |
 | AUD-03 y AUD-15 se cierran solo en su parte RAG | AUD-03 incluye Claude; AUD-15 incluye LightGBM en ONNX | Auditoría, AUD-03 y AUD-15 |
 | Autores distintos para corpus y preguntas; regla de decisión previa | El vocabulario compartido favorece a BM25; una pregunta vale 6.7 puntos por idioma | Tareas 1.2 y 4.2 |
-| Sin detector de idioma propio | Understand ya fija el idioma de la conversación | [dispute_orchestrator.py:155](../src/orchestrator/dispute_orchestrator.py#L155) |
+| Sin detector de idioma propio | Understand ya fija el idioma de la conversación | [dispute_orchestrator.py:161](../src/orchestrator/dispute_orchestrator.py#L161) |
 | Benchmark en `src/eval/` y preguntas en `data/eval/` | El harness vive en `src/eval/` y las suites en `data/eval/` | `CLAUDE.md` |
 
 **Después, el mismo 30-Sep:** TQ-037 se respondió con la opción 1 y la Tarea 1.1 quedó en `data/policy_corpus.json`. La respuesta formal en 3 a 5 días hábiles, que el texto de registro ya da al cliente, entra en los parámetros públicos por la misma regla de TQ-037.

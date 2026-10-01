@@ -1,0 +1,17 @@
+{
+  "provenance": "team-generated",
+  "note": "Demo personas for Supabase Auth (docs/specs/supabase-login-v1.md section 3.4). Customer ids come from the lakehouse sample; emails and passwords never live here.",
+  "personas": [
+    {"label": "cliente-hasta-150", "app_role": "customer", "customer_id": "CLI-00SA0N9OQTM0",
+     "scenario": "A charge of USD 150 or less in the window: the case opens without a human (POL-AUT-150 or POL-AUT-INTAKE).",
+     "message": "No reconozco un cargo de 113.65 USD del 3 de junio"},
+    {"label": "cliente-mas-de-500", "app_role": "customer", "customer_id": "CLI-0085D5JD85CX",
+     "scenario": "A charge over USD 500: the turn goes to a human (POL-ESC-500) and the console shows the handoff.",
+     "message": "No reconozco un cargo de 4259.97 USD del 12 de junio"},
+    {"label": "cliente-tarjeta-perdida", "app_role": "customer", "customer_id": "CLI-02ARMH0UANWD",
+     "scenario": "A lost card and a charge of USD 500 or less: the case opens and the lock is offered in the same reply (POL-AUT-LOCK); after the yes, the card is locked.",
+     "message": "Perdí la tarjeta y no reconozco un cargo de 168.88 USD del 9 de junio"},
+    {"label": "agente", "app_role": "agent", "customer_id": null,
+     "scenario": "The HITL console: the handoff of the over-500 case and the lock appear here."}
+  ]
+}

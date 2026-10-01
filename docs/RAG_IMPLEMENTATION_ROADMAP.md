@@ -1,6 +1,6 @@
 # Plan de Implementación y Roadmap: Motor RAG de Explicaciones de Política
 
-**Estado:** Aprobado con revisiones técnicas incorporadas. TQ-037 respondida el 30-Sep (opción 1); hechas la Tarea 1.1 (`data/policy_corpus.json`), el camino BM25 en `src/rag/` (2.1, 2.2, 3.1 a 3.3) y el desvío al explicador (5.1), apagado hasta que la Tarea 4.1 escriba `data/rag_gate.json` con los umbrales calibrados sobre el banco de la 1.2.  
+**Estado:** Aprobado con revisiones técnicas incorporadas. TQ-037 respondida el 30-Sep (opción 1); hechas la Tarea 1.1 (`data/policy_corpus.json`), el camino BM25 en `src/rag/` (2.1, 2.2, 3.1 a 3.3), el desvío al explicador (5.1) y la herramienta de la 4.1; el explicador sigue apagado hasta que la 4.1, corrida sobre el banco de la 1.2, escriba `data/rag_gate.json` con los umbrales calibrados.  
 **Fecha de Actualización:** 2026-09-30 (segunda revisión del mismo día; cambios y motivos en la sección 7)  
 **Basado en:** Hallazgos del Notebook *Augmented Generation* (`11d894be-6dd0-4680-ad7e-d9a2e8457d76`), reglas de [`AGENTS.md`](../AGENTS.md), especificación [`docs/specs/dispute-policy-v2.3.md`](specs/dispute-policy-v2.3.md), revisión tecnológica [`docs/reviews/2026-09-26-revision-tecnologica.md`](reviews/2026-09-26-revision-tecnologica.md), model card de [`intfloat/multilingual-e5-small`](https://huggingface.co/intfloat/multilingual-e5-small) y resolución de hallazgos **AUD-03 / AUD-15** de [`docs/reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md`](reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md).
 
@@ -162,8 +162,10 @@ Reglas del desvío:
 
 ### Fase 4: Benchmark y Validación de la Hipótesis 5
 
-- [ ] **Tarea 4.1:** Implementar `src/eval/rag_benchmark.py` (`uv run python -m src.eval.rag_benchmark`), junto al resto del harness:
-  - Corre BM25 y E5 sobre dev y test. Los umbrales de cada retriever se calibran solo en dev; test se mide una vez, con los umbrales fijados.
+- [ ] **Tarea 4.1:** Implementar `src/eval/rag_benchmark.py` (`uv run python -m src.eval.rag_benchmark`), junto al resto del harness (herramienta lista el 1-Oct; falta correrla con el banco de la 1.2):
+  - Corre BM25 (E5 se suma con la Tarea 2.3) sobre dev y test. Los umbrales de cada retriever se calibran solo en dev; test se mide una vez, con los umbrales fijados, y se rechaza si ya no coincide con su `.sha256`.
+  - Calibración: entre los puntajes top observados en dev (más infinito), el par de umbrales que acierta más acciones; a igualdad, el más alto, que es el que menos responde y menos cita mal. Una redirección (cláusula interna) cuenta como respuesta que cita la cláusula recuperada.
+  - `--write-gate data/rag_gate.json` escribe el archivo que enciende el explicador, con el SHA-256 del split dev y del corpus y el commit; commitearlo es la decisión de encenderlo.
   - Recuperación (preguntas con cláusula esperada): `Recall@1`, `Recall@3` y `MRR`, por idioma.
   - Compuerta (todas las preguntas): acción correcta (`answer`, `clarify`, `abstain`), abstención en fuera de alcance, abstención indebida y cita equivocada (responde con una cláusula fuera de `expected_clause_ids`).
   - Latencia p50/p95 en caliente; el arranque en frío viene de la Tarea 2.0.
@@ -201,7 +203,7 @@ Entrega: 2026-10-05 ([`AGENTS.md`](../AGENTS.md), sección 3). La corrida RAG co
 | **3.1 Compuerta por retriever** | B | 1.0 h | Hecha (umbrales con la 4.1) | `src/rag/gate.py` |
 | **3.2 Explicador por plantillas** | B | 1.0 h | Hecha | `src/rag/policy_explainer.py` |
 | **3.3 Tests (precedencia y exposición incluidas)** | B | 2.0 h | Hecha (E5 con la 2.3) | `tests/test_policy_rag.py` |
-| **4.1 Benchmark y calibración en dev** | A / B | 1.5 h | Pendiente | `src/eval/rag_benchmark.py` |
+| **4.1 Benchmark y calibración en dev** | A / B | 1.5 h | Herramienta lista (1-Oct); espera el banco (1.2) | `src/eval/rag_benchmark.py` |
 | **4.2 Reporte y decisión H5** | A | 1.0 h | Pendiente | `reports/rag_evaluation_report.md` |
 | **5.1 Señal `policy_question` y desvío seguro** | B | 2.0 h | Hecha, apagada hasta `data/rag_gate.json` (4.1) | `src/understand/`, `src/orchestrator/` |
 | **5.2 Bundle real en Vercel** | B | 0.5 h | Pendiente | Logs de deploy |

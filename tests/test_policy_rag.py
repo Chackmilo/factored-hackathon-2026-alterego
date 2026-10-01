@@ -11,11 +11,16 @@ from pathlib import Path
 
 import pytest
 
+from src.orchestrator.dispute_orchestrator import DisputeOrchestrator
 from src.rag.bm25_retriever import BM25Retriever, Hit
 from src.rag.corpus import DEFAULT_CORPUS_PATH, load_corpus
 from src.rag.gate import Band, ConfidenceGate
-from src.rag.policy_explainer import PolicyExplainer
+from src.rag.policy_explainer import PolicyExplainer, load_policy_explainer
 from src.rules.dispute_policy import DisputePolicyEngine
+from src.tools.gateway import BankingToolGateway
+from src.understand.jev_extractor import JevSignals, StubJev
+from src.understand.keyword_extractor import KeywordIntentExtractor
+from src.understand.router import UnderstandRouter
 
 SPEC = Path(__file__).resolve().parents[1] / "docs" / "specs" / "dispute-policy-v2.3.md"
 CORPUS = load_corpus()
@@ -197,3 +202,114 @@ def test_a_low_score_abstains_in_the_customer_language():
     assert es.action == pt.action == "abstain" and es.band is Band.LOW
     assert es.cited_clauses == pt.cited_clauses == []
     assert es.reply and pt.reply and es.reply != pt.reply
+
+
+# ------------------------------------------------------------------ routing into the explainer (Task 5.1)
+@pytest.mark.parametrize("message, distress_score, prior_distress, clause", [
+    ("¿Qué plazo tengo? Si no responden voy a la Superintendencia", None, None, "POL-ESC-LEGAL"),
+    ("Quanto tempo tenho? Vou falar com meu advogado", None, None, "POL-ESC-LEGAL"),
+    ("¿Cuánto tiempo tengo? Estoy desesperado, no tengo para comer", None, None, "POL-ESC-DISTRESS"),
+    ("¿Cuánto tiempo tengo? Estoy desesperado", 0.5, None, None),  # a Jev score overrides the keywords (S7)
+    ("¿Cuánto tiempo tengo para disputar?", 2.0, None, "POL-ESC-DISTRESS"),
+    ("¿Cuánto tiempo tengo para disputar?", None, 2.0, "POL-ESC-DISTRESS"),  # the case memory escalates too (P3)
+    ("¿Cuánto tiempo tengo para disputar?", None, None, None),
+])
+def test_the_policy_names_a_legal_or_distress_escalation_the_message_alone_fires(message, distress_score, prior_distress, clause):
+    assert DisputePolicyEngine.message_escalation(message, distress_score, prior_distress) == clause
+
+
+def start(orchestrator, session):
+    return orchestrator.start_conversation(session)["conversation_id"]
+
+
+def explained(ops_store, conversation_id):
+    return [a for a in ops_store.list_audit(conversation_id=conversation_id) if a["action"] == "POLICY_EXPLAINED"]
+
+
+@pytest.fixture
+def rag_orchestrator(bank_fixture_db, ops_store):
+    return DisputeOrchestrator(gateway=BankingToolGateway(db_path=bank_fixture_db), ops=ops_store,
+                               explainer=PolicyExplainer(CORPUS, RETRIEVER, ALWAYS_CONFIDENT))
+
+
+@pytest.mark.parametrize("text, language", [
+    ("¿Cuánto tiempo tengo para disputar un cargo?", "es"), ("Quanto tempo tenho para contestar uma cobrança?", "pt"),
+])
+def test_a_policy_question_gets_the_clause_answer_and_opens_nothing(rag_orchestrator, owner_session, ops_store, text, language):
+    cid = start(rag_orchestrator, owner_session)
+    turn = rag_orchestrator.handle_message(owner_session, cid, text)
+    assert (turn.policy_outcome, turn.cited_clauses, turn.state) == ("POLICY_EXPLANATION", ["POL-WIN-60"], "new")
+    assert turn.reply == f"{CORPUS.clause('POL-WIN-60').answer(language)} [POL-WIN-60]"
+    assert ops_store.list_cases(owner_session.customer_id) == []
+    [audit] = explained(ops_store, cid)
+    assert audit["details"]["retriever"] == "bm25" and audit["details"]["hits"][0]["clause_id"] == "POL-WIN-60"
+
+
+def test_an_unanswerable_policy_question_abstains(bank_fixture_db, ops_store, owner_session):
+    strict = PolicyExplainer(CORPUS, RETRIEVER, ConfidenceGate(tau_upper=1e6, tau_lower=1e6))
+    orchestrator = DisputeOrchestrator(gateway=BankingToolGateway(db_path=bank_fixture_db), ops=ops_store, explainer=strict)
+    turn = orchestrator.handle_message(owner_session, start(orchestrator, owner_session), "¿Cómo funciona la disputa?")
+    assert (turn.policy_outcome, turn.cited_clauses, turn.state) == ("SAFE_POLICY_ABSTENTION", [], "new")
+
+
+@pytest.mark.parametrize("text", [
+    "¿Qué plazo tengo? Si no me responden voy a la Superintendencia",  # POL-ESC-LEGAL
+    "¿Cuánto tiempo tengo para disputar? Estoy desesperado, no tengo para comer",  # POL-ESC-DISTRESS
+    "¿Cuánto tiempo tengo para el cargo de 80 dólares que no reconozco?",  # a charge with its amount
+])
+def test_a_legal_distress_or_charge_message_stays_in_the_dispute_flow(rag_orchestrator, owner_session, ops_store, text):
+    cid = start(rag_orchestrator, owner_session)
+    turn = rag_orchestrator.handle_message(owner_session, cid, text)
+    assert explained(ops_store, cid) == [] and turn.policy_outcome != "POLICY_EXPLANATION"
+
+
+@pytest.mark.parametrize("first, state", [
+    ("No reconozco un cargo", "awaiting_clarification"), ("Me robaron la tarjeta", "awaiting_lock_confirmation"),
+])
+def test_a_policy_question_while_a_charge_or_a_lock_is_pending_stays_in_the_dispute_flow(rag_orchestrator, owner_session,
+                                                                                        ops_store, first, state):
+    cid = start(rag_orchestrator, owner_session)
+    assert rag_orchestrator.handle_message(owner_session, cid, first).state == state
+    rag_orchestrator.handle_message(owner_session, cid, "¿Cuánto tiempo tengo para disputar un cargo?")
+    assert explained(ops_store, cid) == []
+
+
+@pytest.mark.parametrize("signals", [
+    JevSignals(intent="tarjeta_robada", intent_confidence=0.9, stolen_card_probability=0.85, distress_score=0.2),
+    JevSignals(intent="fuera_de_alcance", intent_confidence=0.9, stolen_card_probability=0.0, distress_score=0.0,
+               out_of_scope_category="prestamo_o_credito"),
+])
+def test_a_policy_question_jev_reads_as_a_stolen_card_or_another_product_stays_in_the_dispute_flow(
+        bank_fixture_db, ops_store, owner_session, signals):
+    text = "¿Qué pasa si me roban la tarjeta?"
+    assert KeywordIntentExtractor().extract(text).policy_question  # the keywords alone would send it to the explainer
+    orchestrator = DisputeOrchestrator(gateway=BankingToolGateway(db_path=bank_fixture_db), ops=ops_store,
+                                       router=UnderstandRouter(jev=StubJev(answers={text: signals})),
+                                       explainer=PolicyExplainer(CORPUS, RETRIEVER, ALWAYS_CONFIDENT))
+    cid = start(orchestrator, owner_session)
+    orchestrator.handle_message(owner_session, cid, text)
+    assert explained(ops_store, cid) == []
+
+
+def test_without_calibrated_thresholds_a_policy_question_takes_the_dispute_flow(orchestrator, owner_session, ops_store):
+    cid = start(orchestrator, owner_session)
+    turn = orchestrator.handle_message(owner_session, cid, "¿Cuánto tiempo tengo para disputar un cargo?")
+    assert explained(ops_store, cid) == [] and turn.policy_outcome != "POLICY_EXPLANATION"
+
+
+def test_the_app_serves_no_explainer_until_the_gate_is_calibrated(tmp_path):
+    assert load_policy_explainer(tmp_path / "rag_gate.json") is None
+
+
+def test_a_calibrated_gate_file_turns_the_explainer_on(tmp_path):
+    gate = tmp_path / "rag_gate.json"
+    gate.write_text(json.dumps({"retriever": "bm25", "tau_upper": 4.0, "tau_lower": 1.5}), encoding="utf-8")
+    explainer = load_policy_explainer(gate)
+    assert (explainer.gate.tau_upper, explainer.gate.tau_lower, explainer.retriever.name) == (4.0, 1.5, "bm25")
+
+
+def test_a_gate_file_for_an_unknown_retriever_is_refused(tmp_path):
+    gate = tmp_path / "rag_gate.json"
+    gate.write_text(json.dumps({"retriever": "e5", "tau_upper": 0.9, "tau_lower": 0.8}), encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_policy_explainer(gate)

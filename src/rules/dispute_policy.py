@@ -212,7 +212,7 @@ class DisputePolicyEngine:
                 "Se reportaron múltiples cargos no reconocidos en menos de 48 horas. Se activa protocolo de seguridad con escalamiento a especialista.",
                 "Foram relatadas múltiplas cobranças não reconhecidas em menos de 48 horas. Protocolo de segurança ativado com transferência para especialista.",
             ))
-        if cls._severe_distress(policy_input, msg_lower):
+        if cls._severe_distress(policy_input.customer_distress_score, policy_input.prior_distress_max_30d, msg_lower):
             fired.append((
                 "POL-ESC-DISTRESS", "SEVERE_DISTRESS",
                 "Queremos atenderle con prioridad. Un especialista tomará su caso de inmediato.",
@@ -220,14 +220,29 @@ class DisputePolicyEngine:
             ))
         return fired
 
+    @classmethod
+    def message_escalation(cls, message: str, distress_score: float | None = None,
+                           prior_distress_max_30d: float | None = None) -> str | None:
+        """POL-ESC-LEGAL or POL-ESC-DISTRESS when the message and the case memory alone fire it, before any charge is known.
+        The routing into the policy explainer keeps such a turn in the dispute flow (docs/RAG_IMPLEMENTATION_ROADMAP.md, Task 5.1)."""
+        msg_lower = message.lower()
+        if cls._cites_regulator_or_legal(msg_lower):
+            return "POL-ESC-LEGAL"
+        if cls._severe_distress(distress_score, prior_distress_max_30d, msg_lower):
+            return "POL-ESC-DISTRESS"
+        return None
+
+    @classmethod
+    def _cites_regulator_or_legal(cls, msg_lower: str) -> bool:
+        return any(re.search(pattern, msg_lower) for pattern in cls.REGULATOR_OR_LEGAL_KEYWORDS)
+
     @staticmethod
-    def _severe_distress(policy_input: DisputePolicyInput, msg_lower: str) -> bool:
-        score = policy_input.customer_distress_score
+    def _severe_distress(score: float | None, prior_distress_max_30d: float | None, msg_lower: str) -> bool:
         if score is not None:
             current = score >= 2.0
         else:
             current = any(k in msg_lower for k in DISTRESS_KEYWORDS)
-        remembered = policy_input.prior_distress_max_30d is not None and policy_input.prior_distress_max_30d >= 2.0
+        remembered = prior_distress_max_30d is not None and prior_distress_max_30d >= 2.0
         return current or remembered
 
     @classmethod
@@ -281,19 +296,18 @@ class DisputePolicyEngine:
     def _evaluate_outcome(cls, policy_input: DisputePolicyInput) -> DisputePolicyDecision:
         # 1. LEGAL / REGULATOR ESCALATION (POL-ESC-LEGAL): before the window, so it escalates even an old charge
         msg_lower = policy_input.customer_message.lower()
-        for pattern in cls.REGULATOR_OR_LEGAL_KEYWORDS:
-            if re.search(pattern, msg_lower):
-                return DisputePolicyDecision(
-                    is_eligible=True,
-                    policy_outcome=OUTCOME_ESCALATION,
-                    provisional_credit_candidate=False,
-                    provisional_credit_amount_usd=0.0,
-                    cited_clauses=["POL-ESC-LEGAL"],
-                    escalation_reason="REGULATOR_OR_LEGAL_CITING",
-                    action_required=ACTION_ESCALATE,
-                    explanation_es="Su caso requiere atención prioritaria por parte de un especialista de atención bancaria y cumplimiento.",
-                    explanation_pt="Seu caso requer atenção prioritária de um especialista em atendimento bancário e conformidade."
-                )
+        if cls._cites_regulator_or_legal(msg_lower):
+            return DisputePolicyDecision(
+                is_eligible=True,
+                policy_outcome=OUTCOME_ESCALATION,
+                provisional_credit_candidate=False,
+                provisional_credit_amount_usd=0.0,
+                cited_clauses=["POL-ESC-LEGAL"],
+                escalation_reason="REGULATOR_OR_LEGAL_CITING",
+                action_required=ACTION_ESCALATE,
+                explanation_es="Su caso requiere atención prioritaria por parte de un especialista de atención bancaria y cumplimiento.",
+                explanation_pt="Seu caso requer atenção prioritária de um especialista em atendimento bancário e conformidade."
+            )
 
         # 2. IDENTIFY THE CHARGE (POL-CLARIFY / POL-ESC-AMBIG)
         clarification_reason = cls._clarification_reason(policy_input)

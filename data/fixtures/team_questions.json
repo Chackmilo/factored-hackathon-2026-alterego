@@ -452,6 +452,69 @@
       ],
       "recommendation": "Match whole words and extend the lists on the development split",
       "source": "30-Sep, review of the held-out fixes (pr/8)"
+    },
+    {
+      "question_id": "TQ-032",
+      "topic": "Data: the data-use question to the mentors (IEEE-CIS licence, Supabase publishing)",
+      "question": "docs/PLAN.md still marks the data-use question to the mentors as \"pendiente de enviar (día 2)\", and TQ-026 leaves the IEEE-CIS competition licence pending with them. Rule 4 allows only organizer-approved data. Who sends the question to #technical-help today, and what do we do if there is no answer by 2-Oct?",
+      "context": "Audit v3, AUD-01 (docs/reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md). The risk model of record is trained on the IEEE-CIS competition (TQ-026), and the serving copy publishes a minimized subset of the bank data to Supabase (docs/SUPABASE_VERCEL.md section 4.2). Both need the organizers' approval. The system works without the model: with no model file, ml_risk_score stays 0.0 and POL-ESC-ML-RISK never fires.",
+      "options": [
+        "Send it today; without an answer by 2-Oct, present the risk model as experimental and demo without it (recommended)",
+        "Send it today and keep the model in the demo whatever the answer",
+        "Drop the external data now and report the negative result of TQ-023"
+      ],
+      "recommendation": "Send it today; without an answer by 2-Oct, present the risk model as experimental and demo without it",
+      "source": "30-Sep, audit v3 (AUD-01)"
+    },
+    {
+      "question_id": "TQ-033",
+      "topic": "Eval: which run of the frozen held-out suite is the held-out result",
+      "question": "The first, blind run of the frozen held-out suite gave a safe automated resolution of 63.6 % (68 of 107) and 12.4 % unsafe outcomes (31 of 250), as PR #12 records. After 32 fix commits chosen from that run (pr/8), the run at 0f663d7 gives 86.0 % (92 of 107) and 8.0 % (20 of 250). Which run does the report present as the held-out result?",
+      "context": "Audit v3, AUD-26. The fixes respect the freeze rule (each with its own test, suite hash unchanged), but each fix chosen from the suite's failures raises the next run, so 86.0 % is no longer a blind number. The blind table lives only in the PR #12 description and in a git-ignored handoff note; TQ-019 decides where reports live in the repo.",
+      "options": [
+        "Present the blind run as the held-out result and the 0f663d7 run as post-error-analysis, each with its commit (recommended)",
+        "Build a held-out v2 before the final report and present its first run as the held-out result"
+      ],
+      "recommendation": "Present the blind run as the held-out result and the 0f663d7 run as post-error-analysis, each with its commit",
+      "source": "30-Sep, audit v3 (AUD-26)"
+    },
+    {
+      "question_id": "TQ-034",
+      "topic": "Eval: the denominator of the safe automated resolution rate",
+      "question": "The official statement defines safe automated resolution as a \"rate over all in-scope cases, plus the share where automation was attempted\" (AGENTS.md section 5), while the brief and src/eval/metrics.py divide by eligible cases only (expected outcome AUTONOMOUS_RESOLUTION). Which denominator do we report, and what counts as in-scope?",
+      "context": "Audit v3, AUD-10. The adversarial review of 26-Sep (item 3) flagged the gap and no decision followed. reports/eval_dev.md already prints the eligible rate (9 of 9) and the attempted-automation share (9 of 18). In-scope could mean every dispute conversation (without out-of-scope intents such as DEV-006, a loan request, and without the token or cross-customer attacks), or every case of the suite.",
+      "options": [
+        "Report both: over eligible cases, and over in-scope cases defined as dispute conversations without out-of-scope intents or API attacks (recommended)",
+        "Report only the rate over all in-scope cases, as the official wording says",
+        "Keep the eligible-cases denominator only"
+      ],
+      "recommendation": "Report both: over eligible cases, and over in-scope cases defined as dispute conversations without out-of-scope intents or API attacks",
+      "source": "30-Sep, audit v3 (AUD-10)"
+    },
+    {
+      "question_id": "TQ-035",
+      "topic": "Eval: an abstention on a case that needed a human",
+      "question": "The judge (src/eval/runner.py) flags materially_incorrect_outcome only when the system resolves alone a case that needed an abstention or a human. When it abstains or clarifies on a case that needed a human, as in HO-139 and HO-143 (disputes above 500 USD answered as out of scope), the case counts only as a missed transfer. Should it also count as an unsafe outcome?",
+      "context": "Audit v3, AUD-31. AGENTS.md section 5 counts materially wrong results as unsafe outcomes; telling a customer that a dispute above 500 USD is out of scope leaves them with no case and no human. Changing the judge changes the reported numbers, so record the decision before the next runs are reported.",
+      "options": [
+        "Count it as unsafe (materially_incorrect_outcome) and keep it among the missed transfers (recommended)",
+        "Keep it as a missed transfer only"
+      ],
+      "recommendation": "Count it as unsafe (materially_incorrect_outcome) and keep it among the missed transfers",
+      "source": "30-Sep, audit v3 (AUD-31)"
+    },
+    {
+      "question_id": "TQ-036",
+      "topic": "Observability: OpenTelemetry",
+      "question": "OpenTelemetry stayed in scope on 26-Sep (\"sin recortes\") and was scheduled for day 6, and nothing of it exists in src/. Do we drop it formally, or add a minimal version?",
+      "context": "Audit v3, AUD-08. The append-only audit log already records every action with its conversation and actor. An OpenTelemetry middleware makes Vercel keep the static files inside the function unless cdn = true is forced (docs/SUPABASE_VERCEL.md section 6), and adds dependencies to a bundle that may already exceed 500 MB (AUD-30).",
+      "options": [
+        "Drop it formally in the decision log and declare it future work (recommended)",
+        "Minimal: a request trace_id in the audit log and the response headers, no exporter",
+        "Full OpenTelemetry with an exporter"
+      ],
+      "recommendation": "Drop it formally in the decision log and declare it future work",
+      "source": "30-Sep, audit v3 (AUD-08)"
     }
   ]
 }

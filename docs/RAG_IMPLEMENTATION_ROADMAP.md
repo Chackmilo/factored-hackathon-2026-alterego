@@ -1,7 +1,7 @@
 # Plan de Implementación y Roadmap: Motor RAG de Explicaciones de Política
 
-**Estado:** Aprobado con revisiones técnicas incorporadas. TQ-037 respondida el 30-Sep (opción 1); hechas la Tarea 1.1 (`data/policy_corpus.json`), el camino BM25 en `src/rag/` (2.1, 2.2, 3.1 a 3.3), el desvío al explicador (5.1) y la herramienta de la 4.1; el explicador sigue apagado hasta que la 4.1, corrida sobre el banco de la 1.2, escriba `data/rag_gate.json` con los umbrales calibrados.  
-**Fecha de Actualización:** 2026-09-30 (segunda revisión del mismo día; cambios y motivos en la sección 7)  
+**Estado:** Aprobado con revisiones técnicas incorporadas. TQ-037 respondida el 30-Sep (opción 1); hechas la Tarea 1.1 (`data/policy_corpus.json`), el camino BM25 en `src/rag/` (2.1, 2.2, 3.1 a 3.3), el desvío al explicador (5.1), la herramienta de la 4.1 y la medida de la 2.0 (E5 no cabe en el bundle con el código de hoy; cabe si el modelo de riesgo pasa a ONNX, TQ-022); el explicador sigue apagado hasta que la 4.1, corrida sobre el banco de la 1.2, escriba `data/rag_gate.json` con los umbrales calibrados.  
+**Fecha de Actualización:** 2026-10-01 (Tareas 4.1 y 2.0; la segunda revisión del 30-Sep, con sus cambios y motivos, está en la sección 7)  
 **Basado en:** Hallazgos del Notebook *Augmented Generation* (`11d894be-6dd0-4680-ad7e-d9a2e8457d76`), reglas de [`AGENTS.md`](../AGENTS.md), especificación [`docs/specs/dispute-policy-v2.3.md`](specs/dispute-policy-v2.3.md), revisión tecnológica [`docs/reviews/2026-09-26-revision-tecnologica.md`](reviews/2026-09-26-revision-tecnologica.md), model card de [`intfloat/multilingual-e5-small`](https://huggingface.co/intfloat/multilingual-e5-small) y resolución de hallazgos **AUD-03 / AUD-15** de [`docs/reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md`](reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md).
 
 ---
@@ -125,11 +125,12 @@ Reglas del desvío:
 
 ### Fase 2: Retrievers y Dependencias Ligeras
 
-- [ ] **Tarea 2.0 (antes de 2.3):** Prueba de bundle y arranque en frío en el contenedor Linux (`docker compose run --rm dev`), ya que el repo aún no tiene configuración de Vercel:
-  - Tamaño instalado de `onnxruntime` + `tokenizers` + modelo + tokenizer, sumado a las dependencias de runtime actuales, contra 500 MB.
-  - Carga de la sesión ONNX en frío, p50/p95 ([`docs/PLAN.md:211`](PLAN.md#L211)).
-  - El artefacto oficial está pensado para CPUs con AVX-512 VNNI; sin esa extensión, la cuantización puede perder exactitud por saturación. Comparar su ranking con el de `onnx/model.onnx` (fp32) sobre el split dev, en el contenedor y luego en Vercel (Tarea 5.2). Si diverge, cuantizar el fp32 en el build con `onnxruntime.quantization.quantize_dynamic`.
+- [x] **Tarea 2.0 (antes de 2.3):** Prueba de bundle y arranque en frío en el contenedor Linux (`docker compose run --rm dev`), ya que el repo aún no tiene configuración de Vercel (medida el 1-Oct, detalle en [`docs/SUPABASE_VERCEL.md`](SUPABASE_VERCEL.md) 6.3 y 6.5; falta la comparación int8 contra fp32, que espera el split dev de la 1.2):
+  - Tamaño instalado de `onnxruntime` + `tokenizers` + modelo + tokenizer, sumado a las dependencias de runtime actuales, contra 500 MB. Medido: el runtime bajó de 595 MB a 358 MB al pasar al grupo `dev` lo que la API no importa; E5 suma 232 MB (97 de paquetes, 118,3 del modelo int8 y 17,1 del tokenizer) y, con los 18,7 MB del repo, el bundle llegaría a unos 609 MB. **E5 no cabe con el código de hoy**; cabe (unos 466 MB) si el modelo de riesgo se sirve en ONNX y salen `scikit-learn` y `scipy` (TQ-022).
+  - Carga de la sesión ONNX en frío, p50/p95 ([`docs/PLAN.md:211`](PLAN.md#L211)). Medido con un hilo en 10 procesos nuevos: importar p50 0,65 s; sesión y tokenizer p50 1,18 s, máximo 4,24 s (con 10 corridas, el máximo hace de p95); primera consulta 10 ms; en caliente p50 8,4 ms y p95 10,2 ms.
+  - El artefacto oficial está pensado para CPUs con AVX-512 VNNI; sin esa extensión, la cuantización puede perder exactitud por saturación. Comparar su ranking con el de `onnx/model.onnx` (fp32) sobre el split dev, en el contenedor y luego en Vercel (Tarea 5.2). Si diverge, cuantizar el fp32 en el build con `onnxruntime.quantization.quantize_dynamic`. La CPU de la medida (Intel i7-10510U) no tiene AVX-512 ni VNNI: el modelo corre, y su ranking queda por comparar.
   - Si no cabe o no se valida, E5 no se despliega (BM25 queda como motor) y se documenta.
+  - Archivos medidos, para fijarlos en la 2.3: commit `614241f622f53c4eeff9890bdc4f31cfecc418b3` del repo del modelo; `onnx/model_qint8_avx512_vnni.onnx`, 118.346.824 bytes, SHA-256 `dd476dd0c2514e9b9be83aeb3853fac0763e0bdf4a71645407587d77c48a2d88`; `onnx/tokenizer.json`, 17.082.730 bytes, SHA-256 `0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39`.
 - [x] **Tarea 2.1:** Dependencias en `pyproject.toml` (hecha el 30-Sep para BM25):
   - `rank-bm25` (baseline léxico, siempre).
   - `onnxruntime` y `tokenizers`, solo si la Tarea 2.0 pasa (`onnxruntime` no tokeniza). Sin torch ni `transformers`.
@@ -196,7 +197,7 @@ Entrega: 2026-10-05 ([`AGENTS.md`](../AGENTS.md), sección 3). La corrida RAG co
 | :--- | :---: | :---: | :---: | :--- |
 | **1.1 Corpus (13 cláusulas con exposición, respuestas ES/PT)** | B | 2.0 h | Hecha (falta revisar el portugués) | `data/policy_corpus.json` |
 | **1.2 Banco de preguntas (dev + test congelado)** | A / C (no B) | 2.5 h | Pendiente | `data/eval/policy_questions_{dev,test}.jsonl` |
-| **2.0 Prueba de bundle y arranque en frío** | B | 1.0 h | Pendiente | Nota en `reports/rag_evaluation_report.md` |
+| **2.0 Prueba de bundle y arranque en frío** | B | 1.0 h | Medida (1-Oct): E5 no cabe hoy; cabe si TQ-022 sirve el riesgo en ONNX | `docs/SUPABASE_VERCEL.md` 6.3 y 6.5 |
 | **2.1 Dependencias `pyproject.toml`** | B | 0.5 h | Hecha para BM25 (E5 espera la 2.0) | `pyproject.toml` |
 | **2.2 Retriever BM25** | B | 1.0 h | Hecha | `src/rag/bm25_retriever.py` |
 | **2.3 Retriever E5 ONNX int8** | B | 2.5 h | Pendiente | `src/rag/onnx_retriever.py` |

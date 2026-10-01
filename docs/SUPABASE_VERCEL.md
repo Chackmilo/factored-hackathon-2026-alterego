@@ -212,7 +212,7 @@ Respaldos, en orden: (1) un segundo proyecto de Vercel con el preset de Vite y u
 | Límite (26 sep) | Consecuencia |
 | --- | --- |
 | Python 3.12 (por defecto), 3.13 o 3.14; no hay 3.11 | Decidido: 3.12 en `.python-version`, `requires-python`, `uv.lock` y CI. Verificado el 26 sep con `uv pip compile --only-binary :all:`: los 28 paquetes directos del stack (los actuales del `pyproject.toml` más psycopg, lightgbm, onnxruntime, onnxmltools, skl2onnx, tokenizers, mlflow, pandera, anthropic y supabase) y sus 171 dependencias resuelven a la misma última versión con wheels binarias en Linux y Windows para 3.12, 3.13 y 3.14, igual que `typesafe-sdk==0.7.1` probado aparte. Empatan; 3.12 gana por ser el default de Vercel |
-| Bundle de Python de 500 MB sin comprimir, sin tree-shaking | Separar dependencias (6.3) y medir el bundle el día 4 |
+| Bundle de Python de 500 MB sin comprimir, sin tree-shaking | Dependencias separadas y bundle medido el 1 oct (6.3) |
 | Hobby: 2 GB y 1 vCPU, 300 s por invocación | Suficiente para un turno de chat; los modelos se cargan una vez con el `lifespan` de FastAPI |
 | Cuerpo de petición y respuesta de 4,5 MB | Sin impacto |
 | Disco de solo lectura salvo `/tmp` | SQLite y DuckDB no sirven en la app; confirma el cambio a Postgres |
@@ -221,7 +221,20 @@ Respaldos, en orden: (1) un segundo proyecto de Vercel con el preset de Vite y u
 
 ### 6.3 Qué entra en la función
 
-Solo lo que corre en producción: `fastapi`, `pydantic`, `psycopg[binary]`, `pyjwt[crypto]`, `httpx`, el SDK de Anthropic, `onnxruntime`, `tokenizers`, `numpy` y los archivos del modelo. A grupos de dependencias aparte: `pandas`, `duckdb`, `boto3`, `matplotlib`, `seaborn`, `ipykernel`, `nbclient`, `nbformat`, `rich`, `pytest`, `scikit-learn` y `lightgbm` (entrenamiento). Por verificar en el log del build: que Vercel no instale el grupo `dev` que `uv sync` instala por defecto.
+Hecho el 1 oct: `[project.dependencies]` lista solo lo que la API importa. Lo demás (tests, notebooks, scripts y entrenamiento: `pytest`, `httpx`, `ipykernel`, `nbclient`, `nbformat`, `matplotlib`, `seaborn`, `mlflow-skinny`, `boto3`, `alembic` y `sqlalchemy`) está en el grupo `dev`, que el builder de Python de Vercel no instala: corre `uv sync --no-dev` (`packages/python/src/uv.ts` del repo `vercel/vercel`, leído el 1 oct), igual que la imagen de producción. `tests/test_runtime_dependencies.py` recorre los módulos que la API alcanza desde `src.api.app`, con los imports dentro de funciones, y falla si alguno importa un paquete del grupo `dev`. Por eso el modelo de riesgo se sirve desde `src/ml/transfer_scorer.py`, sin el entrenamiento (`src/ml/fraud_risk_transfer.py`, que importa MLflow).
+
+Medido en Linux con Python 3.12 (`site-packages` sin `__pycache__`): 595 MB antes y 358 MB después. Los archivos del repo suman 18,7 MB y viajan enteros salvo lo que excluya `excludeFiles` (10,4 MB son `.agents/`). Lo que más pesa sigue en runtime porque la API lo importa hoy:
+
+| Paquete | MB | Por qué sigue |
+| --- | --- | --- |
+| `scipy` | 111 | Lo pide `scikit-learn` (32 MB más), que sirve el modelo de riesgo (TQ-022) |
+| `duckdb` | 58 | El gateway, el ops store y `src.data` lo importan al cargar la API, aunque en Vercel se use Postgres |
+| `numpy` | 57 | BM25 y el modelo de riesgo |
+| `pandas` | 41 | El contrato de features del modelo de riesgo |
+| `psycopg-binary` | 20 | Postgres |
+| `cryptography` | 15 | La verificación ES256 de las sesiones |
+
+Sin E5 el bundle queda en unos 377 MB. Con E5 (6.5) llegaría a unos 609 MB: con el código de hoy no cabe. Servir el modelo de riesgo en ONNX (6.4, TQ-022) saca `scikit-learn` y `scipy` (143 MB) y lo deja en unos 466 MB; importar `duckdb` solo en el camino local ahorraría 58 MB más. El SDK de Anthropic y `onnxruntime` entran cuando haya código de la API que los use.
 
 ### 6.4 Riesgo del runtime de inferencia
 
@@ -238,6 +251,8 @@ Propuesta: entrenar con LightGBM y servir el modelo exportado a ONNX (`onnxmltoo
 ### 6.5 Embeddings del RAG
 
 Los modelos multilingües pequeños pesan cientos de MB en fp32 por su vocabulario de unos 250.000 tokens. Se usa la versión cuantizada a int8, se descarga en el build y los embeddings de los unos 15 fragmentos del corpus se calculan en el build. pgvector no aporta con 15 vectores: quedan en memoria.
+
+Medido el 1 oct en el contenedor (Tarea 2.0 de `docs/RAG_IMPLEMENTATION_ROADMAP.md`): `onnxruntime` 1.30.0 y `tokenizers` 0.23.2 suman 97 MB con sus dependencias (62 y 12 MB, más unos 20 MB de `huggingface-hub` y `hf-xet`, que pide `tokenizers`); el modelo int8 pesa 118,3 MB y el tokenizer 17,1 MB. En frío, con un hilo como la función de 1 vCPU y en 10 procesos nuevos: importar toma p50 0,65 s, crear la sesión y cargar el tokenizer p50 1,18 s (máximo 4,24 s) y la primera consulta 10 ms; en caliente, p50 8,4 ms. Hoy no cabe en el bundle (6.3).
 
 ### 6.6 Funciones sin estado
 

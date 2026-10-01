@@ -29,8 +29,10 @@ COPY src/ ./src/
 COPY data/fixtures/ ./data/fixtures/
 COPY supabase/ ./supabase/
 COPY --from=frontend /ui/dist ./frontend/dist
-ENV PATH="/app/.venv/bin:$PATH" PYTHONPATH="/app" APP_ENV=development \
+ENV PATH="/app/.venv/bin:$PATH" PYTHONPATH="/app" APP_ENV=production \
     LAKEHOUSE_PATH=data/lakehouse.duckdb OPS_DB_PATH=data/ops.duckdb
+# Production by default: the image issues no local tokens and needs SUPABASE_URL to start.
+# docker-compose.yml sets APP_ENV=development for local use.
 # Mount the lakehouse (git-ignored, built from S3) at /app/data/lakehouse.duckdb; the ops store is created on first use.
 VOLUME ["/app/data"]
 EXPOSE 8000

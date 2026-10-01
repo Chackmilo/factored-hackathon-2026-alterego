@@ -1,7 +1,7 @@
 # Plan de Implementación y Roadmap: Motor RAG de Explicaciones de Política
 
-**Estado:** Aprobado con revisiones técnicas incorporadas. TQ-037 respondida el 30-Sep (opción 1); hechas la Tarea 1.1 (`data/policy_corpus.json`), el camino BM25 en `src/rag/` (2.1, 2.2, 3.1 a 3.3), el desvío al explicador (5.1), la herramienta de la 4.1 y la medida de la 2.0 (E5 no cabe en el bundle con el código de hoy; cabe si el modelo de riesgo pasa a ONNX, TQ-022); el explicador sigue apagado hasta que la 4.1, corrida sobre el banco de la 1.2, escriba `data/rag_gate.json` con los umbrales calibrados.  
-**Fecha de Actualización:** 2026-10-01 (Tareas 4.1 y 2.0; la segunda revisión del 30-Sep, con sus cambios y motivos, está en la sección 7)  
+**Estado:** Aprobado con revisiones técnicas incorporadas. TQ-037 respondida el 30-Sep (opción 1); hechas la Tarea 1.1 (`data/policy_corpus.json`), el camino BM25 en `src/rag/` (2.1, 2.2, 3.1 a 3.3), el desvío al explicador (5.1), la herramienta de la 4.1, la medida de la 2.0 (E5 no cabe en el bundle con el código de hoy; cabe si el modelo de riesgo pasa a ONNX, TQ-022) y el buscador E5 de la 2.3, que se mide offline; el explicador sigue apagado hasta que la 4.1, corrida sobre el banco de la 1.2, escriba `data/rag_gate.json` con los umbrales calibrados.  
+**Fecha de Actualización:** 2026-10-01 (Tareas 4.1, 2.0 y 2.3; la segunda revisión del 30-Sep, con sus cambios y motivos, está en la sección 7)  
 **Basado en:** Hallazgos del Notebook *Augmented Generation* (`11d894be-6dd0-4680-ad7e-d9a2e8457d76`), reglas de [`AGENTS.md`](../AGENTS.md), especificación [`docs/specs/dispute-policy-v2.3.md`](specs/dispute-policy-v2.3.md), revisión tecnológica [`docs/reviews/2026-09-26-revision-tecnologica.md`](reviews/2026-09-26-revision-tecnologica.md), model card de [`intfloat/multilingual-e5-small`](https://huggingface.co/intfloat/multilingual-e5-small) y resolución de hallazgos **AUD-03 / AUD-15** de [`docs/reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md`](reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md).
 
 ---
@@ -133,16 +133,16 @@ Reglas del desvío:
   - Archivos medidos, para fijarlos en la 2.3: commit `614241f622f53c4eeff9890bdc4f31cfecc418b3` del repo del modelo; `onnx/model_qint8_avx512_vnni.onnx`, 118.346.824 bytes, SHA-256 `dd476dd0c2514e9b9be83aeb3853fac0763e0bdf4a71645407587d77c48a2d88`; `onnx/tokenizer.json`, 17.082.730 bytes, SHA-256 `0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39`.
 - [x] **Tarea 2.1:** Dependencias en `pyproject.toml` (hecha el 30-Sep para BM25):
   - `rank-bm25` (baseline léxico, siempre).
-  - `onnxruntime` y `tokenizers`, solo si la Tarea 2.0 pasa (`onnxruntime` no tokeniza). Sin torch ni `transformers`.
+  - `onnxruntime` y `tokenizers` (`onnxruntime` no tokeniza), en el grupo `dev` desde el 1-Oct para medir E5 offline; pasan al runtime solo si E5 se despliega (Tarea 2.0). Sin torch ni `transformers`.
 - [x] **Tarea 2.2:** Implementar `src/rag/bm25_retriever.py` (hecha el 30-Sep):
   - Tokenización ES/PT con stopwords y el `_strip_accents` de [`keyword_extractor.py:97`](../src/understand/keyword_extractor.py#L97), sin stemming.
   - Índice en RAM al instanciar, sobre `Clause.index_text` (`src/rag/corpus.py`), el texto que también indexará E5.
-- [ ] **Tarea 2.3:** Implementar `src/rag/onnx_retriever.py`:
-  - Modelo `intfloat/multilingual-e5-small`: `onnx/model_qint8_avx512_vnni.onnx` (118 MB) y `onnx/tokenizer.json`, descargados en el build a `models/e5-small/` (carpeta git-ignorada) con el commit del repo y el SHA-256 de cada archivo.
-  - Prefijos `"passage: "` para el corpus y `"query: "` para la pregunta; average pooling con la máscara de atención y normalización L2, como el ejemplo de la model card; similitud coseno con `numpy`.
-  - Embeddings del corpus precomputados en el build (`data/policy_embeddings.npy`), con el SHA-256 del corpus y del modelo al lado: si no coinciden al cargar, falla en vez de servir vectores viejos.
-  - Carga perezosa en el primer turno `consulta_politica`: los turnos de disputa no pagan la carga del modelo.
-  - Los tests usan un embedder falso; el modelo real no se descarga en CI.
+- [x] **Tarea 2.3:** Implementar `src/rag/onnx_retriever.py` (hecha el 1-Oct para medirlo offline; servirlo espera que quepa en el bundle, TQ-022, y la decisión de la 4.2):
+  - Modelo `intfloat/multilingual-e5-small`: `onnx/model_qint8_avx512_vnni.onnx` (118 MB) y `onnx/tokenizer.json`, descargados a `models/e5-small/` (carpeta git-ignorada) con `uv run python -m src.rag.onnx_retriever download`, fijados al commit y al SHA-256 medidos en la 2.0. La descarga solo guarda un archivo que coincide, y el embedder vuelve a verificar al cargar.
+  - Prefijos `"passage: "` para el corpus y `"query: "` para la pregunta; average pooling con la máscara de atención y normalización L2, como el ejemplo de la model card; similitud coseno con `numpy`. Hecho, con un hilo como la función Hobby.
+  - Embeddings del corpus precomputados en el build (`data/policy_embeddings.npy`), con el SHA-256 del corpus y del modelo al lado: si no coinciden al cargar, falla en vez de servir vectores viejos. Queda para cuando E5 se sirva: offline, los 13 pasajes se codifican al crear el buscador (1,3 s).
+  - Carga perezosa en el primer turno `consulta_politica`: los turnos de disputa no pagan la carga del modelo. Queda para cuando E5 se sirva; hoy `onnxruntime` se importa recién al crear el embedder, y la API nunca importa el módulo (`src/rag/__init__.py` no lo exporta; `tests/test_runtime_dependencies.py`).
+  - Los tests usan un embedder falso; el modelo real no se descarga en CI. Hecho: prefijos, coseno, k y empates, pooling, una pregunta en portugués contra el corpus en español y la verificación de los archivos, más un test con el modelo real que se salta si no está descargado (pasó en el contenedor el 1-Oct).
 
 ### Fase 3: Compuerta, Respuestas y Tests
 
@@ -154,7 +154,7 @@ Reglas del desvío:
   - *Alta*, cláusula `internal`: texto fijo de redirección, sin contenido ni parámetros de la cláusula.
   - *Ambivalente*: lista `title_es` o `title_pt` de las cláusulas públicas candidatas y pide aclaración; si todas las candidatas son internas, se abstiene.
   - *No Relevante*: `SAFE_POLICY_ABSTENTION`, texto fijo en ES y PT.
-- [x] **Tarea 3.3:** Crear `tests/test_policy_rag.py` (hecha el 30-Sep para el corpus, BM25, la compuerta y el explicador: 55 casos, y cada una de 14 mutaciones realistas del código o del corpus rompe al menos uno; lo de la 5.1 llegó con ella; lo de E5, con la 2.3):
+- [x] **Tarea 3.3:** Crear `tests/test_policy_rag.py` (hecha el 30-Sep para el corpus, BM25, la compuerta y el explicador: 55 casos, y cada una de 14 mutaciones realistas del código o del corpus rompe al menos uno; lo de la 5.1 llegó con ella y lo de E5 con la 2.3):
   - Recuperación por cláusula con BM25 y con el embedder falso (este, con la Tarea 2.3); preguntas en portugués contra el corpus en español.
   - Abstención en preguntas fuera de alcance.
   - Precedencia (hecha con la Tarea 5.1): legal ("Superintendencia", "abogado"), angustia y mensaje mixto (monto más pregunta) siguen el flujo de disputa y no pasan por el RAG; un turno en `awaiting_clarification` o `awaiting_lock_confirmation` tampoco.
@@ -164,7 +164,7 @@ Reglas del desvío:
 ### Fase 4: Benchmark y Validación de la Hipótesis 5
 
 - [ ] **Tarea 4.1:** Implementar `src/eval/rag_benchmark.py` (`uv run python -m src.eval.rag_benchmark`), junto al resto del harness (herramienta lista el 1-Oct; falta correrla con el banco de la 1.2):
-  - Corre BM25 (E5 se suma con la Tarea 2.3) sobre dev y test. Los umbrales de cada retriever se calibran solo en dev; test se mide una vez, con los umbrales fijados, y se rechaza si ya no coincide con su `.sha256`.
+  - Corre BM25 y, con `--e5 models/e5-small`, E5 sobre dev y test; el archivo de compuerta sigue siendo el de BM25, el único que se puede servir hoy. Los umbrales de cada retriever se calibran solo en dev; test se mide una vez, con los umbrales fijados, y se rechaza si ya no coincide con su `.sha256`.
   - Calibración: entre los puntajes top observados en dev (más infinito), el par de umbrales que acierta más acciones; a igualdad, el más alto, que es el que menos responde y menos cita mal. Una redirección (cláusula interna) cuenta como respuesta que cita la cláusula recuperada.
   - `--write-gate data/rag_gate.json` escribe el archivo que enciende el explicador, con el SHA-256 del split dev y del corpus y el commit; commitearlo es la decisión de encenderlo.
   - Recuperación (preguntas con cláusula esperada): `Recall@1`, `Recall@3` y `MRR`, por idioma.
@@ -198,13 +198,13 @@ Entrega: 2026-10-05 ([`AGENTS.md`](../AGENTS.md), sección 3). La corrida RAG co
 | **1.1 Corpus (13 cláusulas con exposición, respuestas ES/PT)** | B | 2.0 h | Hecha (falta revisar el portugués) | `data/policy_corpus.json` |
 | **1.2 Banco de preguntas (dev + test congelado)** | A / C (no B) | 2.5 h | Pendiente | `data/eval/policy_questions_{dev,test}.jsonl` |
 | **2.0 Prueba de bundle y arranque en frío** | B | 1.0 h | Medida (1-Oct): E5 no cabe hoy; cabe si TQ-022 sirve el riesgo en ONNX | `docs/SUPABASE_VERCEL.md` 6.3 y 6.5 |
-| **2.1 Dependencias `pyproject.toml`** | B | 0.5 h | Hecha para BM25 (E5 espera la 2.0) | `pyproject.toml` |
+| **2.1 Dependencias `pyproject.toml`** | B | 0.5 h | Hecha (E5 en el grupo `dev` mientras no se despliegue) | `pyproject.toml` |
 | **2.2 Retriever BM25** | B | 1.0 h | Hecha | `src/rag/bm25_retriever.py` |
-| **2.3 Retriever E5 ONNX int8** | B | 2.5 h | Pendiente | `src/rag/onnx_retriever.py` |
+| **2.3 Retriever E5 ONNX int8** | B | 2.5 h | Hecha offline (1-Oct); servirla espera TQ-022 y la 4.2 | `src/rag/onnx_retriever.py` |
 | **3.1 Compuerta por retriever** | B | 1.0 h | Hecha (umbrales con la 4.1) | `src/rag/gate.py` |
 | **3.2 Explicador por plantillas** | B | 1.0 h | Hecha | `src/rag/policy_explainer.py` |
-| **3.3 Tests (precedencia y exposición incluidas)** | B | 2.0 h | Hecha (E5 con la 2.3) | `tests/test_policy_rag.py` |
-| **4.1 Benchmark y calibración en dev** | A / B | 1.5 h | Herramienta lista (1-Oct); espera el banco (1.2) | `src/eval/rag_benchmark.py` |
+| **3.3 Tests (precedencia y exposición incluidas)** | B | 2.0 h | Hecha | `tests/test_policy_rag.py` |
+| **4.1 Benchmark y calibración en dev** | A / B | 1.5 h | Herramienta lista con BM25 y E5 (1-Oct); espera el banco (1.2) | `src/eval/rag_benchmark.py` |
 | **4.2 Reporte y decisión H5** | A | 1.0 h | Pendiente | `reports/rag_evaluation_report.md` |
 | **5.1 Señal `policy_question` y desvío seguro** | B | 2.0 h | Hecha, apagada hasta `data/rag_gate.json` (4.1) | `src/understand/`, `src/orchestrator/` |
 | **5.2 Bundle real en Vercel** | B | 0.5 h | Pendiente | Logs de deploy |

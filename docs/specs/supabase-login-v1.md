@@ -1,6 +1,6 @@
 # Spec: ingreso con Supabase Auth en la demo (v1)
 
-Estado: diseño aprobado por secciones en el chat el 2026-09-30; este documento lo fija para su revisión escrita. Rama: `feat/supabase-login`, desde `main` en `c1a9bfd`. Hallazgo: AUD-02 de la auditoría v3 (plan v3, ítem 6). Enmendado el mismo día por el plan de implementación (`docs/specs/supabase-login-v1-plan.md`, sección final): `APP_ENV` en blanco u otro valor, la recarga de la página y el campo `message`.
+Estado: diseño aprobado por secciones en el chat el 2026-09-30; este documento lo fija para su revisión escrita. Rama: `feat/supabase-login`, desde `main` en `c1a9bfd`. Hallazgo: AUD-02 de la auditoría v3 (plan v3, ítem 6). Enmendado el mismo día por el plan de implementación (`docs/specs/supabase-login-v1-plan.md`, sección "Enmiendas al spec"): `APP_ENV` en blanco u otro valor, la recarga de la página y el campo `message`.
 
 - **Porción:** ingreso con Supabase Auth en el front (`@supabase/supabase-js`), el endpoint `GET /api/v1/auth/me`, el script que crea las personas en Supabase Auth y un `APP_ENV` que falla cerrado, con una guarda de arranque.
 - **Manda:** `docs/SUPABASE_VERCEL.md` sección 3 (identidad, decidida el 26-Sep) y sección 7 (el desarrollo local no necesita cuenta de Supabase), AUD-02 en `docs/reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md` y TQ-020 (proyecto `alterego-dev`, `https://lrddokaihdwrdtwfiale.supabase.co`, una clave ES256 en su JWKS).

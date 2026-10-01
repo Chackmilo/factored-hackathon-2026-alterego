@@ -29,7 +29,7 @@ El enunciado admite como fuente de identidad "mock OIDC/JWT or an identity servi
 
 ### 3.1 Modelo de personas (propuesta)
 
-- **Personas de prueba con email y contraseña.** Un script (`src/auth/seed_personas.py`, implementado el 30 sep; spec `docs/specs/supabase-login-v1.md`) las crea con la API de administración de Auth y la secret key, que vive solo en el `.env` local de quien corre el script. Cada persona de cliente lleva `app_metadata = {"customer_id": "CLI-...", "app_role": "customer"}`; la del agente de la consola lleva `{"customer_id": null, "app_role": "agent"}`.
+- **Personas de prueba con email y contraseña.** Un script (`src/auth/seed_personas.py`, implementado el 1 oct; spec `docs/specs/supabase-login-v1.md`) las crea con la API de administración de Auth y la secret key, que vive solo en el `.env` local de quien corre el script. Cada persona de cliente lleva `app_metadata = {"customer_id": "CLI-...", "app_role": "customer"}`; la del agente de la consola lleva `{"customer_id": null, "app_role": "agent"}`.
 - **Registro público deshabilitado.** Nadie crea cuentas desde la app. Una cuenta sin `customer_id` recibe 403 en los endpoints de cliente.
 - **Nunca `user_metadata`.** El usuario puede editarlo y aparece en el token: no sirve para autorizar. Solo `app_metadata`, que únicamente la secret key escribe.
 - **Sin magic links.** El SMTP por defecto envía 2 correos por hora por proyecto: no alcanza para una demo ni para el harness.
@@ -67,7 +67,7 @@ El token que FastAPI recibe como `Authorization: Bearer` se ve así (valores de 
 
 No hay secreto compartido en el API: SEC-03 desaparece en lugar de mitigarse. La documentación de Supabase ya no recomienda el secreto HS256 heredado.
 
-`GET /api/v1/auth/me` devuelve la identidad verificada (`app_role` y `customer_id`) con cualquier `APP_ENV`, y el front la lee después de ingresar para elegir entre el chat y la consola (implementado el 30 sep).
+`GET /api/v1/auth/me` devuelve la identidad verificada (`app_role` y `customer_id`) con cualquier `APP_ENV`, y el front la lee después de ingresar para elegir entre el chat y la consola (implementado el 1 oct).
 
 ### 3.4 Emisor local para tests y harness (propuesta)
 
@@ -75,7 +75,7 @@ Una interfaz `SessionVerifier` con dos implementaciones: la de JWKS de Supabase 
 
 Guarda obligatoria: el verificador local solo existe con `APP_ENV` en `test` o `development`. En producción la app se niega a arrancar si alguien lo configura, y un test lo prueba (SEC-03 revisado).
 
-Sin `APP_ENV`, en blanco o con un valor distinto de `development` o `test`, el código asume producción (falla cerrado), y ahí el app no arranca sin `SUPABASE_URL` (implementado el 30 sep).
+Sin `APP_ENV`, en blanco o con un valor distinto de `development` o `test`, el código asume producción (falla cerrado), y ahí el app no arranca sin `SUPABASE_URL` (implementado el 1 oct).
 
 ### 3.5 Límites y trampas de Auth
 

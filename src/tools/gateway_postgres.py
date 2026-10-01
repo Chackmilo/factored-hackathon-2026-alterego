@@ -119,6 +119,3 @@ class PostgresBankingGateway:
             raise ActionVerificationError(f"Verification failed: Product {product_id} status could not be verified as Blocked.")
         return {"verified": True, "action": "LOCK_CARD", "product_id": product_id, "status": verified[0], "lock_id": verified[1],
                 "reason": reason, "timestamp": datetime.utcnow().isoformat()}
-
-    def execute_open_dispute(self, *args, **kwargs):
-        raise ActionVerificationError("Cases are opened in the ops store, not in bank (read-only serving copy).")

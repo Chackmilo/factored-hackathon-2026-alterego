@@ -222,28 +222,6 @@ def test_lock_card_with_an_unknown_reason_code_changes_nothing(fixture_db):
         gateway.execute_lock_card(_session("CLI-FIX-OWNER"), "PRD-FIX-OWNER", reason_code="Preventive hold")
     assert _fetch(fixture_db, "SELECT product_status FROM silver_products WHERE product_id = ?", ["PRD-FIX-OWNER"]) == [("Active",)]
 
-def test_open_dispute_persists_case(fixture_db):
-    gateway = BankingToolGateway(db_path=fixture_db)
-    result = gateway.execute_open_dispute(
-        _session("CLI-FIX-OWNER"), "TRX-FIX-001",
-        dispute_reason="No reconozco el cargo", claimed_amount=120.0, currency="USD"
-    )
-    stored = _fetch(
-        fixture_db,
-        "SELECT customer_id, affected_product_id, claimed_amount, status FROM silver_complaints WHERE complaint_id = ?",
-        [result["case_id"]]
-    )
-    assert stored == [("CLI-FIX-OWNER", "PRD-FIX-OWNER", 120.0, "INTAKE_RECEIVED")]
-
-def test_open_dispute_rejects_other_customers_transaction(fixture_db):
-    gateway = BankingToolGateway(db_path=fixture_db)
-    with pytest.raises(UnauthorizedAccessError):
-        gateway.execute_open_dispute(
-            _session("CLI-FIX-OTHER"), "TRX-FIX-001",
-            dispute_reason="Intento cruzado", claimed_amount=120.0, currency="USD"
-        )
-    assert _fetch(fixture_db, "SELECT COUNT(*) FROM silver_complaints", []) == [(0,)]
-
 
 def test_search_escapes_merchant_text_inside_untrusted_tags(tmp_path):
     """SEC-04: a merchant name cannot close the <untrusted_merchant_data> boundary."""

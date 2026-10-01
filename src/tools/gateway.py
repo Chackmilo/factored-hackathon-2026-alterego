@@ -4,7 +4,6 @@ Every tool enforces that customer_id matches the cryptographically verified sess
 Mutating actions perform a round-trip database read-back before confirming success.
 """
 import html
-import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -236,81 +235,6 @@ class BankingToolGateway:
                 "status": verified_status[0],
                 "reason": reason,
                 "timestamp": datetime.utcnow().isoformat()
-            }
-        finally:
-            con.close()
-
-    def execute_open_dispute(
-        self,
-        session: VerifiedSession,
-        transaction_id: str,
-        dispute_reason: str,
-        claimed_amount: float,
-        currency: str
-    ) -> dict[str, Any]:
-        """
-        Act & Verify: Creates official dispute complaint ticket and reads back to verify.
-        Enforces authorization: transaction must belong to session.customer_id.
-        """
-        con = self._get_con()
-        try:
-            # 1. AUTHORIZATION CHECK
-            tx_row = con.execute(
-                "SELECT customer_id, product_id FROM silver_transactions WHERE transaction_id = ?",
-                [transaction_id]
-            ).fetchone()
-
-            if not tx_row:
-                raise ActionVerificationError(f"Transaction {transaction_id} not found in system of record.")
-
-            if tx_row[0] != session.customer_id:
-                raise UnauthorizedAccessError(
-                    f"Cross-customer violation: Transaction {transaction_id} does not belong to authenticated customer {session.customer_id}."
-                )
-
-            product_id = tx_row[1]
-            complaint_id = f"CMP-AUTO-{uuid.uuid4().hex[:12].upper()}"
-            now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-
-            # 2. ACT: Insert dispute into silver_complaints
-            con.execute(
-                """
-                INSERT INTO silver_complaints (
-                    complaint_id, creation_date, process_date, customer_id,
-                    case_type, category, subcategory, reception_channel,
-                    affected_product_id, description, claimed_amount,
-                    currency, priority, status, sla_breached, is_repeat_complainer
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-                """,
-                [
-                    complaint_id, now_str, now_str[:10], session.customer_id,
-                    "Claim", "Fraud", "Cargo no reconocido", "Chat",
-                    product_id, dispute_reason, claimed_amount,
-                    currency, "High" if claimed_amount > 500 else "Medium",
-                    "INTAKE_RECEIVED", False, False
-                ]
-            )
-
-            # 3. VERIFY: Read back from DB
-            persisted = con.execute(
-                "SELECT complaint_id, status FROM silver_complaints WHERE complaint_id = ?",
-                [complaint_id]
-            ).fetchone()
-
-            if not persisted or persisted[1] != "INTAKE_RECEIVED":
-                raise ActionVerificationError(
-                    f"Verification failed: Dispute case {complaint_id} could not be verified in system of record."
-                )
-
-            return {
-                "verified": True,
-                "action": "OPEN_DISPUTE",
-                "case_id": complaint_id,
-                "transaction_id": transaction_id,
-                "status": persisted[1],
-                "claimed_amount": claimed_amount,
-                "currency": currency,
-                "timestamp": now_str
             }
         finally:
             con.close()

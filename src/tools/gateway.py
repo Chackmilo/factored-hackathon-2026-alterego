@@ -71,7 +71,7 @@ class BankingToolGateway:
         try:
             window_clause = "AND is_within_60_days = true" if only_within_window else ""
             query = f"""
-                SELECT 
+                SELECT
                     transaction_id,
                     transaction_date,
                     process_date,
@@ -120,7 +120,7 @@ class BankingToolGateway:
         con = self._get_con()
         try:
             query = """
-                SELECT 
+                SELECT
                     customer_id,
                     full_name,
                     country,

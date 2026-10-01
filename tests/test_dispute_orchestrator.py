@@ -123,6 +123,18 @@ def test_one_named_amount_with_two_matches_opens_the_pick_without_a_reminder(orc
     assert second.policy_outcome == "AUTONOMOUS_RESOLUTION" and "cargos que mencionó" not in second.reply
 
 
+@pytest.mark.parametrize("report, reason_code", [
+    ("Me robaron la tarjeta y no reconozco un cargo de 80 dólares en Oxxo", "STOLEN_CARD_CLAIM"),
+    ("No reconozco tres cargos de mi tarjeta: 80, 120 y 850 dólares", "MULTI_CHARGE_FRAUD"),
+])
+def test_the_lock_audit_records_why_the_card_was_locked(orchestrator, owner_session, ops_store, report, reason_code):
+    cid = start(orchestrator, owner_session)
+    orchestrator.handle_message(owner_session, cid, report)
+    assert orchestrator.handle_message(owner_session, cid, "Sí").lock_status == "locked"
+    [lock] = [a for a in ops_store.list_audit(conversation_id=cid) if a["action"] == "LOCK_CARD"]
+    assert lock["details"].get("reason_code") == reason_code
+
+
 def test_statement_request_without_dispute_language_still_abstains(orchestrator, owner_session, ops_store):
     cid = start(orchestrator, owner_session)
     turn = orchestrator.handle_message(owner_session, cid, "Necesito descargar el extracto de mayo en PDF")

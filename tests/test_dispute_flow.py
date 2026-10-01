@@ -216,6 +216,12 @@ def test_lock_card_rejects_other_customers_card(fixture_db):
         gateway.execute_lock_card(_session("CLI-FIX-OWNER"), "PRD-FIX-OTHER")
     assert _fetch(fixture_db, "SELECT product_status FROM silver_products WHERE product_id = ?", ["PRD-FIX-OTHER"]) == [("Active",)]
 
+def test_lock_card_with_an_unknown_reason_code_changes_nothing(fixture_db):
+    gateway = BankingToolGateway(db_path=fixture_db)
+    with pytest.raises(ValueError):
+        gateway.execute_lock_card(_session("CLI-FIX-OWNER"), "PRD-FIX-OWNER", reason_code="Preventive hold")
+    assert _fetch(fixture_db, "SELECT product_status FROM silver_products WHERE product_id = ?", ["PRD-FIX-OWNER"]) == [("Active",)]
+
 def test_open_dispute_persists_case(fixture_db):
     gateway = BankingToolGateway(db_path=fixture_db)
     result = gateway.execute_open_dispute(

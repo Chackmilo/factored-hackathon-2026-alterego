@@ -27,6 +27,8 @@ from src.auth.session import configured_supabase_url
 ROLES = ("customer", "agent")
 SECRET_KEY_PREFIX = "sb_secret_"
 PAGE_SIZE = 1000
+REASON_FIELDS = ("error_code", "msg", "message", "error", "error_description")  # where Supabase Auth says why it refused
+REASON_MAX_CHARS = 200
 
 
 class PersonaError(ValueError):
@@ -137,6 +139,25 @@ def seed(personas: list[dict[str, Any]], email_pattern: str, client: httpx.Clien
         echo(f"{action:<12}  {p['label']:<24}  {p['app_role']:<8}  {p.get('customer_id') or '-':<16}  {email}")
 
 
+def _describe_http_error(exc: httpx.HTTPStatusError, secret_key: str) -> str:
+    """The status, the path and the reason Supabase gives, so a 401 can be told from a 403. It reads no header (the key
+    travels in one) and takes the key out of the text if a response body ever echoes it."""
+    key = secret_key.strip()
+
+    def clean(value: Any) -> str:  # redacts before the caller cuts, so a cut never leaves the start of the key behind
+        text = str(value)
+        return text.replace(key, "[redacted]") if key else text
+
+    try:
+        body = exc.response.json()
+    except ValueError:  # not JSON at all
+        body = None
+    reasons = [f"{field}: {clean(body[field])[:REASON_MAX_CHARS]}" for field in REASON_FIELDS
+               if isinstance(body, dict) and body.get(field)]
+    detail = f" ({'; '.join(reasons)})" if reasons else ""
+    return f"HTTP {exc.response.status_code} on {clean(exc.request.url.path)}{detail}"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Create or update the demo personas in Supabase Auth.")
     parser.add_argument("--email-pattern", required=True, help="Email of each persona, with {label}: you+{label}@gmail.com")
@@ -146,13 +167,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--reset-passwords", action="store_true", help="Give the existing personas a new password too")
     args = parser.parse_args(argv)
     load_dotenv()
+    secret_key = os.getenv("SUPABASE_SECRET_KEY", "")
     try:
         personas = load_personas(args.personas)
-        with admin_client(os.getenv("SUPABASE_URL", ""), os.getenv("SUPABASE_SECRET_KEY", "")) as client:
+        with admin_client(os.getenv("SUPABASE_URL", ""), secret_key) as client:
             seed(personas, args.email_pattern, client, Path(args.out), dry_run=args.dry_run,
                  reset_passwords=args.reset_passwords)
+    except httpx.HTTPStatusError as exc:
+        print(f"error: {_describe_http_error(exc, secret_key)}", file=sys.stderr)
+        return 1
     except (PersonaError, httpx.HTTPError) as exc:
-        # URLs and status codes, never the key: admin_client validates it before it becomes a header value
+        # never the key: admin_client validates it before it becomes a header value
         print(f"error: {exc}", file=sys.stderr)
         return 1
     return 0

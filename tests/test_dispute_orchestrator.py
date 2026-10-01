@@ -82,6 +82,47 @@ def test_a_high_value_charge_said_not_to_be_mine_goes_to_a_human(orchestrator, o
     assert turn.handoff_id and ops_store.list_cases(customer_id="CLI-FIX-OWNER") == []
 
 
+@pytest.mark.parametrize("text, named", [
+    ("No reconozco tres cargos de mi tarjeta: 80, 120 y 850 dólares. Creo que la clonaron.", ["TRX-A-080", "TRX-A-120", "TRX-A-850"]),
+    ("Não reconheço três compras no meu cartão: 80, 120 e 850 dólares.", ["TRX-A-080", "TRX-A-120", "TRX-A-850"]),
+    # the declined 45 counts as a named charge; the turn is decided on the first disputable one
+    ("No reconozco cargos de 45, 80 y 120 dólares", ["TRX-A-DECL", "TRX-A-080", "TRX-A-120"]),
+])
+def test_three_charges_named_at_once_go_to_a_human_with_a_lock_offer(orchestrator, owner_session, ops_store, text, named):
+    cid = start(orchestrator, owner_session)
+    turn = orchestrator.handle_message(owner_session, cid, text)
+    assert turn.policy_outcome == "MANDATORY_HITL_ESCALATION" and turn.escalation_reason == "MULTIPLE_CHARGES_48H"
+    assert turn.lock_offer["reason"] == "MULTI_CHARGE_FRAUD" and turn.state == "awaiting_lock_confirmation"
+    assert ops_store.list_cases(customer_id="CLI-FIX-OWNER") == []
+    facts = " ".join(ops_store.get_handoff(turn.handoff_id)["packet"]["verified_facts"])
+    assert all(transaction_id in facts for transaction_id in named)
+
+
+def test_two_charges_named_at_once_are_listed_and_the_other_is_remembered(orchestrator, owner_session, ops_store):
+    cid = start(orchestrator, owner_session)
+    first = orchestrator.handle_message(owner_session, cid, "No reconozco dos cargos: 80 y 120 dólares")
+    assert first.policy_outcome == "CLARIFICATION_REQUIRED" and first.clarification_reason == "MULTIPLE_CANDIDATE_CHARGES"
+    assert [c["transaction_id"] for c in first.candidates] == ["TRX-A-120", "TRX-A-080"]  # most recent first
+    second = orchestrator.handle_message(owner_session, cid, "1")
+    assert second.policy_outcome == "AUTONOMOUS_RESOLUTION"
+    assert ops_store.get_case(second.case_id)["transaction_id"] == "TRX-A-120"
+    assert "cargos que mencionó" in second.reply
+
+
+def test_amounts_that_match_several_charges_list_every_match(orchestrator, owner_session):
+    cid = start(orchestrator, owner_session)
+    turn = orchestrator.handle_message(owner_session, cid, "No reconozco dos cargos: 35 y 80 dólares")
+    assert turn.clarification_reason == "MULTIPLE_CANDIDATE_CHARGES"
+    assert [c["transaction_id"] for c in turn.candidates] == ["TRX-A-DUP2", "TRX-A-DUP1", "TRX-A-080"]
+
+
+def test_one_named_amount_with_two_matches_opens_the_pick_without_a_reminder(orchestrator, owner_session, ops_store):
+    cid = start(orchestrator, owner_session)
+    orchestrator.handle_message(owner_session, cid, "No reconozco un cargo de 35 dólares")
+    second = orchestrator.handle_message(owner_session, cid, "1")
+    assert second.policy_outcome == "AUTONOMOUS_RESOLUTION" and "cargos que mencionó" not in second.reply
+
+
 def test_statement_request_without_dispute_language_still_abstains(orchestrator, owner_session, ops_store):
     cid = start(orchestrator, owner_session)
     turn = orchestrator.handle_message(owner_session, cid, "Necesito descargar el extracto de mayo en PDF")

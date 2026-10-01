@@ -77,6 +77,18 @@ def test_a_charge_that_is_not_mine_is_disputed(text, intent, category):
     assert (result.intent, result.out_of_scope_category) == (intent, category)
 
 
+@pytest.mark.parametrize("text, amounts", [
+    ("No reconozco tres cargos: uno de 45 dólares, otro de 80 dólares y otro de 120 dólares", [45.0, 80.0, 120.0]),
+    ("No reconozco los cargos de 45, 80 y 120 dólares", [45.0, 80.0, 120.0]),  # a list shares the unit of its last amount
+    ("Não reconheço duas compras: US$ 30 e US$ 75", [30.0, 75.0]),
+    ("No reconozco un cargo de 1.250.000 pesos", [1250000.0]),
+    ("No reconozco un cargo de 80 dólares del 12 de junio", [80.0]),  # a date is no amount
+    ("Mi saldo es de 500 dólares y no reconozco un cargo de 80 dólares", [80.0]),  # the amount of a balance names no charge
+])
+def test_every_amount_a_message_names_is_read(text, amounts):
+    assert extract(text).amount_hints == amounts
+
+
 @pytest.mark.parametrize("text, charge_date", [
     ("Extravié mi tarjeta de débito anteayer en el bus", None),
     ("Ontem à noite perdi o cartão no metrô", None),

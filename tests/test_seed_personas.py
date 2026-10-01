@@ -119,6 +119,30 @@ def test_a_missing_project_url_is_refused():
         admin_client("", KEY)
 
 
+# httpx refuses an illegal header value at the first request and prints it whole in its error, and main() prints that
+# error: so the key is cleaned or refused before it becomes a header, and no refusal carries any part of it.
+@pytest.mark.parametrize("key", ["sb_publishable_abc", "eyJhbGciOiJIUzI1NiJ9.legacy"])
+def test_a_refused_key_is_not_echoed_by_the_error(key):
+    with pytest.raises(PersonaError) as refused:
+        admin_client(URL, key)
+    assert key not in str(refused.value)
+
+
+@pytest.mark.parametrize("padded", [KEY + "\n", KEY + " ", KEY + "\r\n", "\t " + KEY + " \r\n"])
+def test_whitespace_around_the_secret_key_is_stripped_before_it_becomes_a_header(padded):
+    with admin_client(URL, padded) as client:
+        assert client.headers["apikey"] == KEY
+
+
+@pytest.mark.parametrize("separator", [" ", "\t", "\n", "\x00", "\x7f", " ", "é"])
+def test_a_key_with_whitespace_or_a_stray_character_inside_is_refused_without_echoing_any_of_it(separator):
+    key = f"sb_secret_ZQ7{separator}XK9"
+    with pytest.raises(PersonaError) as refused:
+        admin_client(URL, key)
+    message = str(refused.value)
+    assert not any(part in message for part in (key, "sb_secret_", "ZQ7", "XK9"))
+
+
 @pytest.mark.parametrize("personas", [
     [{"label": "x", "app_role": "customer"}],                       # a customer without an id
     [{"label": "x", "app_role": "agent", "customer_id": "CLI-1"}],  # an agent with one

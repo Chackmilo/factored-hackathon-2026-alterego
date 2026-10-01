@@ -19,6 +19,9 @@ from src.auth.session import (
     local_issuer,
 )
 
+REPO = Path(__file__).resolve().parents[1]
+NO_DOTENV = "import dotenv; dotenv.load_dotenv = lambda *args, **kwargs: False; "  # python -c finds the .env of any parent folder
+
 
 def _claims(**overrides):
     now = int(time.time())
@@ -98,7 +101,7 @@ def test_production_refuses_the_local_issuer(monkeypatch):
 
 def _import_app(**env):
     """Import the API in a fresh interpreter, as uvicorn does at startup, with these environment overrides."""
-    return subprocess.run([sys.executable, "-c", "import src.api.app"], cwd=Path(__file__).resolve().parents[1],
+    return subprocess.run([sys.executable, "-c", "import src.api.app"], cwd=REPO,
                           env={**os.environ, **env}, capture_output=True, text=True)
 
 
@@ -111,3 +114,28 @@ def test_the_app_refuses_to_start_with_the_local_issuer_in_production():
 def test_the_app_starts_in_production_without_the_local_issuer():
     result = _import_app(APP_ENV="production", LOCAL_ISSUER_ENABLED="false")
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize("app_env", [None, "", "preview"])
+def test_only_development_and_test_turn_the_local_issuer_on(monkeypatch, app_env):
+    """Fails closed: no APP_ENV, a blank one or any other value means production."""
+    if app_env is None:
+        monkeypatch.delenv("APP_ENV", raising=False)
+    else:
+        monkeypatch.setenv("APP_ENV", app_env)
+    monkeypatch.delenv("LOCAL_ISSUER_ENABLED", raising=False)
+    assert session_module.local_issuer_enabled() is False
+
+
+@pytest.mark.parametrize("app_env", [None, ""])
+def test_without_app_env_the_app_runs_as_production(app_env):
+    """A deploy that forgets APP_ENV issues no local tokens. No .env may supply the variable here."""
+    env = {k: v for k, v in os.environ.items() if k not in ("APP_ENV", "LOCAL_ISSUER_ENABLED")}
+    if app_env is not None:
+        env["APP_ENV"] = app_env
+    env["SUPABASE_URL"] = "https://proj.supabase.co"
+    code = NO_DOTENV + ("import src.api.app; from src.core.config import settings; "
+                        "from src.auth.session import local_issuer_enabled; print(settings.app_env, local_issuer_enabled())")
+    result = subprocess.run([sys.executable, "-c", code], cwd=REPO, env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.split() == ["production", "False"]

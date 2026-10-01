@@ -20,6 +20,7 @@ from src.tools.gateway import (
     RecordNotFoundError,
     SystemOfRecordUnavailableError,
     UnauthorizedAccessError,
+    check_lock_reason,
 )
 
 BUSINESS_TODAY = date(2026, 6, 17)
@@ -96,8 +97,9 @@ class PostgresBankingGateway:
         return [{"customer_id": r[0], "segment": r[1], "country": r[2], "account_age_days": int(r[3]), "complaints_last_90d": int(r[4])} for r in rows]
 
     def execute_lock_card(self, session: VerifiedSession, product_id: str, reason: str = "Preventive security hold for dispute",
-                          lock_id: str | None = None) -> dict[str, Any]:
+                          lock_id: str | None = None, reason_code: str = "STOLEN_CARD_CLAIM") -> dict[str, Any]:
         """Act: mark the offered lock as locked and verified in ops.card_locks (or insert one). Verify: read the effective status back."""
+        check_lock_reason(reason_code)
         with self._con() as con:
             owner = con.execute("SELECT customer_id FROM bank.products WHERE product_id = %s", [product_id]).fetchone()
             if not owner:
@@ -111,7 +113,7 @@ class PostgresBankingGateway:
             if not updated:
                 lock_id = f"LOCK-{uuid.uuid4().hex[:12].upper()}"
                 con.execute("""INSERT INTO ops.card_locks (lock_id, conversation_id, customer_id, product_id, reason, status, verified, created_at, updated_at)
-                               VALUES (%s, NULL, %s, %s, 'STOLEN_CARD_CLAIM', 'locked', TRUE, now(), now())""", [lock_id, session.customer_id, product_id])
+                               VALUES (%s, NULL, %s, %s, %s, 'locked', TRUE, now(), now())""", [lock_id, session.customer_id, product_id, reason_code])
             verified = con.execute("SELECT product_status, active_lock_id FROM ops.v_product_status WHERE product_id = %s", [product_id]).fetchone()
         if not verified or verified[0] != "Blocked":
             raise ActionVerificationError(f"Verification failed: Product {product_id} status could not be verified as Blocked.")

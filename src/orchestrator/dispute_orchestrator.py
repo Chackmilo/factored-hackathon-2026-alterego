@@ -440,8 +440,10 @@ class DisputeOrchestrator:
         final_state = STATE_ESCALATED if has_handoff else STATE_CLOSED
         result = TurnResult(conversation_id=cid, state=conv["state"], language=language, reply="", signals=u.as_signals())
         if u.said_yes and not u.said_no:
+            reason_code = offered[0]["reason"] if offered else "STOLEN_CARD_CLAIM"
             try:
-                outcome = self.gateway.execute_lock_card(session, product_id, reason="Preventive temporary lock confirmed by the customer", lock_id=lock_id)
+                outcome = self.gateway.execute_lock_card(session, product_id, reason="Preventive temporary lock confirmed by the customer",
+                                                         lock_id=lock_id, reason_code=reason_code)
             except (ActionVerificationError, UnauthorizedAccessError, *SYSTEM_OF_RECORD_UNAVAILABLE) as exc:  # a timeout leaves the write unverified
                 self.ops.audit(conversation_id=cid, customer_id=session.customer_id, actor="system", action="LOCK_CARD_FAILED",
                                details={"product_id": product_id, "error": str(exc)}, verified=False)
@@ -462,7 +464,8 @@ class DisputeOrchestrator:
             if lock_id:
                 self.ops.update_lock(lock_id, "locked", verified=True)
             self.ops.audit(conversation_id=cid, customer_id=session.customer_id, actor="customer", action="LOCK_CARD",
-                           details={"lock_id": lock_id, "product_id": product_id, "read_back_status": outcome["status"]}, verified=True)
+                           details={"lock_id": lock_id, "product_id": product_id, "reason_code": reason_code,
+                                    "read_back_status": outcome["status"]}, verified=True)
             result.reply = TEXT["lock_done"][language].format(product=self._card_label(product_id))
             result.lock_status = "locked"
             result.actions.append({"action": "LOCK_CARD", "product_id": product_id, "verified": True})

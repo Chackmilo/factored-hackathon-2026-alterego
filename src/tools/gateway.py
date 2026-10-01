@@ -31,6 +31,15 @@ class SystemOfRecordUnavailableError(Exception):
     """Raised when the system of record cannot be reached or does not answer in time; the outcome of a write is unknown."""
     pass
 
+LOCK_REASON_CODES = ("STOLEN_CARD_CLAIM", "MULTI_CHARGE_FRAUD")  # the CHECK on ops.card_locks.reason (0001_ops.sql)
+
+
+def check_lock_reason(code: str) -> str:
+    """A card lock reason code the ops schema accepts, checked before any write."""
+    if code not in LOCK_REASON_CODES:
+        raise ValueError(f"Unknown card lock reason code {code!r}; expected one of {', '.join(LOCK_REASON_CODES)}.")
+    return code
+
 def _records(frame) -> list[dict[str, Any]]:
     """Rows with None for SQL NULL, as the Postgres gateway returns them: pandas reads NULL as NaN or NaT, and NaN passes `is not None`."""
     return frame.astype(object).where(frame.notna(), None).to_dict(orient="records")
@@ -180,11 +189,13 @@ class BankingToolGateway:
         product_id: str,
         reason: str = "Preventive security hold for dispute",
         lock_id: str | None = None,  # used by the Postgres gateway; the DuckDB one writes silver_products
+        reason_code: str = "STOLEN_CARD_CLAIM",
     ) -> dict[str, Any]:
         """
         Act & Verify: Locks customer card and reads back status to confirm.
         Enforces authorization: product must belong to session.customer_id.
         """
+        check_lock_reason(reason_code)
         con = self._get_con()
         try:
             # 1. AUTHORIZATION CHECK

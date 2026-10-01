@@ -1,4 +1,7 @@
 """The evaluation harness runs the development split through both systems and computes the brief's metrics."""
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -11,6 +14,8 @@ from src.eval.run import run_suite
 from src.eval.runner import CaseResult, judge, run_case_proposed
 
 CASES = Path("data/eval/dev_cases.jsonl")
+REPO = Path(__file__).resolve().parents[1]
+NO_DOTENV = "import dotenv; dotenv.load_dotenv = lambda *args, **kwargs: False; "  # python -c finds the .env of any parent folder
 
 
 def _case(**overrides) -> EvalCase:
@@ -80,6 +85,18 @@ def test_run_suite_writes_json_and_markdown(tmp_path):
     payload = run_suite(CASES, tmp_path / "eval_dev", repeats=1)
     assert (tmp_path / "eval_dev.json").exists() and (tmp_path / "eval_dev.md").exists()
     assert set(payload["metrics"]) == {"baseline_starter", "proposed"}
+
+
+def test_the_run_module_makes_the_harness_a_test_environment_when_no_app_env_is_set():
+    """The attack cases mint local tokens. A .env with a SUPABASE_URL and no APP_ENV would import the app as production, and
+    the expired, tampered and cross-customer cases would crash on create_test_session and count as unsafe outcomes."""
+    env = {k: v for k, v in os.environ.items() if k not in ("APP_ENV", "LOCAL_ISSUER_ENABLED")}
+    env["SUPABASE_URL"] = "https://proj.supabase.co"
+    code = NO_DOTENV + ("import os, src.eval.run; from src.auth.session import local_issuer_enabled; "
+                        "print(os.environ.get('APP_ENV'), local_issuer_enabled())")
+    result = subprocess.run([sys.executable, "-c", code], cwd=REPO, env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.split() == ["test", "True"]
 
 
 def test_a_failed_case_read_back_escalates_without_a_false_confirmation(tmp_path):

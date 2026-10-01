@@ -119,6 +119,28 @@ def test_a_missing_project_url_is_refused():
         admin_client("", KEY)
 
 
+@pytest.mark.parametrize("url", [
+    "http://proj.supabase.co",
+    "proj.supabase.co",
+    "# https://<project-ref>.supabase.co; the API verifies ES256 tokens against its JWKS and issuer",  # a copied .env.example
+], ids=["http", "bare host", "template comment"])
+def test_a_project_url_that_is_not_https_is_refused(url):
+    with pytest.raises(PersonaError):
+        admin_client(url, KEY)
+
+
+def test_a_refused_project_url_is_not_echoed_by_the_error():
+    """The secret key pasted into SUPABASE_URL by mistake must not come back in the message main() prints."""
+    with pytest.raises(PersonaError) as refused:
+        admin_client(KEY, KEY)
+    assert KEY not in str(refused.value)
+
+
+def test_a_padded_project_url_with_a_trailing_slash_is_cleaned():
+    with admin_client(" https://proj.supabase.co/ ", KEY) as client:
+        assert str(client.base_url) == "https://proj.supabase.co/auth/v1/"  # httpx keeps a trailing slash on a base URL
+
+
 # httpx refuses an illegal header value at the first request and prints it whole in its error, and main() prints that
 # error: so the key is cleaned or refused before it becomes a header, and no refusal carries any part of it.
 @pytest.mark.parametrize("key", ["sb_publishable_abc", "eyJhbGciOiJIUzI1NiJ9.legacy"])

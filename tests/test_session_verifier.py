@@ -5,6 +5,7 @@ import sys
 import time
 from pathlib import Path
 
+import dotenv
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -86,6 +87,37 @@ def test_supabase_jwks_path_verifies_project_tokens():
         verifier.verify(unknown_kid)
 
 
+def test_a_padded_supabase_url_with_a_trailing_slash_still_names_the_project_issuer():
+    """A URL pasted with its padding and slash must give the issuer <url>/auth/v1 that Supabase puts in `iss`."""
+    key = ec.generate_private_key(ec.SECP256R1())
+    jwk = jwt.algorithms.ECAlgorithm.to_jwk(key.public_key(), as_dict=True)
+    jwk.update({"kid": "sb-key-1", "alg": "ES256", "use": "sig"})
+    verifier = SessionVerifier(supabase_url=" https://proj.supabase.co/ ", jwks={"keys": [jwk]})
+    token = jwt.encode(_claims(iss="https://proj.supabase.co/auth/v1"), key, algorithm="ES256", headers={"kid": "sb-key-1"})
+    assert verifier.verify(token).customer_id == "CLI-1"
+
+
+@pytest.mark.parametrize("raw, expected", [
+    (" https://proj.supabase.co/ ", "https://proj.supabase.co"),
+    ("https://proj.supabase.co", "https://proj.supabase.co"),
+    ("# https://<project-ref>.supabase.co; the API verifies ES256 tokens against its JWKS and issuer", None),
+    ("http://proj.supabase.co", None),
+    ("proj.supabase.co", None),
+    ("", None),
+    ("   ", None),
+], ids=["padded and slashed", "clean", "template comment", "http", "bare host", "blank", "spaces"])
+def test_configured_supabase_url_keeps_only_a_clean_https_url(raw, expected):
+    assert session_module.configured_supabase_url(raw) == expected
+
+
+def test_configured_supabase_url_reads_the_environment_only_when_given_nothing(monkeypatch):
+    monkeypatch.setenv("SUPABASE_URL", " https://proj.supabase.co/ ")
+    assert session_module.configured_supabase_url() == "https://proj.supabase.co"
+    assert session_module.configured_supabase_url("") is None  # an explicit blank never falls back to the environment
+    monkeypatch.delenv("SUPABASE_URL")
+    assert session_module.configured_supabase_url() is None
+
+
 def test_production_refuses_the_local_issuer(monkeypatch):
     token = create_test_session("CLI-1")  # minted while the local issuer is enabled
     monkeypatch.setenv("APP_ENV", "production")
@@ -124,6 +156,23 @@ def test_without_supabase_url_the_app_refuses_to_start(app_env):
     assert f"APP_ENV={app_env} needs SUPABASE_URL" in result.stderr
 
 
+@pytest.mark.parametrize("supabase_url", [
+    "# https://<project-ref>.supabase.co; the API verifies ES256 tokens against its JWKS and issuer",  # a copied .env.example
+    "http://proj.supabase.co",
+    "proj.supabase.co",
+], ids=["template comment", "http", "bare host"])
+def test_production_refuses_a_supabase_url_that_is_not_an_https_url(supabase_url):
+    """python-dotenv reads `SUPABASE_URL=   # comment` as the comment text: a blank check lets it through and every token gets 401."""
+    result = _import_app(APP_ENV="production", LOCAL_ISSUER_ENABLED="false", SUPABASE_URL=supabase_url)
+    assert result.returncode != 0
+    assert "APP_ENV=production needs SUPABASE_URL" in result.stderr
+
+
+def test_production_starts_with_a_padded_supabase_url_and_a_trailing_slash():
+    result = _import_app(APP_ENV="production", LOCAL_ISSUER_ENABLED="false", SUPABASE_URL=" https://proj.supabase.co/ ")
+    assert result.returncode == 0, result.stderr
+
+
 @pytest.mark.parametrize("app_env", [None, "", "preview"])
 def test_only_development_and_test_turn_the_local_issuer_on(monkeypatch, app_env):
     """Fails closed: no APP_ENV, a blank one or any other value means production."""
@@ -147,3 +196,14 @@ def test_without_app_env_the_app_runs_as_production(app_env):
     result = subprocess.run([sys.executable, "-c", code], cwd=REPO, env=env, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert result.stdout.split() == ["production", "False"]
+
+
+@pytest.mark.parametrize("name", ["SUPABASE_URL", "SUPABASE_SECRET_KEY", "DATABASE_URL"])
+def test_the_env_template_leaves_these_variables_blank(name):
+    """python-dotenv reads `KEY=   # comment` as the comment text, so a blank variable keeps its comment on the line above."""
+    assert not dotenv.dotenv_values(REPO / ".env.example")[name]
+
+
+def test_no_variable_of_the_env_template_takes_a_comment_for_its_value():
+    values = dotenv.dotenv_values(REPO / ".env.example")
+    assert [name for name, value in values.items() if (value or "").startswith("#")] == []

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { loadSession, onUnauthorized, saveSession, type Session } from './api'
+import { clearSession, loadSession, onUnauthorized, saveSession, type Session } from './api'
 import Chat from './Chat'
 import Console from './Console'
 import Login from './Login'
@@ -19,7 +19,7 @@ export default function App() {
   }
 
   const logout = () => {
-    saveSession(null)
+    void clearSession()
     setSession(null)
   }
 

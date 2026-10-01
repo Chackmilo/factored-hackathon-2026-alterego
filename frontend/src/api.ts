@@ -1,6 +1,8 @@
 // Typed client for the dispute-intake API. All URLs are relative (/api/...): the Vite dev
 // server proxies them to FastAPI on port 8000 and, in production, FastAPI serves the build itself.
 
+import { supabase } from './supabase'
+
 export type AppRole = 'customer' | 'agent'
 export type Language = 'es' | 'pt'
 export type ConversationState = 'new' | 'awaiting_clarification' | 'awaiting_lock_confirmation' | 'closed' | 'escalated'
@@ -13,12 +15,25 @@ export interface Persona {
   complaints_last_90d: number
 }
 
+// Who is signed in, as GET /api/v1/auth/me verified it. label is what the header shows: the email
+// with Supabase Auth, the persona id in local mode. The token is kept only in local mode; with
+// Supabase, supabase-js holds the session and every request asks it for a fresh access token.
 export interface Session {
+  app_role: AppRole
+  customer_id: string | null
+  label: string
+  token?: string
+}
+
+export interface Identity {
+  app_role: AppRole
+  customer_id: string | null
+}
+
+export interface LocalToken {
   token: string
   app_role: AppRole
   customer_id: string
-  segment?: string
-  country?: string
 }
 
 export interface Conversation {
@@ -206,6 +221,20 @@ export function onUnauthorized(handler: (() => void) | null): void {
   unauthorizedHandler = handler
 }
 
+/** Forget the session: ours, and the Supabase one on this device only. Personas are shared, so never 'global'. */
+export async function clearSession(): Promise<void> {
+  saveSession(null)
+  if (supabase) await supabase.auth.signOut({ scope: 'local' })
+}
+
+async function bearerToken(): Promise<string | null> {
+  if (supabase) {
+    const { data } = await supabase.auth.getSession() // refreshes an expired access token first
+    return data.session?.access_token ?? null
+  }
+  return loadSession()?.token ?? null
+}
+
 // ---------------------------------------------------------------- fetch wrapper
 
 export class ApiError extends Error {
@@ -236,8 +265,8 @@ async function request<T>(path: string, init: RequestInit = {}, auth = true): Pr
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (init.body) headers['Content-Type'] = 'application/json'
   if (auth) {
-    const session = loadSession()
-    if (session) headers.Authorization = `Bearer ${session.token}`
+    const token = await bearerToken()
+    if (token) headers.Authorization = `Bearer ${token}`
   }
   let response: Response
   try {
@@ -256,7 +285,7 @@ async function request<T>(path: string, init: RequestInit = {}, auth = true): Pr
   }
   if (!response.ok) {
     if (response.status === 401 && auth) {
-      saveSession(null)
+      await clearSession()
       unauthorizedHandler?.()
     }
     throw new ApiError(response.status, extractDetail(body, `${response.status} ${response.statusText}`))
@@ -279,7 +308,11 @@ export const api = {
   personas: () => request<Persona[]>('/api/v1/auth/personas', {}, false),
 
   testSession: (customer_id: string, app_role: AppRole) =>
-    request<Session>('/api/v1/auth/test-session', { method: 'POST', body: JSON.stringify({ customer_id, app_role }) }, false),
+    request<LocalToken>('/api/v1/auth/test-session', { method: 'POST', body: JSON.stringify({ customer_id, app_role }) }, false),
+
+  /** The verified identity. A token passed here wins over the stored one (local sign-in, before the session is saved). */
+  me: (token?: string) =>
+    request<Identity>('/api/v1/auth/me', token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
 
   startConversation: (language: Language) =>
     request<Conversation>('/api/v1/disputes/conversations', { method: 'POST', body: JSON.stringify({ language }) }),

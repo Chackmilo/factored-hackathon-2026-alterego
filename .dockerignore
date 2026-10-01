@@ -6,6 +6,7 @@ personas.local.json
 **/__pycache__
 frontend/node_modules
 frontend/dist
+frontend/.env.local
 data/*.duckdb
 data/*.duckdb.wal
 data/kaggle

@@ -68,6 +68,14 @@ def local_issuer_enabled() -> bool:
     return configured in ("", "true")
 
 
+def check_production_identity() -> None:
+    """Outside development and test only Supabase tokens pass, so the project URL is required: without it nobody signs in."""
+    env = _app_env()
+    if env not in LOCAL_ENVS and not (os.getenv("SUPABASE_URL") or "").strip():
+        raise RuntimeError(f"APP_ENV={env} needs SUPABASE_URL: without it no session token can be verified. "
+                           "Set SUPABASE_URL, or APP_ENV=development for local work.")
+
+
 class LocalIssuer:
     """Signs Supabase-shaped claims with a per-process ES256 key and publishes the matching JWKS."""
 

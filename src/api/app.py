@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from src.agents.orchestrator import HybridOrchestrator
 from src.api.dispute_routes import router as dispute_router
-from src.auth.session import local_issuer_enabled
+from src.auth.session import check_production_identity, local_issuer_enabled
 from src.core.config import settings
 from src.domain.schemas import (
     CustomerInteractionInput,
@@ -18,6 +18,7 @@ from src.hitl.queue import hitl_queue
 from src.privacy.pii_masker import PIIMasker
 
 local_issuer_enabled()  # SEC-03: raises at import, so the app refuses to start, when LOCAL_ISSUER_ENABLED=true meets APP_ENV=production
+check_production_identity()  # and when production has no SUPABASE_URL to verify tokens against
 
 app = FastAPI(
     title=settings.app_name,

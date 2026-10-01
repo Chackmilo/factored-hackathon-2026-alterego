@@ -221,3 +221,50 @@ def test_passwords_of_created_accounts_survive_a_failure(tmp_path):
 def test_open_sign_up_is_reported(tmp_path):
     assert any("sign-up is on" in line for line in run(FakeAuth(disable_signup=False), [AGENT], tmp_path))
     assert not any("sign-up" in line for line in run(FakeAuth(disable_signup=True), [AGENT], tmp_path))
+
+
+def http_failure(status, **response):
+    """The error the script gets when Supabase answers `status`: a request through a MockTransport, then raise_for_status."""
+    transport = httpx.MockTransport(lambda request: httpx.Response(status, **response))
+    with admin_client(URL, KEY, transport=transport) as client, pytest.raises(httpx.HTTPStatusError) as raised:
+        client.get("/admin/users", params={"page": 1, "per_page": 1000}).raise_for_status()
+    return raised.value
+
+
+def test_an_http_error_shows_the_status_the_path_and_the_reason_supabase_gives():
+    text = seed_personas._describe_http_error(http_failure(401, json={"error_code": "bad_jwt", "msg": "invalid JWT"}), KEY)
+    assert "401" in text and "/auth/v1/admin/users" in text and "bad_jwt" in text and "invalid JWT" in text
+
+
+def test_every_reason_field_of_the_response_is_shown():
+    body = {"error_code": "code-1", "msg": "msg-2", "message": "message-3", "error": "error-4", "error_description": "description-5"}
+    text = seed_personas._describe_http_error(http_failure(400, json=body), KEY)
+    assert all(value in text for value in body.values())
+
+
+def test_each_reason_is_cut_to_200_characters():
+    text = seed_personas._describe_http_error(http_failure(400, json={"msg": "y" * 500, "error": "z" * 500}), KEY)
+    assert "y" * 200 in text and "y" * 201 not in text
+    assert "z" * 200 in text and "z" * 201 not in text
+
+
+@pytest.mark.parametrize("echoed", [f"invalid API key {KEY}", "x" * 190 + KEY], ids=["whole", "at the cut"])
+def test_a_response_that_echoes_the_secret_key_is_redacted(echoed):
+    """The second case puts the key across the 200-character cut: cutting before redacting would leave its first ten characters."""
+    text = seed_personas._describe_http_error(http_failure(401, json={"msg": echoed}), KEY)
+    assert "[redacted]" in text
+    assert KEY not in text and "sb_secret" not in text
+
+
+@pytest.mark.parametrize("content", [b"<html>Bad gateway</html>", b"[1, 2]"], ids=["not json", "json but not an object"])
+def test_a_response_without_a_reason_still_gives_the_status_and_the_path(content):
+    text = seed_personas._describe_http_error(http_failure(502, content=content), KEY)
+    assert "502" in text and "/auth/v1/admin/users" in text
+
+
+def test_no_header_reaches_the_description():
+    """The key travels in the apikey request header, and a response header is none of the reader's business."""
+    error = http_failure(403, json={"msg": "User not allowed"}, headers={"x-request-id": "REQ-1234", "set-cookie": "sid=abc"})
+    text = seed_personas._describe_http_error(error, KEY)
+    assert "User not allowed" in text
+    assert not any(part in text for part in (KEY, "apikey", "REQ-1234", "x-request-id", "sid=abc"))

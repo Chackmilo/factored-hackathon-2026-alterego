@@ -64,6 +64,24 @@ def test_statement_mention_with_dispute_language_opens_the_case(orchestrator, ow
     assert ops_store.get_case(turn.case_id)["transaction_id"] == transaction_id
 
 
+@pytest.mark.parametrize("text, language, transaction_id", [
+    ("Vi en el extracto un cargo de 120 dólares en Cine Premium que no es mío", "es", "TRX-A-120"),
+    ("No extrato tem uma compra de 80 dólares no Oxxo que não é minha", "pt", "TRX-A-080"),
+])
+def test_a_charge_said_not_to_be_mine_opens_the_case(orchestrator, owner_session, ops_store, text, language, transaction_id):
+    cid = start(orchestrator, owner_session)
+    turn = orchestrator.handle_message(owner_session, cid, text)
+    assert turn.language == language and turn.policy_outcome == "AUTONOMOUS_RESOLUTION"
+    assert ops_store.get_case(turn.case_id)["transaction_id"] == transaction_id
+
+
+def test_a_high_value_charge_said_not_to_be_mine_goes_to_a_human(orchestrator, owner_session, ops_store):
+    cid = start(orchestrator, owner_session)
+    turn = orchestrator.handle_message(owner_session, cid, "En el estado de cuenta me sale una compra de 850 dólares en Super Ahorro que no es mía")
+    assert turn.policy_outcome == "MANDATORY_HITL_ESCALATION" and turn.escalation_reason == "AMOUNT_EXCEEDS_500_USD"
+    assert turn.handoff_id and ops_store.list_cases(customer_id="CLI-FIX-OWNER") == []
+
+
 def test_statement_request_without_dispute_language_still_abstains(orchestrator, owner_session, ops_store):
     cid = start(orchestrator, owner_session)
     turn = orchestrator.handle_message(owner_session, cid, "Necesito descargar el extracto de mayo en PDF")

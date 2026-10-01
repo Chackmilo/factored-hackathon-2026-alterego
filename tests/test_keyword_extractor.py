@@ -60,6 +60,23 @@ def test_dispute_language_wins_over_a_statement_mention_only(text, intent, categ
     assert (result.intent, result.out_of_scope_category) == (intent, category)
 
 
+@pytest.mark.parametrize("text, intent, category", [
+    ("Vi en el extracto un cargo de 35 dólares que no es mío", "cargo_no_reconocido", None),
+    ("En mi estado de cuenta hay una compra de 20 dólares que no es mía", "cargo_no_reconocido", None),
+    ("Esos dos retiros que salen en el extracto no son míos", "cargo_no_reconocido", None),
+    ("tengo un cargo en el extracto de 10 dolares que no es mio", "cargo_no_reconocido", None),
+    ("No es mío ese cobro del martes", "cargo_no_reconocido", None),
+    ("No meu extrato tem um lançamento de 30 dólares que não é meu", "cargo_no_reconocido", None),
+    ("Os saques que aparecem no extrato não são meus", "cargo_no_reconocido", None),
+    # what is not mine names no charge: the statement or the balance itself
+    ("El extracto que me llegó no es mío", "fuera_de_alcance", "saldo_o_extracto"),
+    ("Mi saldo de 80 dólares no es mío", "fuera_de_alcance", "saldo_o_extracto"),
+])
+def test_a_charge_that_is_not_mine_is_disputed(text, intent, category):
+    result = extract(text)
+    assert (result.intent, result.out_of_scope_category) == (intent, category)
+
+
 @pytest.mark.parametrize("text, charge_date", [
     ("Extravié mi tarjeta de débito anteayer en el bus", None),
     ("Ontem à noite perdi o cartão no metrô", None),

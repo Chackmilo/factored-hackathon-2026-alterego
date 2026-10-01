@@ -39,13 +39,13 @@ router = APIRouter(prefix="/api/v1")
 
 
 def load_scorer(model_path: Path):
-    """The transferred model (bundle with a contract version, src.ml.fraud_risk_transfer) or the legacy one; None when no file."""
+    """The transferred model (bundle with a contract version, src.ml.transfer_scorer) or the legacy one; None when no file."""
     if not model_path.exists():
         return None
     import joblib
 
     if "contract_version" in joblib.load(model_path):
-        from src.ml.fraud_risk_transfer import TransferRiskScorer
+        from src.ml.transfer_scorer import TransferRiskScorer
 
         return TransferRiskScorer(model_path)
     from src.ml.fraud_risk import RiskScorer

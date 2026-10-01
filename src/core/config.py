@@ -7,7 +7,7 @@ load_dotenv()
 class Settings(BaseModel):
     app_name: str = "OmniGuard AI - Hybrid Fraud & Customer Resolution Engine"
     app_version: str = "0.1.0"
-    app_env: str = os.getenv("APP_ENV", "development")
+    app_env: str = (os.getenv("APP_ENV") or "production").strip().lower()  # missing or blank: production (fails closed)
     debug: bool = os.getenv("DEBUG", "True").lower() == "true"
     port: int = int(os.getenv("APP_PORT", "8000"))
     

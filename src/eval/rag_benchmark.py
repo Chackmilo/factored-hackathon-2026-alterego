@@ -3,6 +3,7 @@ Benchmark of the policy explainer (docs/RAG_IMPLEMENTATION_ROADMAP.md, Task 4.1)
 team's bank of policy questions, with the gate thresholds calibrated on the development split only.
 
     uv run python -m src.eval.rag_benchmark --out reports/rag_benchmark
+    uv run python -m src.eval.rag_benchmark --out reports/rag_benchmark --e5 models/e5-small   # E5 beside BM25 (Task 2.3)
     uv run python -m src.eval.rag_benchmark --out reports/rag_benchmark --write-gate data/rag_gate.json
 
 A bank row (JSONL, Task 1.2): question_id, language (es or pt), text, expected_action (answer, clarify or abstain),
@@ -29,6 +30,7 @@ from src.eval.report import _fmt
 from src.rag.bm25_retriever import BM25Retriever, Hit
 from src.rag.corpus import DEFAULT_CORPUS_PATH, PolicyCorpus, load_corpus
 from src.rag.gate import ConfidenceGate
+from src.rag.onnx_retriever import MODEL_REPO, MODEL_REVISION, E5Retriever, OnnxE5Embedder
 from src.rag.policy_explainer import PolicyExplainer
 
 DEFAULT_DEV = Path("data/eval/policy_questions_dev.jsonl")
@@ -159,11 +161,13 @@ def _frozen(test_path: Path) -> str:
 
 
 def benchmark(dev_path: str | Path, test_path: str | Path, corpus_path: Path = DEFAULT_CORPUS_PATH,
-              retrievers: dict[str, Any] | None = None) -> dict[str, Any]:
+              retrievers: dict[str, Any] | None = None, e5_model_dir: str | Path | None = None) -> dict[str, Any]:
     corpus = load_corpus(corpus_path)
     frozen = _frozen(Path(test_path))
     dev, test = load_questions(dev_path, corpus), load_questions(test_path, corpus)
-    retrievers = retrievers or {"bm25": BM25Retriever(corpus)}  # E5 joins with Task 2.3
+    retrievers = retrievers or {"bm25": BM25Retriever(corpus)}
+    if e5_model_dir is not None:
+        retrievers = {**retrievers, "e5": E5Retriever(corpus, OnnxE5Embedder(Path(e5_model_dir)))}
     results = {}
     for name, retriever in retrievers.items():
         gate = calibrate(dev, corpus, retriever)
@@ -179,6 +183,8 @@ def benchmark(dev_path: str | Path, test_path: str | Path, corpus_path: Path = D
                     "provenance": ", ".join(sorted({q.provenance for q in dev}))},
             "test": {"path": str(test_path), "questions": len(test), "sha256": _sha256(Path(test_path)), "frozen": frozen,
                      "provenance": ", ".join(sorted({q.provenance for q in test}))}}
+    if e5_model_dir is not None:  # its files matched their pinned SHA-256 when the embedder loaded
+        meta["e5"] = {"model": MODEL_REPO, "revision": MODEL_REVISION, "model_dir": str(e5_model_dir)}
     return {"meta": meta, "retrievers": results}
 
 
@@ -194,6 +200,8 @@ def render_markdown(payload: dict[str, Any]) -> str:
              f"{meta['test']['frozen']}. Corpus SHA-256 `{meta['corpus_sha256'][:12]}`; commit {meta['commit']}. "
              "The thresholds come from the development split only; the test split is measured once with them. Offline "
              "results on team-written questions; the retrievers are deterministic, so one run."]
+    if "e5" in meta:
+        lines[-1] += f" E5: `{meta['e5']['model']}` at revision `{meta['e5']['revision'][:12]}`, int8 ONNX, files checked against their SHA-256."
     for name, result in payload["retrievers"].items():
         dev, test = result["dev"]["all"], result["test"]["all"]
         lines += ["", f"## {name} (gate: tau_upper {result['gate']['tau_upper']:.3f}, tau_lower {result['gate']['tau_lower']:.3f})", "",
@@ -220,17 +228,21 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--test", default=str(DEFAULT_TEST), help="test split (JSONL), frozen by <test>.sha256 when present")
     parser.add_argument("--out", default="reports/rag_benchmark", help="output prefix (writes <out>.json and <out>.md)")
     parser.add_argument("--write-gate", metavar="PATH", help="write the BM25 gate file that turns the explainer on")
+    parser.add_argument("--e5", metavar="MODEL_DIR", help="also measure E5 with the model in MODEL_DIR "
+                        "(uv run python -m src.rag.onnx_retriever download); the gate file stays BM25's")
     args = parser.parse_args(argv)
     for path in (args.dev, args.test):
         if not Path(path).exists():
             parser.error(f"{path} does not exist: the team writes the question bank (roadmap Task 1.2)")
-    payload = benchmark(args.dev, args.test)
+    payload = benchmark(args.dev, args.test, e5_model_dir=args.e5)
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.with_suffix(".json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
     out.with_suffix(".md").write_text(render_markdown(payload), encoding="utf-8")
+    for name, result in payload["retrievers"].items():
+        print(f"{name}: gate {result['gate']}, test correct action {_fmt(result['test']['all']['correct_action'])}")
+    print(f"wrote {out}.md and {out}.json")
     bm25 = payload["retrievers"]["bm25"]
-    print(f"bm25: gate {bm25['gate']}, test correct action {_fmt(bm25['test']['all']['correct_action'])}; wrote {out}.md and {out}.json")
     if args.write_gate:
         meta = payload["meta"]
         gate = {"retriever": "bm25", **bm25["gate"], "calibrated_on": meta["dev"]["path"], "dev_sha256": meta["dev"]["sha256"],

@@ -5,7 +5,9 @@ banks here are team-written test fixtures; the team's evaluation bank (Task 1.2)
 """
 import hashlib
 import json
+from pathlib import Path
 
+import numpy as np
 import pytest
 
 from src.eval.rag_benchmark import (
@@ -19,6 +21,7 @@ from src.eval.rag_benchmark import (
 from src.rag.bm25_retriever import Hit
 from src.rag.corpus import load_corpus
 from src.rag.gate import ConfidenceGate
+from src.rag.onnx_retriever import MODEL_REVISION
 from src.rag.policy_explainer import load_policy_explainer
 
 CORPUS = load_corpus()
@@ -171,6 +174,33 @@ def test_the_cli_writes_the_report_and_writes_the_gate_only_when_asked(tmp_path)
     main(["--dev", str(dev), "--test", str(test), "--out", str(out), "--write-gate", str(gate_path)])
     explainer = load_policy_explainer(gate_path)
     assert {"tau_upper": explainer.gate.tau_upper, "tau_lower": explainer.gate.tau_lower} == report["retrievers"]["bm25"]["gate"]
+
+
+class ConstantEmbedder:
+    """Stands in for the E5 model in the CLI: every text gets the same unit vector."""
+
+    def embed(self, texts: list[str]) -> np.ndarray:
+        return np.full((len(texts), 4), 0.5)
+
+
+def test_the_e5_option_measures_e5_beside_bm25_and_the_gate_file_stays_bm25(tmp_path, monkeypatch):
+    loaded = []
+
+    def fake_model(model_dir):
+        loaded.append(Path(model_dir))
+        return ConstantEmbedder()
+
+    monkeypatch.setattr("src.eval.rag_benchmark.OnnxE5Embedder", fake_model)
+    dev = bank(tmp_path, "dev.jsonl", [row("D-01", "¿Cuánto tiempo tengo para disputar un cargo?", "answer", ["POL-WIN-60"]),
+                                       row("D-02", "xyzzy plugh", "abstain", [])])
+    test = bank(tmp_path, "test.jsonl", [row("T-01", "qwerty asdf", "abstain", [])])
+    out, gate_path = tmp_path / "rag_benchmark", tmp_path / "rag_gate.json"
+    main(["--dev", str(dev), "--test", str(test), "--out", str(out), "--e5", str(tmp_path / "e5"), "--write-gate", str(gate_path)])
+    report = json.loads(out.with_suffix(".json").read_text(encoding="utf-8"))
+    assert loaded == [tmp_path / "e5"] and set(report["retrievers"]) == {"bm25", "e5"}
+    assert report["meta"]["e5"]["revision"] == MODEL_REVISION and "## e5" in out.with_suffix(".md").read_text(encoding="utf-8")
+    gate = json.loads(gate_path.read_text(encoding="utf-8"))  # only BM25 can be served (Task 2.0)
+    assert gate["retriever"] == "bm25" and {k: gate[k] for k in ("tau_upper", "tau_lower")} == report["retrievers"]["bm25"]["gate"]
 
 
 def test_the_cli_names_the_missing_question_bank(tmp_path):

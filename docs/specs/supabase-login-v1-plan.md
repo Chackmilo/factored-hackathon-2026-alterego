@@ -1433,3 +1433,11 @@ for p in personas:  # the agent comes last, so it sees the handoff of the over-5
 1. **`APP_ENV` en blanco o con otro valor** (sección 3.5): cuenta como producción, igual que la variable ausente, y la guarda aplica a todo lo que no sea development o test. Sin esto, `APP_ENV=` o `preview` dejaban el emisor local encendido.
 2. **Recarga de la página** (sección 3.2): la sesión del front y la de Supabase siguen en `sessionStorage`, sin volver a llamar a `/auth/me`; si el token ya no sirve, el primer 401 devuelve al ingreso. Es más simple y no cambia lo que ve el usuario.
 3. **`message` en `personas.json`** (secciones 3.3 y 3.4): el mensaje sugerido va en un campo propio, para que la verificación lo mande tal cual; `scenario` describe el camino.
+
+## Cambios durante la ejecución
+
+Lo que quedó distinto del código y de los textos de este plan, y por qué:
+
+1. **Tarea 4, `admin_client` endurecido tras la revisión** (commits `211f1d7` y `9c4cb59`): quita los espacios que deja un pegado y rechaza, sin mostrarla, cualquier carácter fuera del ASCII visible, para que un error de `httpx` no imprima la clave. El código de la Tarea 4 de este plan es la versión anterior.
+2. **Tarea 5, el mensaje de la persona de tarjeta perdida** dice "Perdí la tarjeta" y no "Perdí mi tarjeta" (la segunda frase no está en `STOLEN_CARD_KEYWORDS` y no dispara la oferta de bloqueo; spec, sección 3.4), y su `scenario` pone el caso y la oferta de bloqueo en la misma respuesta, con el bloqueo después del "sí" (commit `2a28cb8`).
+3. **Textos que ahora coinciden con el código** (Tarea 7): el spec dice que el ingreso muestra "Email or password is incorrect." solo con `invalid_credentials` y el mensaje de Supabase con otro error (sección 3.2), que la persona de tarjeta perdida abre el caso y ofrece el bloqueo en la misma respuesta y que el agente ve el handoff de la disputa de más de $500 (sección 3.4); el `scenario` del agente en `personas.json` dice "the over-500 dispute" y no "the over-500 case", porque `POL-ESC-500` no abre caso.

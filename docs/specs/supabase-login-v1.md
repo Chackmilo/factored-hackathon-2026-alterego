@@ -38,7 +38,7 @@ El agente recibe `{"app_role": "agent", "customer_id": null}`. Responde con cual
 
 - **Dependencia.** `@supabase/supabase-js` fijado en `2.117.2` (la última el 25-Sep), sin rango.
 - **`frontend/src/supabase.ts`.** Crea el cliente solo si el build trae `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`; si falta alguna, exporta `null` y el front queda en modo local. Opciones de `auth`: `storage: window.sessionStorage` (cerrar la pestaña cierra la sesión, como hoy), `persistSession: true`, `autoRefreshToken: true` y `detectSessionInUrl: false` (no hay magic links ni OAuth).
-- **`Login.tsx`.** En modo Supabase, un formulario de email y contraseña que llama a `signInWithPassword`; si falla, dice solo "Email or password is incorrect.". No hay registro ni recuperación de contraseña. En modo local, el selector de personas de hoy.
+- **`Login.tsx`.** En modo Supabase, un formulario de email y contraseña que llama a `signInWithPassword`; con credenciales inválidas (`invalid_credentials`) dice "Email or password is incorrect."; con cualquier otro error (límite de peticiones, red) muestra el mensaje de Supabase. No hay registro ni recuperación de contraseña. En modo local, el selector de personas de hoy.
 - **Después del ingreso, en los dos modos,** el front llama a `/auth/me` y elige el chat o la consola con lo que responde. Si responde 403, cierra la sesión de Supabase y muestra el detalle del API. Al recargar la página, la sesión del front y la de Supabase siguen en `sessionStorage`; si el token ya no sirve, el primer 401 devuelve al ingreso.
 - **`api.ts`.** En modo Supabase, cada petición toma el token de `supabase.auth.getSession()`, que lo renueva si venció: el chat no se cae al cumplir la hora. En modo local, el token sigue en `sessionStorage` como hoy. Un 401 cierra la sesión en los dos modos (en Supabase, `signOut({ scope: 'local' })`).
 - **`Session` del front:** `{app_role, customer_id, label}`, más el token solo en modo local. `label` es el email en modo Supabase y el id de la persona en modo local; la consola muestra `label` porque el agente no tiene `customer_id`.
@@ -89,8 +89,10 @@ Una consulta de solo lectura sobre la muestra del lakehouse (`data/lakehouse.duc
 | --- | --- | --- |
 | `cliente-hasta-150` | Un cargo disputable en ventana de hasta $150 cuyo monto no repite ningún otro cargo del cliente | Abre el caso sin humano (`POL-AUT-150` o `POL-AUT-INTAKE`) |
 | `cliente-mas-de-500` | Un cargo disputable en ventana de más de $500 con monto único | Pasa a humano (`POL-ESC-500`) |
-| `cliente-tarjeta-perdida` | Una sola tarjeta activa y un cargo disputable en ventana de hasta $500 con monto único | Oferta de bloqueo (`POL-AUT-LOCK`); con el "sí", bloqueo y caso |
-| `agente` | Sin cliente | Consola: ve el handoff del caso de más de $500 |
+| `cliente-tarjeta-perdida` | Una sola tarjeta activa y un cargo disputable en ventana de hasta $500 con monto único | Abre el caso y ofrece el bloqueo en la misma respuesta (`POL-AUT-LOCK`); con el "sí", bloquea la tarjeta |
+| `agente` | Sin cliente | Consola: ve el handoff de la disputa de más de $500 |
+
+El mensaje de `cliente-tarjeta-perdida` dice "Perdí la tarjeta" y no "Perdí mi tarjeta" porque la segunda frase no está en `STOLEN_CARD_KEYWORDS` (`src/rules/dispute_policy.py`) y, sin Jev, no dispara la oferta de bloqueo; ese hueco es un hallazgo aparte, fuera de este lote.
 
 El cargo de `cliente-hasta-150` y el de `cliente-tarjeta-perdida` no son compras extranjeras por Web o App, para que `POL-ESC-ML-RISK` no cambie el camino cuando el deploy cargue el modelo; si el archivo del modelo está disponible, su puntaje queda además bajo el umbral del bundle. Cada cliente trae su `scenario` (el camino que muestra) y su `message` (el mensaje sugerido para la demo, con el monto y la moneda del cargo), que la verificación manda tal cual. Los ids se revisan en el PR.
 
@@ -140,7 +142,7 @@ Además: la suite completa en el contenedor `dev`, `ruff` en cada archivo tocado
 1. Daniel, en el dashboard: deja el proveedor Email encendido y apaga "Allow new users to sign up"; pone `SUPABASE_URL` y `SUPABASE_SECRET_KEY` en `.env`, y `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` en `frontend/.env.local`.
 2. `seed_personas --dry-run`: confirma el header `apikey` y muestra el plan. La corrida real crea cuentas en el proyecto de Daniel, así que espera su aprobación.
 3. API local (`APP_ENV=development`, `SUPABASE_URL`, el lakehouse del checkout principal) sirviendo el front construido en modo Supabase. Un script desechable fuera del repo toma las credenciales de `personas.local.json` sin imprimirlas, pide el token a Supabase y recorre `/auth/me` y el mensaje de cada escenario.
-4. Daniel, en el navegador: entra con cada cliente y manda su mensaje; entra con el agente y ve el handoff del caso de más de $500; prueba una contraseña errónea; recarga la página sin perder la sesión; sale.
+4. Daniel, en el navegador: entra con cada cliente y manda su mensaje; entra con el agente y ve el handoff de la disputa de más de $500; prueba una contraseña errónea; recarga la página sin perder la sesión; sale.
 5. El modo local sigue: front sin variables y `docker compose up` con el selector de personas. La imagen sin variables no arranca y muestra el mensaje de la guarda.
 
 ## 6. Criterios de aceptación

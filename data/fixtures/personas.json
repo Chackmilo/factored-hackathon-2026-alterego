@@ -12,6 +12,6 @@
      "scenario": "A lost card and a charge of USD 500 or less: the case opens and the lock is offered in the same reply (POL-AUT-LOCK); after the yes, the card is locked.",
      "message": "Perdí la tarjeta y no reconozco un cargo de 168.88 USD del 9 de junio"},
     {"label": "agente", "app_role": "agent", "customer_id": null,
-     "scenario": "The HITL console: the handoff of the over-500 case and the lock appear here."}
+     "scenario": "The HITL console: the handoff of the over-500 dispute and the lock appear here."}
   ]
 }

@@ -22,6 +22,8 @@ from typing import Any
 import httpx
 from dotenv import load_dotenv
 
+from src.auth.session import configured_supabase_url
+
 ROLES = ("customer", "agent")
 SECRET_KEY_PREFIX = "sb_secret_"
 PAGE_SIZE = 1000
@@ -59,8 +61,9 @@ def app_metadata(persona: dict[str, Any]) -> dict[str, Any]:
 
 
 def admin_client(supabase_url: str, secret_key: str, transport: httpx.BaseTransport | None = None) -> httpx.Client:
-    if not supabase_url:
-        raise PersonaError("SUPABASE_URL is not set.")
+    base_url = configured_supabase_url(supabase_url)
+    if base_url is None:  # a fixed message: a key pasted into the wrong variable must not come back in it
+        raise PersonaError("SUPABASE_URL must be the project's https URL (https://<project-ref>.supabase.co).")
     # httpx refuses an illegal header value at the first request and prints it whole, and main() prints that message:
     # so the padding a paste leaves is stripped, and anything but visible ASCII inside the key is refused here.
     key = secret_key.strip()
@@ -69,7 +72,7 @@ def admin_client(supabase_url: str, secret_key: str, transport: httpx.BaseTransp
     if not all("!" <= char <= "~" for char in key):
         raise PersonaError("SUPABASE_SECRET_KEY has a space, a control character or a non-ASCII character inside it; "
                            "paste the key again from the project's API settings.")
-    return httpx.Client(base_url=f"{supabase_url.rstrip('/')}/auth/v1", headers={"apikey": key},
+    return httpx.Client(base_url=f"{base_url}/auth/v1", headers={"apikey": key},
                         transport=transport, timeout=15.0)
 
 

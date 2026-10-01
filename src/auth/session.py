@@ -69,12 +69,20 @@ def local_issuer_enabled() -> bool:
     return configured in ("", "true")
 
 
+def configured_supabase_url(raw: str | None = None) -> str | None:
+    """SUPABASE_URL as the API uses it: stripped, without a trailing slash, and only an https URL.
+    None when it is unset, blank, or anything else (a comment a template left behind, an http URL, a typo)."""
+    value = (os.getenv("SUPABASE_URL") if raw is None else raw) or ""
+    value = value.strip().rstrip("/")
+    return value if value.startswith("https://") else None
+
+
 def check_production_identity() -> None:
-    """Outside development and test only Supabase tokens pass, so the project URL is required: without it nobody signs in."""
+    """Outside development and test only Supabase tokens pass, so the project's https URL is required: without it nobody signs in."""
     env = _app_env()
-    if env not in LOCAL_ENVS and not (os.getenv("SUPABASE_URL") or "").strip():
+    if env not in LOCAL_ENVS and configured_supabase_url() is None:
         raise RuntimeError(f"APP_ENV={env} needs SUPABASE_URL: without it no session token can be verified. "
-                           "Set SUPABASE_URL, or APP_ENV=development for local work.")
+                           "Set an https SUPABASE_URL, or APP_ENV=development for local work.")
 
 
 class LocalIssuer:
@@ -102,7 +110,7 @@ class SessionVerifier:
     """Verifies ES256 tokens from the Supabase project JWKS and, outside production, from the local issuer."""
 
     def __init__(self, supabase_url: str | None = None, jwks: dict[str, Any] | None = None, issuer: str | None = None):
-        self.supabase_url = (supabase_url or os.getenv("SUPABASE_URL", "")).rstrip("/")
+        self.supabase_url = configured_supabase_url(supabase_url) or ""
         self.supabase_issuer = issuer or (f"{self.supabase_url}/auth/v1" if self.supabase_url else None)
         self._static_jwks = jwks  # for tests: a JWKS dict standing in for the remote one
         self._jwk_client = jwt.PyJWKClient(f"{self.supabase_url}/auth/v1/.well-known/jwks.json", cache_keys=True) \

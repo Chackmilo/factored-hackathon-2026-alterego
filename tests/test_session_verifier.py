@@ -112,8 +112,16 @@ def test_the_app_refuses_to_start_with_the_local_issuer_in_production():
 
 
 def test_the_app_starts_in_production_without_the_local_issuer():
-    result = _import_app(APP_ENV="production", LOCAL_ISSUER_ENABLED="false")
+    result = _import_app(APP_ENV="production", LOCAL_ISSUER_ENABLED="false", SUPABASE_URL="https://proj.supabase.co")
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize("app_env", ["production", "preview"])
+def test_without_supabase_url_the_app_refuses_to_start(app_env):
+    """Outside development and test only Supabase tokens pass: without the project URL nobody could sign in."""
+    result = _import_app(APP_ENV=app_env, LOCAL_ISSUER_ENABLED="false", SUPABASE_URL="")
+    assert result.returncode != 0
+    assert f"APP_ENV={app_env} needs SUPABASE_URL" in result.stderr
 
 
 @pytest.mark.parametrize("app_env", [None, "", "preview"])

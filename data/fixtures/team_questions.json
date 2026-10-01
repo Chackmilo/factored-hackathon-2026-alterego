@@ -515,6 +515,18 @@
       ],
       "recommendation": "Drop it formally in the decision log and declare it future work",
       "source": "30-Sep, audit v3 (AUD-08)"
+    },
+    {
+      "question_id": "TQ-037",
+      "topic": "RAG: which policy clauses and parameters the policy explainer may tell a customer",
+      "question": "The RAG roadmap indexes the 13 clause ids of spec v2.3 and answers customers with the clause it retrieves. Should each clause carry an exposure level: internal for POL-AUT-150, POL-SEC-SESSION and POL-ESC-ML-RISK (indexed, but answered with a fixed redirect that states none of their content), public_generic for POL-ESC-LEGAL and POL-ESC-DISTRESS (a specialist reviews some cases, without naming what triggers it), and public for the rest, stating only the parameters the policy texts already tell customers (60 days, 500 USD, 48 hours)?",
+      "context": "The spec says the customer never hears that credit was applied (POL-AUT-150 row) and rule 8 keeps provisional credit inside the handoff packet, so a question such as \"¿me devuelven la plata?\" must not surface the credit criteria. POL-SEC-SESSION is an auth control outside the dispute policy, and POL-ESC-ML-RISK is the fraud model's escalation threshold. Listing the legal and distress triggers would tell customers which words reach a human. dispute_policy.py already tells customers 60 days (line 387), 500 USD (line 200) and 48 hours (line 212); no customer text states 150 USD or the risk threshold. Indexing the internal clauses lets a credit question land on a safe redirect instead of the nearest public clause. Task 1.1 of docs/RAG_IMPLEMENTATION_ROADMAP.md waits on this answer.",
+      "options": [
+        "Exposure levels as proposed, internal clauses indexed and answered with a fixed redirect (recommended)",
+        "Same exposure levels, but leave the internal clauses out of the corpus"
+      ],
+      "recommendation": "Exposure levels as proposed, internal clauses indexed and answered with a fixed redirect",
+      "source": "30-Sep, review of the RAG roadmap"
     }
   ]
 }

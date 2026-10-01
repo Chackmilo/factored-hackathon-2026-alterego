@@ -5,30 +5,36 @@ description = "AlterEgo / OmniGuard AI - AI-First Banking Dispute Intake Engine"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "alembic>=1.13",
-    "boto3>=1.43.103",
     "duckdb>=1.5.5",
     "fastapi>=0.141.1",
+    "numpy>=2.4.6",
+    "pandas>=3.0.6",
+    "psycopg[binary]>=3.2",
+    "pydantic>=2.13.5",
+    "pyjwt[crypto]>=2.15",
+    "python-dotenv>=1.2.3",
+    "rank-bm25>=0.2.2",
+    "rich>=15.0.0",
+    "scikit-learn>=1.9.1",
+    "typesafe-sdk==0.7.1",
+    "uvicorn>=0.53.0",
+]
+
+# Tests, notebooks, scripts and training. `uv sync` installs this group by default; `uv sync --no-dev`, which the
+# production image and Vercel's build run, leaves it out (tests/test_runtime_dependencies.py keeps the API off it).
+[dependency-groups]
+dev = [
+    "alembic>=1.13",
+    "boto3>=1.43.103",
     "httpx>=0.28.1",
     "ipykernel>=7.3.0",
     "matplotlib>=3.11.2",
     "mlflow-skinny>=3.0",
     "nbclient>=0.11.0",
     "nbformat>=5.11.1",
-    "numpy>=2.4.6",
-    "pandas>=3.0.6",
-    "psycopg[binary]>=3.2",
-    "pydantic>=2.13.5",
-    "pyjwt[crypto]>=2.15",
     "pytest>=9.1.1",
-    "python-dotenv>=1.2.3",
-    "rank-bm25>=0.2.2",
-    "rich>=15.0.0",
-    "scikit-learn>=1.9.1",
     "seaborn>=0.13.2",
     "sqlalchemy>=2.0",
-    "typesafe-sdk==0.7.1",
-    "uvicorn>=0.53.0",
 ]
 
 [tool.pytest.ini_options]

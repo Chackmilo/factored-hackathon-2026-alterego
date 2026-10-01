@@ -61,9 +61,15 @@ def app_metadata(persona: dict[str, Any]) -> dict[str, Any]:
 def admin_client(supabase_url: str, secret_key: str, transport: httpx.BaseTransport | None = None) -> httpx.Client:
     if not supabase_url:
         raise PersonaError("SUPABASE_URL is not set.")
-    if not secret_key.startswith(SECRET_KEY_PREFIX):
+    # httpx refuses an illegal header value at the first request and prints it whole, and main() prints that message:
+    # so the padding a paste leaves is stripped, and anything but visible ASCII inside the key is refused here.
+    key = secret_key.strip()
+    if not key.startswith(SECRET_KEY_PREFIX):
         raise PersonaError("SUPABASE_SECRET_KEY must be the project's secret key (sb_secret_...), never the publishable one.")
-    return httpx.Client(base_url=f"{supabase_url.rstrip('/')}/auth/v1", headers={"apikey": secret_key},
+    if not all("!" <= char <= "~" for char in key):
+        raise PersonaError("SUPABASE_SECRET_KEY has a space, a control character or a non-ASCII character inside it; "
+                           "paste the key again from the project's API settings.")
+    return httpx.Client(base_url=f"{supabase_url.rstrip('/')}/auth/v1", headers={"apikey": key},
                         transport=transport, timeout=15.0)
 
 
@@ -142,7 +148,8 @@ def main(argv: list[str] | None = None) -> int:
         with admin_client(os.getenv("SUPABASE_URL", ""), os.getenv("SUPABASE_SECRET_KEY", "")) as client:
             seed(personas, args.email_pattern, client, Path(args.out), dry_run=args.dry_run,
                  reset_passwords=args.reset_passwords)
-    except (PersonaError, httpx.HTTPError) as exc:  # the messages carry URLs and status codes, never the key
+    except (PersonaError, httpx.HTTPError) as exc:
+        # URLs and status codes, never the key: admin_client validates it before it becomes a header value
         print(f"error: {exc}", file=sys.stderr)
         return 1
     return 0

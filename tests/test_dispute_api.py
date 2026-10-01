@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from src.api.app import app
 from src.api.dispute_routes import get_orchestrator
 from src.auth.session import create_test_session
+from src.core.config import settings
 from src.ops.store import OpsStore
 from src.orchestrator.dispute_orchestrator import DisputeOrchestrator
 from src.tools.gateway import BankingToolGateway
@@ -22,6 +23,27 @@ def api(bank_fixture_db):
 
 def bearer(customer_id="CLI-FIX-OWNER", app_role="customer"):
     return {"Authorization": f"Bearer {create_test_session(customer_id=customer_id, app_role=app_role)}"}
+
+
+def test_me_returns_the_identity_the_api_verified(api):
+    assert api.get("/api/v1/auth/me", headers=bearer()).json() == {"app_role": "customer", "customer_id": "CLI-FIX-OWNER"}
+    agent = {"Authorization": f"Bearer {create_test_session(None, app_role='agent')}"}
+    assert api.get("/api/v1/auth/me", headers=agent).json() == {"app_role": "agent", "customer_id": None}
+
+
+def test_me_needs_a_session(api):
+    assert api.get("/api/v1/auth/me").status_code == 401
+
+
+def test_me_refuses_a_customer_session_without_a_customer(api):
+    orphan = {"Authorization": f"Bearer {create_test_session(None, app_role='customer')}"}
+    assert api.get("/api/v1/auth/me", headers=orphan).status_code == 403
+
+
+def test_me_answers_in_production(api, monkeypatch):
+    """Unlike the local issuer's routes, the front needs /auth/me wherever people sign in."""
+    monkeypatch.setattr(settings, "app_env", "production")
+    assert api.get("/api/v1/auth/me", headers=bearer()).status_code == 200
 
 
 def test_local_issuer_reads_facts_from_the_system_of_record(api):

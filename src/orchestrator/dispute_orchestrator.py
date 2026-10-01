@@ -18,6 +18,8 @@ from src.domain.handoff import StructuredHandoffPacket, TriggeringTransaction
 from src.ops.store import OpsStore
 from src.privacy.pii_masker import PIIMasker
 from src.rules.dispute_policy import (
+    DISPUTABLE_STATUS,
+    DISPUTABLE_TYPES,
     OUTCOME_ABSTENTION,
     OUTCOME_AUTONOMOUS,
     OUTCOME_CLARIFICATION,
@@ -69,6 +71,10 @@ TEXT = {
         "pt": "Não conseguimos confirmar o bloqueio no sistema. Um especialista concluirá e confirmará; enquanto isso fica registrado como pendente.",
     },
     "case_ref": {"es": " Número de caso: {case_id}.", "pt": " Número do caso: {case_id}."},
+    "other_charges": {
+        "es": " Si también desconoce otro de los cargos que mencionó, escríbanos para abrir su caso.",
+        "pt": " Se também não reconhece outra das cobranças que mencionou, escreva para nós para abrir o caso.",
+    },
     "case_exists": {
         "es": "Ese cargo ya tiene un caso de disputa abierto y en revisión, así que no abrimos otro. Número de caso: {case_id}.",
         "pt": "Essa cobrança já tem um caso de contestação aberto e em análise, portanto não abrimos outro. Número do caso: {case_id}.",
@@ -183,11 +189,12 @@ class DisputeOrchestrator:
             return self._escalate_data_gap(session, conv, masked, language, "SYSTEM_OF_RECORD_UNAVAILABLE",
                                            fact=f"The system of record did not answer ({type(exc).__name__})", text="system_unavailable")
 
-        candidates, matched = self._identify_charge(conv, rows, u)
+        candidates, matched, named = self._identify_charge(conv, rows, u)
         memory = self.ops.case_memory(session.customer_id)
         recent = self.ops.recent_disputed_transaction_ids(session.customer_id)
         if matched:
             recent = recent | {matched["transaction_id"]}
+        recent = recent | {r["transaction_id"] for r in named}  # charges named at once count like charges disputed one by one
         ml_score, top_features = (self.risk_scorer(matched, rows, profile) if (self.risk_scorer and matched) else (0.0, []))
 
         policy_input = DisputePolicyInput(
@@ -237,8 +244,10 @@ class DisputeOrchestrator:
                     self.ops.update_conversation(cid, candidate_ids=[c["transaction_id"] for c in listed])
                     result.reply += self._format_candidates(listed, language)
             result.state = STATE_AWAITING_CLARIFICATION
+            several_named = len(u.amount_hints) > 1 and decision.clarification_reason == "MULTIPLE_CANDIDATE_CHARGES"
             self.ops.audit(conversation_id=cid, customer_id=session.customer_id, actor="system", action="ASK_CLARIFICATION",
-                           details={"reason": decision.clarification_reason, "clauses": decision.cited_clauses})
+                           details={"reason": decision.clarification_reason, "clauses": decision.cited_clauses,
+                                    "several_charges_named": several_named})
             if decision.card_lock_recommended:  # POL-AUT-LOCK travels with any outcome (S2, P5): the lock first, the charge after
                 clarification, result.reply = result.reply, TEXT["lock_first"][language]
                 if self._offer_lock(session, conv, decision, matched, language, result):
@@ -254,7 +263,7 @@ class DisputeOrchestrator:
                            details={"reason": decision.escalation_reason, "clauses": decision.cited_clauses,
                                     "data_quality_flag": decision.data_quality_flag})
         elif decision.policy_outcome == OUTCOME_ESCALATION:
-            handoff_id = self._create_handoff(session, conv, decision, policy_input, profile, matched, masked)
+            handoff_id = self._create_handoff(session, conv, decision, policy_input, profile, matched, masked, named=named)
             result.handoff_id = handoff_id
             result.reply += TEXT["handoff_ref"][language].format(handoff_id=handoff_id)
             result.actions.append({"action": "CREATE_HANDOFF", "handoff_id": handoff_id, "verified": True})
@@ -284,6 +293,8 @@ class DisputeOrchestrator:
             else:
                 result.case_id = case_id
                 result.reply += TEXT["case_ref"][language].format(case_id=case_id)
+                if conv["state"] == STATE_AWAITING_CLARIFICATION and self._pending_clarification_details(conv).get("several_charges_named"):
+                    result.reply += TEXT["other_charges"][language]  # the customer picked one of the several charges they named
                 result.actions.append({"action": "OPEN_DISPUTE", "case_id": case_id, "verified": True})
 
         if decision.card_lock_recommended:
@@ -299,16 +310,21 @@ class DisputeOrchestrator:
 
     # ------------------------------------------------------ identify the charge
     def _identify_charge(self, conv: dict[str, Any], rows: list[dict[str, Any]], u: UnderstandResult):
-        """Match the customer's hints against the session customer's own charges. Returns (candidates, matched or None)."""
+        """Match the customer's hints against the session customer's own charges. Returns (candidates, matched or None, named):
+        named holds the charges one message names at once when there are three or more, which count for POL-ESC-MULTI."""
         if u.intent == "fuera_de_alcance":
-            return [], None
+            return [], None, []
         pool = rows
         if conv["state"] == STATE_AWAITING_CLARIFICATION and conv.get("candidate_ids"):
             prior = [r for r in rows if r["transaction_id"] in conv["candidate_ids"]]
             if u.selected_option and 1 <= u.selected_option <= len(prior):
                 chosen = prior[u.selected_option - 1]
-                return [chosen], chosen
+                return [chosen], chosen, []
             pool = prior or rows
+        if len(u.amount_hints) > 1:
+            several = self._several_named(pool, u)
+            if several is not None:
+                return several
         has_hint = u.amount_hint is not None or u.date_hint is not None
         candidates = list(pool)
         if u.amount_hint is not None:
@@ -323,10 +339,31 @@ class DisputeOrchestrator:
             candidates = candidates[:5]
             if (len(candidates) == 1 and u.intent in ("consulta_general", "tarjeta_robada")
                     and (conv["state"] != STATE_AWAITING_CLARIFICATION or self._pending_clarification(conv) == "NO_CANDIDATE_CHARGE")):
-                return [], None  # nothing names a charge, and a list of recent charges is no match: POL-CLARIFY asks (S3)
+                return [], None, []  # nothing names a charge, and a list of recent charges is no match: POL-CLARIFY asks (S3)
         if len(candidates) == 1:
-            return candidates, candidates[0]
-        return candidates, None
+            return candidates, candidates[0], []
+        return candidates, None, []
+
+    def _several_named(self, pool: list[dict[str, Any]], u: UnderstandResult):
+        """A message that names several amounts. Three or more charges named without ambiguity count for POL-ESC-MULTI and the
+        turn is decided on the first disputable one; otherwise every charge that matches one of the amounts is listed. None when
+        at most one charge matches, so the single-amount reading decides."""
+        per_amount = [[r for r in pool if self._amount_matches(r, amount)
+                       and (u.date_hint is None or self._date_matches(r, u.date_hint, u.date_tolerance_days))]
+                      for amount in u.amount_hints]
+        named = list({m[0]["transaction_id"]: m[0] for m in per_amount if len(m) == 1}.values())
+        if len(named) >= 3:
+            matched = next((r for r in named if self._disputable(r)), named[0])
+            return [matched], matched, named
+        matching = {r["transaction_id"] for m in per_amount for r in m}
+        candidates = [r for r in pool if r["transaction_id"] in matching]  # in listing order: the option reply reads it
+        return (candidates, None, []) if len(candidates) > 1 else None
+
+    @staticmethod
+    def _disputable(row: dict[str, Any]) -> bool:
+        """POL-DISP-TYPE and POL-WIN-60 as the gateway row tells them."""
+        return (row.get("transaction_status") == DISPUTABLE_STATUS and row.get("transaction_type") in DISPUTABLE_TYPES
+                and bool(row.get("is_within_60_days")))
 
     @staticmethod
     def _amount_matches(row: dict[str, Any], hint: float) -> bool:
@@ -449,8 +486,12 @@ class DisputeOrchestrator:
 
     def _pending_clarification(self, conv: dict[str, Any]) -> str | None:
         """The reason of the last POL-CLARIFY question asked in the conversation, from its audit row."""
-        return next((a["details"].get("reason") for a in reversed(self.ops.list_audit(conversation_id=conv["conversation_id"], limit=1000))
-                     if a["action"] == "ASK_CLARIFICATION"), None)
+        return self._pending_clarification_details(conv).get("reason")
+
+    def _pending_clarification_details(self, conv: dict[str, Any]) -> dict[str, Any]:
+        """The audit details of the last POL-CLARIFY question asked in the conversation (empty when none was asked)."""
+        return next((a["details"] for a in reversed(self.ops.list_audit(conversation_id=conv["conversation_id"], limit=1000))
+                     if a["action"] == "ASK_CLARIFICATION"), {})
 
     def _lock_offer_request(self, cid: str) -> str:
         """The customer's message of the turn that offered the pending lock (the report of the loss), for a handoff packet."""
@@ -494,7 +535,8 @@ class DisputeOrchestrator:
 
     # ---------------------------------------------------------------- escalate
     def _create_handoff(self, session: VerifiedSession, conv: dict[str, Any], decision: DisputePolicyDecision, policy_input: DisputePolicyInput,
-                        profile: dict[str, Any], matched: dict[str, Any] | None, masked: str, reason_override: str | None = None) -> str:
+                        profile: dict[str, Any], matched: dict[str, Any] | None, masked: str, reason_override: str | None = None,
+                        named: list[dict[str, Any]] | None = None) -> str:
         now = datetime.utcnow().replace(microsecond=0).isoformat()
         reason = reason_override or decision.escalation_reason or "UNSPECIFIED"
         facts = ["Customer authenticated via a valid session token"]
@@ -515,6 +557,8 @@ class DisputeOrchestrator:
         facts.append(f"Customer has {policy_input.complaints_last_90d} complaints in the last 90 days")
         facts.append(f"ML risk score: {policy_input.ml_risk_score:.2f} (escalation threshold {policy_input.ml_risk_threshold:.2f})")
         facts.append(f"{policy_input.recent_disputed_charges_count} distinct charge(s) disputed within 48 hours")
+        if named:
+            facts.append(f"Charges named in the customer's message: {', '.join(r['transaction_id'] for r in named)}")
         questions = self._questions_for(reason, decision)
         packet = StructuredHandoffPacket(
             handoff_id="", customer_id=session.customer_id, customer_name=str(profile.get("full_name") or session.name),

@@ -27,7 +27,10 @@ INTENT_KEYWORDS: dict[str, tuple[str, ...]] = {
     "cargo_no_reconocido": ("no reconozco", "no hice", "no realicé", "no realice", "cargo que no", "no fui yo", "desconozco",
                             "no autoricé", "no autorice", "não reconheço", "nao reconheco", "não fiz", "nao fiz", "não fui eu",
                             "nao fui eu", "não autorizei", "nao autorizei", "desconheço", "desconheco", "compra que não",
-                            "compra que nao", "cobrança estranha", "cobranca estranha", "cargo extraño", "cargo extrano"),
+                            "compra que nao", "cobrança estranha", "cobranca estranha", "cargo extraño", "cargo extrano",
+                            "no es mío", "no es mio", "no es mía", "no es mia", "no son míos", "no son mios", "no son mías",
+                            "no son mias", "não é meu", "nao e meu", "não é minha", "nao e minha", "não são meus", "nao sao meus",
+                            "não são minhas", "nao sao minhas"),
 }
 OUT_OF_SCOPE_KEYWORDS: dict[str, tuple[str, ...]] = {
     "prestamo_o_credito": ("préstamo", "prestamo", "crédito hipotecario", "credito hipotecario", "empréstimo", "emprestimo",
@@ -110,7 +113,7 @@ CHARGE_CUE_RE = re.compile(rf"\b(?:{CHARGE_NOUNS}|usaron|usaram|utilizaron|utili
 DISPUTE_PHRASES = tuple(dict.fromkeys(_strip_accents(w) for words in INTENT_KEYWORDS.values() for w in words))
 LOOSE_DISPUTE_PHRASES = ("no hice", "no realice", "nao fiz", "dos veces", "duas vezes")  # dispute a charge only when said after it
 NOT_A_DISPUTE_RE = re.compile(r"\b(?:desconozco|desconheco)\s+(?:como|cuanto|cuando|donde|que|quanto|quando|onde)\b")  # not knowing how
-CLAUSE_SPLIT_RE = re.compile(r"((?<!\d)[.,]|[.,](?!\d)|[;!?¿¡]|\b(?:y|e|pero|porem|porque|pois|aunque|embora)\b)")  # never in "85.000"
+CLAUSE_SPLIT_RE = re.compile(r"((?<!\d)[.,]|[.,](?!\d)|[;!?¿¡]|\b(?:y|(?<!\bnao )e|pero|porem|porque|pois|aunque|embora)\b)")  # never in "85.000" or "não é"
 DATE_EXPR_RE = re.compile(r"\b(?:anteayer|antier|anteontem|ayer|ontem|hoy|hoje|(?:hace|ha|faz)\s+\d{1,2}\s+dias?|semana\s+pasada|"
                           r"semana\s+passada|\d{1,2}\s+de\s+[a-z]+|\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?)\b")
 DATE_FILLER_WORDS = frozenset({"el", "la", "lo", "los", "las", "o", "a", "os", "as", "no", "na", "en", "em", "de", "del", "do", "da", "dia",

@@ -93,7 +93,7 @@ class OpsStore:
 
         with psycopg.connect(url, autocommit=True) as con:
             for path in sorted(MIGRATIONS_DIR.glob("*.sql")):
-                con.execute(path.read_text())
+                con.execute(path.read_text(encoding="utf-8"))
 
     # ------------------------------------------------------------------ plumbing
     def _con(self):
@@ -328,7 +328,7 @@ class OpsStore:
     # ------------------------------------------------------------ team questions
     def seed_questions(self, path: str | Path | None = None) -> int:
         """Load the team-generated question fixture; inserts missing ids only, never touches an answered question."""
-        data = json.loads(Path(path or DEFAULT_QUESTIONS_PATH).read_text())
+        data = json.loads(Path(path or DEFAULT_QUESTIONS_PATH).read_text(encoding="utf-8"))
         existing = {q["question_id"]: q for q in self.list_questions()}
         inserted = 0
         for q in data["questions"]:

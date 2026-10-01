@@ -42,7 +42,7 @@ class EvalCase:
 
 def load_cases(path: str | Path) -> list[EvalCase]:
     cases: list[EvalCase] = []
-    for line_no, line in enumerate(Path(path).read_text().splitlines(), start=1):
+    for line_no, line in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), start=1):
         if not line.strip() or line.startswith("#"):
             continue
         raw = json.loads(line)

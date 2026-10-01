@@ -27,7 +27,10 @@ INTENT_KEYWORDS: dict[str, tuple[str, ...]] = {
     "cargo_no_reconocido": ("no reconozco", "no hice", "no realicé", "no realice", "cargo que no", "no fui yo", "desconozco",
                             "no autoricé", "no autorice", "não reconheço", "nao reconheco", "não fiz", "nao fiz", "não fui eu",
                             "nao fui eu", "não autorizei", "nao autorizei", "desconheço", "desconheco", "compra que não",
-                            "compra que nao", "cobrança estranha", "cobranca estranha", "cargo extraño", "cargo extrano"),
+                            "compra que nao", "cobrança estranha", "cobranca estranha", "cargo extraño", "cargo extrano",
+                            "no es mío", "no es mio", "no es mía", "no es mia", "no son míos", "no son mios", "no son mías",
+                            "no son mias", "não é meu", "nao e meu", "não é minha", "nao e minha", "não são meus", "nao sao meus",
+                            "não são minhas", "nao sao minhas"),
 }
 OUT_OF_SCOPE_KEYWORDS: dict[str, tuple[str, ...]] = {
     "prestamo_o_credito": ("préstamo", "prestamo", "crédito hipotecario", "credito hipotecario", "empréstimo", "emprestimo",
@@ -105,12 +108,13 @@ CHARGE_NOUN_RE = re.compile(rf"\b(?:{CHARGE_NOUNS})\b")
 CORE_CHARGE_NOUN_RE = re.compile(rf"\b(?:{CORE_CHARGE_NOUNS})\b")
 CURRENCY_AMOUNT_RE = re.compile(r"(?:\$|us\$|r\$)\s*\d|\d[\d.,]*\s*(?:mil\s+)?(?:dolares|dolar|usd|pesos|cop|ars|reais|reales)\b")
 BALANCE_RE = re.compile(r"\bsaldos?\b")  # "mi saldo de 80 dólares": the amount of a balance names no charge
+LIST_GAP_RE = re.compile(r"\s*(?:,|y|e|o|ou)?\s*")  # what separates the amounts of one list: "45, 80 y 120 dólares"
 CHARGE_CUE_RE = re.compile(rf"\b(?:{CHARGE_NOUNS}|usaron|usaram|utilizaron|utilizaram|gastaron|gastaram|sacaron|sacaram|retiraron|"
                            r"compraron|compraram|debitaron|debitaram)\b")  # a charge or a use of the card is told, not money alone
 DISPUTE_PHRASES = tuple(dict.fromkeys(_strip_accents(w) for words in INTENT_KEYWORDS.values() for w in words))
 LOOSE_DISPUTE_PHRASES = ("no hice", "no realice", "nao fiz", "dos veces", "duas vezes")  # dispute a charge only when said after it
 NOT_A_DISPUTE_RE = re.compile(r"\b(?:desconozco|desconheco)\s+(?:como|cuanto|cuando|donde|que|quanto|quando|onde)\b")  # not knowing how
-CLAUSE_SPLIT_RE = re.compile(r"((?<!\d)[.,]|[.,](?!\d)|[;!?¿¡]|\b(?:y|e|pero|porem|porque|pois|aunque|embora)\b)")  # never in "85.000"
+CLAUSE_SPLIT_RE = re.compile(r"((?<!\d)[.,]|[.,](?!\d)|[;!?¿¡]|\b(?:y|(?<!\bnao )e|pero|porem|porque|pois|aunque|embora)\b)")  # never in "85.000" or "não é"
 DATE_EXPR_RE = re.compile(r"\b(?:anteayer|antier|anteontem|ayer|ontem|hoy|hoje|(?:hace|ha|faz)\s+\d{1,2}\s+dias?|semana\s+pasada|"
                           r"semana\s+passada|\d{1,2}\s+de\s+[a-z]+|\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?)\b")
 DATE_FILLER_WORDS = frozenset({"el", "la", "lo", "los", "las", "o", "a", "os", "as", "no", "na", "en", "em", "de", "del", "do", "da", "dia",
@@ -124,6 +128,7 @@ class UnderstandResult:
     intent_confidence: float | None = None  # keyword matches carry no calibrated probability
     out_of_scope_category: str | None = None
     amount_hint: float | None = None
+    amount_hints: list[float] = field(default_factory=list)  # every charge amount the message names, in order
     currency_hint: str | None = None
     date_hint: date | None = None
     date_tolerance_days: int = 0
@@ -143,7 +148,7 @@ class UnderstandResult:
     def as_signals(self) -> dict:
         return {
             "language": self.language, "intent": self.intent, "intent_confidence": self.intent_confidence,
-            "out_of_scope_category": self.out_of_scope_category, "amount_hint": self.amount_hint,
+            "out_of_scope_category": self.out_of_scope_category, "amount_hint": self.amount_hint, "amount_hints": self.amount_hints,
             "currency_hint": self.currency_hint, "date_hint": self.date_hint.isoformat() if self.date_hint else None,
             "date_tolerance_days": self.date_tolerance_days, "stolen_card_claimed": self.stolen_card_claimed,
             "said_yes": self.said_yes, "said_no": self.said_no, "selected_option": self.selected_option,
@@ -188,6 +193,7 @@ class KeywordIntentExtractor:
                 result.intent = "tarjeta_robada"
 
         result.amount_hint, result.currency_hint = self._amount(raw)
+        result.amount_hints = self._amounts(raw)
         result.date_hint, result.date_tolerance_days = self._charge_date(low_plain)
         result.said_yes, result.said_no = self._lock_answer(low_plain)
         if result.intent == "consulta_general" and (result.amount_hint is not None or "cargo" in low_plain
@@ -211,37 +217,71 @@ class KeywordIntentExtractor:
         return int(digits[0])
 
     @staticmethod
-    def _amount(raw: str) -> tuple[float | None, str | None]:
+    def _parse_amount(m: re.Match, raw: str) -> tuple[float, str | None, bool, int]:
+        """One AMOUNT_RE match: its value, its currency, whether a currency marks it, and how many digits it has."""
+        whole, dec, unit = m.group(1), m.group(2), (m.group(3) or "").lower()
+        prefix = raw[max(0, m.start() - 4):m.start()].lower()
+        has_currency = bool(unit) or "$" in raw[max(0, m.start() - 1):m.end()] or "usd" in prefix or "cop" in prefix or "ars" in prefix
+        digits = whole.replace(".", "").replace(",", "")
+        value = float(digits)
+        if dec and not (len(whole) >= 5 and whole[-4] in ".," and dec and len(dec) == 3):
+            value = float(f"{digits}.{dec}")
+        if unit == "mil":
+            value *= 1000
+        currency = None
+        if unit in ("dólares", "dolares", "dólar", "dolar", "usd") or "usd" in prefix or "us$" in prefix:
+            currency = "USD"
+        elif unit == "cop" or "cop" in prefix:
+            currency = "COP"
+        elif unit == "ars" or "ars" in prefix:
+            currency = "ARS"
+        elif unit in ("pesos",):
+            currency = "PESOS"
+        elif unit in ("reais", "reales"):
+            currency = "BRL"
+        return value, currency, has_currency, len(digits)
+
+    @classmethod
+    def _amount(cls, raw: str) -> tuple[float | None, str | None]:
         best: tuple[float, str | None] | None = None
         for m in AMOUNT_RE.finditer(raw):
-            whole, dec, unit = m.group(1), m.group(2), (m.group(3) or "").lower()
-            prefix = raw[max(0, m.start() - 4):m.start()].lower()
-            has_currency = bool(unit) or "$" in raw[max(0, m.start() - 1):m.end()] or "usd" in prefix or "cop" in prefix or "ars" in prefix
-            digits = whole.replace(".", "").replace(",", "")
-            if not has_currency and len(digits) < 2:
+            value, currency, has_currency, digits = cls._parse_amount(m, raw)
+            if not has_currency and digits < 2:
                 continue
-            value = float(digits)
-            if dec and not (len(whole) >= 5 and whole[-4] in ".," and dec and len(dec) == 3):
-                value = float(f"{digits}.{dec}")
-            if unit == "mil":
-                value *= 1000
-            currency = None
-            if unit in ("dólares", "dolares", "dólar", "dolar", "usd") or "usd" in prefix or "us$" in prefix:
-                currency = "USD"
-            elif unit == "cop" or "cop" in prefix:
-                currency = "COP"
-            elif unit == "ars" or "ars" in prefix:
-                currency = "ARS"
-            elif unit in ("pesos",):
-                currency = "PESOS"
-            elif unit in ("reais", "reales"):
-                currency = "BRL"
-            if has_currency or best is None:
-                if best is None or has_currency:
-                    best = (value, currency)
-                    if has_currency:
-                        break
+            if best is None or has_currency:
+                best = (value, currency)
+                if has_currency:
+                    break
         return (best[0], best[1]) if best else (None, None)
+
+    @classmethod
+    def _amounts(cls, raw: str) -> list[float]:
+        """Every charge amount the message names, in order: each one with a currency, and the unit-less ones of a list that
+        ends in one ("45, 80 y 120 dólares"). A date is no amount, and the amount of a balance names no charge."""
+        low = raw.lower()
+        found: list[float] = []
+        pending: list[float] = []
+        previous_end = 0
+        for m in AMOUNT_RE.finditer(raw):
+            value, _, has_currency, digits = cls._parse_amount(m, raw)
+            if pending and not LIST_GAP_RE.fullmatch(low[previous_end:m.start()]):
+                pending = []
+            previous_end = m.end()
+            if BALANCE_RE.search(cls._clause_at(low, m.start())):
+                pending = []
+            elif has_currency:
+                found += pending + [value]
+                pending = []
+            elif digits >= 2:
+                pending.append(value)
+        return list(dict.fromkeys(found))
+
+    @staticmethod
+    def _clause_at(low: str, pos: int) -> str:
+        """The clause (CLAUSE_SPLIT_RE) that holds the character at pos."""
+        start = max((m.end() for m in CLAUSE_SPLIT_RE.finditer(low, 0, pos)), default=0)
+        end = CLAUSE_SPLIT_RE.search(low, pos)
+        return low[start:end.start() if end else len(low)]
 
     @classmethod
     def _lock_answer(cls, low_plain: str) -> tuple[bool, bool]:

@@ -60,6 +60,35 @@ def test_dispute_language_wins_over_a_statement_mention_only(text, intent, categ
     assert (result.intent, result.out_of_scope_category) == (intent, category)
 
 
+@pytest.mark.parametrize("text, intent, category", [
+    ("Vi en el extracto un cargo de 35 dólares que no es mío", "cargo_no_reconocido", None),
+    ("En mi estado de cuenta hay una compra de 20 dólares que no es mía", "cargo_no_reconocido", None),
+    ("Esos dos retiros que salen en el extracto no son míos", "cargo_no_reconocido", None),
+    ("tengo un cargo en el extracto de 10 dolares que no es mio", "cargo_no_reconocido", None),
+    ("No es mío ese cobro del martes", "cargo_no_reconocido", None),
+    ("No meu extrato tem um lançamento de 30 dólares que não é meu", "cargo_no_reconocido", None),
+    ("Os saques que aparecem no extrato não são meus", "cargo_no_reconocido", None),
+    # what is not mine names no charge: the statement or the balance itself
+    ("El extracto que me llegó no es mío", "fuera_de_alcance", "saldo_o_extracto"),
+    ("Mi saldo de 80 dólares no es mío", "fuera_de_alcance", "saldo_o_extracto"),
+])
+def test_a_charge_that_is_not_mine_is_disputed(text, intent, category):
+    result = extract(text)
+    assert (result.intent, result.out_of_scope_category) == (intent, category)
+
+
+@pytest.mark.parametrize("text, amounts", [
+    ("No reconozco tres cargos: uno de 45 dólares, otro de 80 dólares y otro de 120 dólares", [45.0, 80.0, 120.0]),
+    ("No reconozco los cargos de 45, 80 y 120 dólares", [45.0, 80.0, 120.0]),  # a list shares the unit of its last amount
+    ("Não reconheço duas compras: US$ 30 e US$ 75", [30.0, 75.0]),
+    ("No reconozco un cargo de 1.250.000 pesos", [1250000.0]),
+    ("No reconozco un cargo de 80 dólares del 12 de junio", [80.0]),  # a date is no amount
+    ("Mi saldo es de 500 dólares y no reconozco un cargo de 80 dólares", [80.0]),  # the amount of a balance names no charge
+])
+def test_every_amount_a_message_names_is_read(text, amounts):
+    assert extract(text).amount_hints == amounts
+
+
 @pytest.mark.parametrize("text, charge_date", [
     ("Extravié mi tarjeta de débito anteayer en el bus", None),
     ("Ontem à noite perdi o cartão no metrô", None),

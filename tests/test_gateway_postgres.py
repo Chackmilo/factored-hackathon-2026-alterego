@@ -63,6 +63,27 @@ def test_postgres_stack_opens_case_and_locks_card_with_read_back(pg_stack):
     assert orchestrator.gateway.get_customer_profile(session)["complaints_last_90d"] == 1
 
 
+def test_postgres_lock_without_an_offer_keeps_its_reason_code(pg_stack):
+    import psycopg
+
+    from tests.conftest import make_session
+    orchestrator, url = pg_stack
+    result = orchestrator.gateway.execute_lock_card(make_session("CLI-PG-1"), "PRD-PG-1", reason_code="MULTI_CHARGE_FRAUD")
+    with psycopg.connect(url, autocommit=True) as con:
+        assert con.execute("SELECT reason FROM ops.card_locks WHERE lock_id = %s", [result["lock_id"]]).fetchone() == ("MULTI_CHARGE_FRAUD",)
+
+
+def test_postgres_lock_with_an_unknown_reason_code_writes_nothing(pg_stack):
+    import psycopg
+
+    from tests.conftest import make_session
+    orchestrator, url = pg_stack
+    with pytest.raises(ValueError):
+        orchestrator.gateway.execute_lock_card(make_session("CLI-PG-1"), "PRD-PG-1", reason_code="Preventive hold")
+    with psycopg.connect(url, autocommit=True) as con:
+        assert con.execute("SELECT count(*) FROM ops.card_locks WHERE product_id = 'PRD-PG-1'").fetchone() == (0,)
+
+
 def test_postgres_gateway_rejects_other_customers_card(pg_stack):
     from src.tools.gateway import UnauthorizedAccessError
     from tests.conftest import make_session

@@ -169,7 +169,7 @@ def contracts(con, subset: dict[str, Any]) -> dict[str, Any]:
 def publish(database_url: str, source: str | Path = "data/lakehouse.duckdb", customers_path: str | Path | None = None) -> dict[str, Any]:
     customer_ids = None
     if customers_path:
-        payload = json.loads(Path(customers_path).read_text())
+        payload = json.loads(Path(customers_path).read_text(encoding="utf-8"))
         customer_ids = payload["customer_ids"] if isinstance(payload, dict) else list(payload)
     subset = extract(source, customer_ids)
     report = load(database_url, subset)

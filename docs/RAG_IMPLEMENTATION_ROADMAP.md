@@ -1,6 +1,6 @@
 # Plan de Implementación y Roadmap: Motor RAG de Explicaciones de Política
 
-**Estado:** Aprobado con revisiones técnicas incorporadas. TQ-037 respondida el 30-Sep (opción 1); hechas la Tarea 1.1 (`data/policy_corpus.json`) y el camino BM25 en `src/rag/` (2.1, 2.2, 3.1 a 3.3), sin conectar al orquestador (5.1) ni umbrales calibrados (1.2, 4.1).  
+**Estado:** Aprobado con revisiones técnicas incorporadas. TQ-037 respondida el 30-Sep (opción 1); hechas la Tarea 1.1 (`data/policy_corpus.json`), el camino BM25 en `src/rag/` (2.1, 2.2, 3.1 a 3.3) y el desvío al explicador (5.1), apagado hasta que la Tarea 4.1 escriba `data/rag_gate.json` con los umbrales calibrados sobre el banco de la 1.2.  
 **Fecha de Actualización:** 2026-09-30 (segunda revisión del mismo día; cambios y motivos en la sección 7)  
 **Basado en:** Hallazgos del Notebook *Augmented Generation* (`11d894be-6dd0-4680-ad7e-d9a2e8457d76`), reglas de [`AGENTS.md`](../AGENTS.md), especificación [`docs/specs/dispute-policy-v2.3.md`](specs/dispute-policy-v2.3.md), revisión tecnológica [`docs/reviews/2026-09-26-revision-tecnologica.md`](reviews/2026-09-26-revision-tecnologica.md), model card de [`intfloat/multilingual-e5-small`](https://huggingface.co/intfloat/multilingual-e5-small) y resolución de hallazgos **AUD-03 / AUD-15** de [`docs/reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md`](reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md).
 
@@ -42,7 +42,7 @@ El análisis de las 29 fuentes del notebook deja lecciones que guían el diseño
 | **3. Modelo de Embeddings** | `intfloat/multilingual-e5-small`, artefacto oficial `onnx/model_qint8_avx512_vnni.onnx` (118 MB) con `onnx/tokenizer.json` (17 MB), fijado por commit y SHA-256; prefijos `"query: "` / `"passage: "`; average pooling y normalización L2 (model card). | No hay archivos `.onnx`. `.gitignore` solo ignora `models/*.joblib`, y el modelo supera el límite de 100 MB por archivo de GitHub: un commit accidental rompe el push. | Script de descarga en el build con commit y SHA-256, carpeta del modelo en `.gitignore`, embeddings del corpus precomputados (`data/policy_embeddings.npy`). |
 | **4. Baseline Comparativo** | Baseline BM25 obligatorio para contrastar `Recall@3` contra los embeddings ([Hipótesis 5](PLAN.md#L26)). | `src/rag/bm25_retriever.py` existe desde el 30-Sep (Tarea 2.2). | Falta el benchmark contra E5 (Tarea 4.1). |
 | **5. Evaluación y Métrica** | Banco de preguntas de política con split dev (calibración) y test (reporte, congelado con SHA-256), cláusula esperada y acción esperada (`answer`, `clarify`, `abstain`). | No existe. `data/eval/dev_cases.jsonl` tiene 18 casos de disputa sin cláusula esperada: no sirve para calibrar el RAG. | Faltan `data/eval/policy_questions_dev.jsonl`, `data/eval/policy_questions_test.jsonl` y `src/eval/rag_benchmark.py`. |
-| **6. Enrutamiento del Orquestador** | Intent `consulta_politica` que no secuestre `consulta_general` ni se salte las escalaciones. | `consulta_general` cubre saldos y extractos ([`jev_extractor.py:29`](../src/understand/jev_extractor.py#L29)) y es el valor por defecto de palabras clave ([`keyword_extractor.py:127`](../src/understand/keyword_extractor.py#L127)). POL-ESC-LEGAL y POL-ESC-DISTRESS se evalúan dentro de `DisputePolicyEngine.evaluate` ([`dispute_policy.py:282`](../src/rules/dispute_policy.py#L282)), y el ajuste que convierte en disputa un mensaje con monto o cargo solo actúa sobre `consulta_general` ([`keyword_extractor.py:199`](../src/understand/keyword_extractor.py#L199)). | Intent nuevo con precedencia de la disputa y desvío al RAG solo sin señal de disputa, legal ni de angustia (sección 4). |
+| **6. Enrutamiento del Orquestador** | Intent `consulta_politica` que no secuestre `consulta_general` ni se salte las escalaciones. | `consulta_general` cubre saldos y extractos ([`jev_extractor.py:29`](../src/understand/jev_extractor.py#L29)) y es el valor por defecto de palabras clave ([`keyword_extractor.py:141`](../src/understand/keyword_extractor.py#L141)). POL-ESC-LEGAL y POL-ESC-DISTRESS se evalúan dentro de `DisputePolicyEngine.evaluate` ([`dispute_policy.py:297`](../src/rules/dispute_policy.py#L297)), y el ajuste que convierte en disputa un mensaje con monto o cargo solo actúa sobre `consulta_general` ([`keyword_extractor.py:215`](../src/understand/keyword_extractor.py#L215)). | Hecho el 30-Sep con una señal `policy_question` en lugar de un intent nuevo (Tarea 5.1); falta encenderlo con los umbrales de la 4.1. |
 
 ---
 
@@ -91,11 +91,11 @@ El análisis de las 29 fuentes del notebook deja lecciones que guían el diseño
 
 Reglas del desvío:
 
-- **Precedencia de la disputa:** un monto, una palabra de cargo, una cláusula que disputa un cargo o una tarjeta robada mantienen el intent de disputa; `consulta_politica` solo aplica sin ninguna de esas señales. "¿Cuánto plazo tengo para el cargo de 300 que no reconozco?" es una disputa.
-- **Escalaciones primero:** si POL-ESC-LEGAL o POL-ESC-DISTRESS dispararían, el turno sigue el flujo de disputa. La guarda reutiliza la detección de `dispute_policy.py` (`REGULATOR_OR_LEGAL_KEYWORDS`, `_severe_distress`) en vez de copiar listas.
-- **Solo en estado `new`** (`closed` y `escalated` ya vuelven a `new`: [`dispute_orchestrator.py:172`](../src/orchestrator/dispute_orchestrator.py#L172)). En `awaiting_clarification` y `awaiting_lock_confirmation` sigue el flujo actual; responder ahí queda para después del MVP.
+- **Precedencia de la disputa:** la señal `policy_question` del extractor de palabras clave pide una pregunta (signo o palabra interrogativa al inicio) sobre las reglas (plazos, proceso, qué se puede disputar, devoluciones, desbloqueo) y se apaga ante un monto, una fecha, un demostrativo ("este cargo"), una frase de disputa, una cláusula que disputa un cargo, una tarjeta robada u otro producto. "¿Cuánto plazo tengo para el cargo de 300 que no reconozco?" es una disputa; "¿Cuánto tiempo tengo para disputar un cargo?" es una pregunta de política. Ante la duda dice que no, porque un falso negativo deja el comportamiento de hoy.
+- **Escalaciones primero:** si POL-ESC-LEGAL o POL-ESC-DISTRESS dispararían, el turno sigue el flujo de disputa. La guarda llama a `DisputePolicyEngine.message_escalation`, que reutiliza la detección legal y de angustia de la política (con la señal de Jev y la memoria de casos) en vez de copiar listas. Con Jev, una probabilidad de robo de 0.40 o más o el intent `fuera_de_alcance` también dejan el turno en el flujo de disputa.
+- **Solo en estado `new`** (`closed` y `escalated` ya vuelven a `new`: [`dispute_orchestrator.py:177`](../src/orchestrator/dispute_orchestrator.py#L177)). En `awaiting_clarification` y `awaiting_lock_confirmation` sigue el flujo actual; responder ahí queda para después del MVP.
 - **Cláusula `internal` recuperada:** texto fijo de redirección, sin contenido ni parámetros de la cláusula (TQ-037).
-- **Datos y auditoría:** el retriever ve solo el mensaje enmascarado ([`docs/PLAN.md:178`](PLAN.md#L178)). La respuesta deja la conversación en `new`, no abre caso y se registra en `ops.audit_log` (retriever, commit del modelo, ids y scores del top 3, banda de la compuerta).
+- **Datos y auditoría:** el retriever ve solo el mensaje enmascarado ([`docs/PLAN.md:178`](PLAN.md#L178)). La respuesta deja la conversación en `new`, no abre caso, no lee el banco y se registra en `ops.audit_log` como `POLICY_EXPLAINED` (retriever, acción, banda de la compuerta, ids y scores del top 3; con E5 se sumará el commit del modelo). El resultado del turno es `POLICY_EXPLANATION`, o `SAFE_POLICY_ABSTENTION` cuando se abstiene.
 - **Un retriever en producción:** el que elija la Tarea 4.2; el benchmark corre ambos. No hay fusión híbrida.
 
 ---
@@ -114,7 +114,7 @@ Reglas del desvío:
   - Cláusulas: `POL-SEC-SESSION`, `POL-ESC-LEGAL`, `POL-CLARIFY`, `POL-ESC-AMBIG`, `POL-DISP-TYPE`, `POL-WIN-60`, `POL-ESC-500`, `POL-ESC-ML-RISK`, `POL-ESC-MULTI`, `POL-ESC-DISTRESS`, `POL-AUT-LOCK`, `POL-AUT-INTAKE`, `POL-AUT-150`.
   - Estructura por entrada: `clause_id`, `exposure` (`public`, `public_generic` o `internal`), `title_es`, `title_pt`, `category`, `official_text_es`, `answer_es`, `answer_pt`, `keywords_es`, `keywords_pt`, `parameters`, `provenance` (`team-generated`).
   - Exposición decidida en TQ-037: `internal` para `POL-AUT-150`, `POL-SEC-SESSION` y `POL-ESC-ML-RISK`; `public_generic` (dice que un especialista revisa ciertos casos, sin listar los disparadores) para `POL-ESC-LEGAL` y `POL-ESC-DISTRESS`; `public` para el resto.
-  - Las respuestas solo dan los parámetros que la política ya dice al cliente: 60 días ([`dispute_policy.py:387`](../src/rules/dispute_policy.py#L387)), 500 USD ([L200](../src/rules/dispute_policy.py#L200)), 48 horas ([L212](../src/rules/dispute_policy.py#L212)) y la respuesta formal en 3 a 5 días hábiles ([L186](../src/rules/dispute_policy.py#L186)). Nunca 150 USD, el umbral de riesgo ni el comportamiento de autenticación; nunca mencionan crédito ni prometen reembolso o bloqueo.
+  - Las respuestas solo dan los parámetros que la política ya dice al cliente: 60 días ([`dispute_policy.py:401`](../src/rules/dispute_policy.py#L401)), 500 USD ([L200](../src/rules/dispute_policy.py#L200)), 48 horas ([L212](../src/rules/dispute_policy.py#L212)) y la respuesta formal en 3 a 5 días hábiles ([L186](../src/rules/dispute_policy.py#L186)). Nunca 150 USD, el umbral de riesgo ni el comportamiento de autenticación; nunca mencionan crédito ni prometen reembolso o bloqueo.
   - BM25 y E5 indexan el mismo texto (`official_text_es` + `keywords_es` + `keywords_pt`), para que la Hipótesis 5 no dependa de qué ve cada retriever.
 - [ ] **Tarea 1.2:** Crear el banco de preguntas de política en `data/eval/` (JSONL con LF, ya cubierto por `.gitattributes`):
   - `policy_questions_test.jsonl`: las ~30 preguntas decididas para el reporte ([`TEAM_BRIEF_COMPLEMENTED.md:73`](TEAM_BRIEF_COMPLEMENTED.md#L73)), 15 ES (variantes de México, Colombia, Argentina) y 15 PT, congeladas con commit y `policy_questions_test.sha256` antes de calibrar nada.
@@ -153,12 +153,12 @@ Reglas del desvío:
   - *Alta*, cláusula `internal`: texto fijo de redirección, sin contenido ni parámetros de la cláusula.
   - *Ambivalente*: lista `title_es` o `title_pt` de las cláusulas públicas candidatas y pide aclaración; si todas las candidatas son internas, se abstiene.
   - *No Relevante*: `SAFE_POLICY_ABSTENTION`, texto fijo en ES y PT.
-- [x] **Tarea 3.3:** Crear `tests/test_policy_rag.py` (hecha el 30-Sep para el corpus, BM25, la compuerta y el explicador: 55 casos, y cada una de 14 mutaciones realistas del código o del corpus rompe al menos uno; lo marcado con la 2.3 o la 5.1 llega con esa tarea):
+- [x] **Tarea 3.3:** Crear `tests/test_policy_rag.py` (hecha el 30-Sep para el corpus, BM25, la compuerta y el explicador: 55 casos, y cada una de 14 mutaciones realistas del código o del corpus rompe al menos uno; lo de la 5.1 llegó con ella; lo de E5, con la 2.3):
   - Recuperación por cláusula con BM25 y con el embedder falso (este, con la Tarea 2.3); preguntas en portugués contra el corpus en español.
   - Abstención en preguntas fuera de alcance.
-  - Precedencia (con la Tarea 5.1): legal ("Superintendencia", "abogado"), angustia y mensaje mixto (monto más pregunta) siguen el flujo de disputa y no pasan por el RAG; un turno en `awaiting_clarification` o `awaiting_lock_confirmation` tampoco.
+  - Precedencia (hecha con la Tarea 5.1): legal ("Superintendencia", "abogado"), angustia y mensaje mixto (monto más pregunta) siguen el flujo de disputa y no pasan por el RAG; un turno en `awaiting_clarification` o `awaiting_lock_confirmation` tampoco.
   - Ninguna respuesta menciona crédito, 150 USD, el score de riesgo ni detalles de sesión, y los números del corpus son los que aplica el motor.
-  - Al final (con la Tarea 5.1), la suite held-out confirma que ningún primer turno cambia de intent. Sus resultados no se usan para ajustar patrones: la suite está congelada.
+  - Al final (hecho con la Tarea 5.1): ningún intent cambia, y la señal `policy_question` no se activa en ninguno de los 345 turnos de la suite held-out ni en los 24 del split de desarrollo. Ese conteo se midió una vez y no ajustó ningún patrón: la suite está congelada.
 
 ### Fase 4: Benchmark y Validación de la Hipótesis 5
 
@@ -174,10 +174,11 @@ Reglas del desvío:
 
 ### Fase 5: Integración con el Sistema y Cierre de Auditoría
 
-- [ ] **Tarea 5.1:** Conectar `PolicyExplainer` al orquestador conversacional:
-  - Agregar `consulta_politica` a `INTENT_CRITERIA` ([`jev_extractor.py:25`](../src/understand/jev_extractor.py#L25)) y a `INTENT_KEYWORDS` ([`keyword_extractor.py:23`](../src/understand/keyword_extractor.py#L23)), con la precedencia de la disputa de la sección 4 (extender a la clase nueva el ajuste de [`keyword_extractor.py:199`](../src/understand/keyword_extractor.py#L199)). `consulta_general` queda para saldos y movimientos.
-  - Desviar al explicador desde `_handle_dispute_turn` en `src/orchestrator/dispute_orchestrator.py` solo cuando la guarda de la sección 4 lo permite, con el mensaje enmascarado.
-  - La clase nueva entra al set etiquetado de Jev contra palabras clave (componente aprendido 2, [`AGENTS.md`](../AGENTS.md) sección 8).
+- [x] **Tarea 5.1:** Conectar `PolicyExplainer` al orquestador conversacional (hecha el 30-Sep, apagada hasta que exista `data/rag_gate.json`):
+  - Cambio frente al plan: en lugar del intent `consulta_politica` hay una señal `policy_question` en `UnderstandResult`, calculada por el extractor de palabras clave (que corre en cada turno, también con Jev). Un intent nuevo habría cambiado intents y resultados aun con el explicador apagado, y la lista de opciones de Jev que el equipo etiqueta; la señal no toca ninguno de los dos. `consulta_general` sigue siendo saldos y movimientos.
+  - `DisputeOrchestrator` recibe `explainer` (por defecto `None`) y desvía un turno al explicador solo cuando pasa la guarda de la sección 4, con el mensaje enmascarado; si no, el turno sigue por `_handle_dispute_turn` como hoy.
+  - `get_orchestrator` construye el explicador con `load_policy_explainer(RAG_GATE_PATH)` (por defecto `data/rag_gate.json`, con `retriever`, `tau_upper` y `tau_lower`). Sin ese archivo no hay explicador: encenderlo es commitear los umbrales de la 4.1.
+  - La aclaración del explicador ya no numera los temas: en estado `new` un "1" iría al flujo de disputa; el cliente nombra el tema.
 - [ ] **Tarea 5.2:** Verificar el bundle real en Vercel cuando exista el deploy (< 500 MB); la medida temprana es la Tarea 2.0.
 - [ ] **Tarea 5.3:** Actualizar la auditoría en `docs/reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md`, solo en su parte RAG:
   - **AUD-03** sigue abierto por Claude Haiku 4.5 (`anthropic` no está en las dependencias); se cierra la parte del RAG.
@@ -199,10 +200,10 @@ Entrega: 2026-10-05 ([`AGENTS.md`](../AGENTS.md), sección 3). La corrida RAG co
 | **2.3 Retriever E5 ONNX int8** | B | 2.5 h | Pendiente | `src/rag/onnx_retriever.py` |
 | **3.1 Compuerta por retriever** | B | 1.0 h | Hecha (umbrales con la 4.1) | `src/rag/gate.py` |
 | **3.2 Explicador por plantillas** | B | 1.0 h | Hecha | `src/rag/policy_explainer.py` |
-| **3.3 Tests (precedencia y exposición incluidas)** | B | 2.0 h | Hecha para BM25 (precedencia con la 5.1) | `tests/test_policy_rag.py` |
+| **3.3 Tests (precedencia y exposición incluidas)** | B | 2.0 h | Hecha (E5 con la 2.3) | `tests/test_policy_rag.py` |
 | **4.1 Benchmark y calibración en dev** | A / B | 1.5 h | Pendiente | `src/eval/rag_benchmark.py` |
 | **4.2 Reporte y decisión H5** | A | 1.0 h | Pendiente | `reports/rag_evaluation_report.md` |
-| **5.1 Intent `consulta_politica` y desvío seguro** | B | 2.0 h | Pendiente | `src/understand/`, `src/orchestrator/` |
+| **5.1 Señal `policy_question` y desvío seguro** | B | 2.0 h | Hecha, apagada hasta `data/rag_gate.json` (4.1) | `src/understand/`, `src/orchestrator/` |
 | **5.2 Bundle real en Vercel** | B | 0.5 h | Pendiente | Logs de deploy |
 | **5.3 AUD-03 / AUD-15, parte RAG** | B / PM | 0.5 h | Pendiente | `docs/reviews/` |
 
@@ -216,7 +217,7 @@ Total: 19 h. El camino BM25 de punta a punta (1.1, 2.1, 2.2, 3.1, 3.2, 3.3, 5.1)
 | :--- | :--- | :--- |
 | Exposición por cláusula; `POL-AUT-150`, `POL-SEC-SESSION` y `POL-ESC-ML-RISK` se responden con redirección | El cliente nunca oye que se aplicó crédito; la autenticación y el umbral de riesgo son internos | [spec:30](specs/dispute-policy-v2.3.md#L30), [spec:8](specs/dispute-policy-v2.3.md#L8), regla 8 de AGENTS.md, TQ-037 |
 | Respuestas `answer_es` y `answer_pt` por cláusula | La política queda en español, pero la interacción va en el idioma del cliente | [PLAN:181](PLAN.md#L181) |
-| Desvío solo en `new` y sin señal de disputa, legal ni de angustia | POL-ESC-LEGAL y POL-ESC-DISTRESS viven dentro de `evaluate`; el ajuste a disputa solo cubre `consulta_general` | [dispute_policy.py:282](../src/rules/dispute_policy.py#L282), [keyword_extractor.py:199](../src/understand/keyword_extractor.py#L199) |
+| Desvío solo en `new` y sin señal de disputa, legal ni de angustia | POL-ESC-LEGAL y POL-ESC-DISTRESS viven dentro de `evaluate`; el ajuste a disputa solo cubre `consulta_general` | [dispute_policy.py:297](../src/rules/dispute_policy.py#L297), [keyword_extractor.py:215](../src/understand/keyword_extractor.py#L215) |
 | Banco propio con split dev y test congelado | El split de desarrollo existente son 18 casos de disputa sin cláusula esperada | `data/eval/dev_cases.jsonl` |
 | Umbrales por retriever, sin semillas | E5 concentra el coseno entre 0.7 y 1.0; BM25 no tiene escala fija | Model card de E5, FAQ 3 |
 | Métricas de compuerta | `Recall@k` y `MRR` no miden la abstención | Tarea 4.1 |
@@ -226,7 +227,7 @@ Total: 19 h. El camino BM25 de punta a punta (1.1, 2.1, 2.2, 3.1, 3.2, 3.3, 5.1)
 | CRAG, CAG y Self-RAG descritos como inspiración | La respuesta es una plantilla; declarar técnicas no implementadas repetiría AUD-03 | Auditoría, AUD-03 |
 | AUD-03 y AUD-15 se cierran solo en su parte RAG | AUD-03 incluye Claude; AUD-15 incluye LightGBM en ONNX | Auditoría, AUD-03 y AUD-15 |
 | Autores distintos para corpus y preguntas; regla de decisión previa | El vocabulario compartido favorece a BM25; una pregunta vale 6.7 puntos por idioma | Tareas 1.2 y 4.2 |
-| Sin detector de idioma propio | Understand ya fija el idioma de la conversación | [dispute_orchestrator.py:161](../src/orchestrator/dispute_orchestrator.py#L161) |
+| Sin detector de idioma propio | Understand ya fija el idioma de la conversación | [dispute_orchestrator.py:166](../src/orchestrator/dispute_orchestrator.py#L166) |
 | Benchmark en `src/eval/` y preguntas en `data/eval/` | El harness vive en `src/eval/` y las suites en `data/eval/` | `CLAUDE.md` |
 
 **Después, el mismo 30-Sep:** TQ-037 se respondió con la opción 1 y la Tarea 1.1 quedó en `data/policy_corpus.json`. La respuesta formal en 3 a 5 días hábiles, que el texto de registro ya da al cliente, entra en los parámetros públicos por la misma regla de TQ-037.

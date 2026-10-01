@@ -25,6 +25,7 @@ from src.core.config import settings
 from src.llm.budget import LlmBudget
 from src.ops.store import OpsStore
 from src.orchestrator.dispute_orchestrator import DisputeOrchestrator
+from src.rag.policy_explainer import load_policy_explainer
 from src.tools.gateway import (
     ActionVerificationError,
     BankingToolGateway,
@@ -57,17 +58,18 @@ def get_orchestrator() -> DisputeOrchestrator:
     """One orchestrator per process. Paths come from the environment so tests and deployments can point elsewhere."""
     database_url = os.getenv("DATABASE_URL")
     scorer = load_scorer(Path(os.getenv("FRAUD_MODEL_PATH", "models/fraud_risk_ieee.joblib")))
+    explainer = load_policy_explainer(Path(os.getenv("RAG_GATE_PATH", "data/rag_gate.json")))  # None until Task 4.1 calibrates it
     if database_url:  # Supabase or a local Postgres: bank serving copy plus the ops schema (migrations applied)
         from src.tools.gateway_postgres import PostgresBankingGateway
 
         ops = OpsStore(database_url)
         orchestrator = DisputeOrchestrator(gateway=PostgresBankingGateway(database_url), ops=ops, risk_scorer=scorer,
-                                           router=UnderstandRouter(jev=JevExtractor(), budget=LlmBudget(ops)))
+                                           router=UnderstandRouter(jev=JevExtractor(), budget=LlmBudget(ops)), explainer=explainer)
     else:
         lakehouse = Path(os.getenv("LAKEHOUSE_PATH", "data/lakehouse.duckdb"))
         ops = OpsStore(os.getenv("OPS_DB_PATH", "data/ops.duckdb"))
         orchestrator = DisputeOrchestrator(gateway=BankingToolGateway(db_path=str(lakehouse)), ops=ops, risk_scorer=scorer,
-                                           router=UnderstandRouter(jev=JevExtractor(), budget=LlmBudget(ops)))
+                                           router=UnderstandRouter(jev=JevExtractor(), budget=LlmBudget(ops)), explainer=explainer)
     orchestrator.ops.seed_questions()  # open questions for the team, answered in the console
     return orchestrator
 

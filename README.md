@@ -31,7 +31,7 @@ The full component diagram is in [`docs/PLAN.md`](docs/PLAN.md) ("Arquitectura d
 
 ## Quick start
 
-Prerequisites: Python 3.11 locally (`.python-version`; CI and the Docker images run 3.12) and [`uv`](https://github.com/astral-sh/uv), or only Docker: `docker compose run --rm dev <command>` runs any Python command below in a Linux container, the same on Mac and Windows. Building the lakehouse needs the read-only AWS keys from the data dictionary in a git-ignored `.env`; never commit them.
+Prerequisites: Python 3.12 (`.python-version`, as in CI, the Docker images and Vercel) and [`uv`](https://github.com/astral-sh/uv), or only Docker: `docker compose run --rm dev <command>` runs any Python command below in a Linux container, the same on Mac and Windows. Building the lakehouse needs the read-only AWS keys from the data dictionary in a git-ignored `.env`; never commit them.
 
 ```bash
 uv sync                                               # install from the lockfile

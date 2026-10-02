@@ -209,6 +209,16 @@ Un solo proyecto de Vercel. FastAPI se despliega sin configuración como una fun
 
 Por verificar en el deploy esqueleto: que el build del proyecto de Python tenga Node para compilar el front, y que `app.frontend()` exista en nuestra versión de FastAPI. Si hay middleware de nivel superior (CORS u OpenTelemetry), Vercel deja los estáticos dentro de la función; se fuerza el CDN con `cdn = true` en `[tool.vercel.fastapi.static]`.
 
+Configurado el 2 oct, todavía sin desplegar:
+
+- `[tool.vercel] entrypoint = "src.api.app:app"`. Sin esa línea Vercel tomaría el `main.py` de la raíz, que es el demo del baseline.
+- `[tool.vercel.scripts] build = "python scripts/deploy/vercel_build.py"` corre `npm ci` y `npm run build` en `frontend/` después de instalar Python. En Vercel se detiene si falta `VITE_SUPABASE_URL` o `VITE_SUPABASE_PUBLISHABLE_KEY`, porque sin ellas el front saldría con el selector de personas local, que responde 404 en producción.
+- La app sigue montando `frontend/dist` en `/` con `StaticFiles` (no hace falta `app.frontend()`). Como no tiene middleware, Vercel promueve esos archivos al CDN.
+- `vercel.json` saca del bundle `.agents`, `.archify`, `docs`, `notebooks`, `tests`, `reports`, `scripts`, `data/eval` y, del front, `node_modules`, `src` y `public`. Medido sobre el árbol: entran 105 archivos del repo (1,6 MB) más el front compilado; con los 358 MB de dependencias de la sección 6.3, el bundle queda en unos 360 MB.
+- `tests/test_vercel_config.py` mantiene alineados el entrypoint, la clave de la función y las exclusiones: un archivo nuevo que la API lea en producción tiene que quedar fuera de `excludeFiles`.
+
+Falta confirmar en el primer deploy que el build de Python tenga Node.
+
 Respaldos, en orden: (1) un segundo proyecto de Vercel con el preset de Vite y un rewrite de `/api/*` al proyecto del API (los previews del front apuntarían al API de producción); (2) Vercel Services, que está en beta y pide permisos, así que no se usa de entrada; (3) Large Functions (beta, hasta 5 GB) o una imagen de contenedor en Vercel si el bundle no cabe.
 
 ### 6.2 Límites verificados que cambian el diseño

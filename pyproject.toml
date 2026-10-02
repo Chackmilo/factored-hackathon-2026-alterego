@@ -47,6 +47,14 @@ filterwarnings = [
     "ignore::starlette.testclient.StarletteDeprecationWarning",
 ]
 
+# Vercel (docs/SUPABASE_VERCEL.md section 6). The root main.py is the baseline demo, so the API is named here; the build
+# step compiles the React front that the app mounts at "/", and vercel.json trims the function bundle.
+[tool.vercel]
+entrypoint = "src.api.app:app"
+
+[tool.vercel.scripts]
+build = "python scripts/deploy/vercel_build.py"
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

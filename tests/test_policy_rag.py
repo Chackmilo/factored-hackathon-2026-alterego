@@ -5,16 +5,26 @@ evaluation bank of Task 1.2 is separate and never tunes them.
 """
 import json
 import re
+import zlib
 from dataclasses import replace
 from datetime import timedelta
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from src.orchestrator.dispute_orchestrator import DisputeOrchestrator
-from src.rag.bm25_retriever import BM25Retriever, Hit
+from src.rag import onnx_retriever
+from src.rag.bm25_retriever import BM25Retriever, Hit, tokenize
 from src.rag.corpus import DEFAULT_CORPUS_PATH, load_corpus
 from src.rag.gate import Band, ConfidenceGate
+from src.rag.onnx_retriever import (
+    DEFAULT_MODEL_DIR,
+    MODEL_FILES,
+    E5Retriever,
+    OnnxE5Embedder,
+    mean_pool,
+)
 from src.rag.policy_explainer import PolicyExplainer, load_policy_explainer
 from src.rules.dispute_policy import DisputePolicyEngine
 from src.tools.gateway import BankingToolGateway
@@ -147,6 +157,93 @@ def test_bm25_returns_k_hits_best_first():
     hits = RETRIEVER.search("plazo para disputar un cargo", k=5)
     assert len(hits) == 5
     assert [h.score for h in hits] == sorted((h.score for h in hits), reverse=True)
+
+
+# ------------------------------------------------------------------ E5 retrieval (Task 2.3), on stand-in embedders
+class WordEmbedder:
+    """Stands in for the E5 model: each text is the unit vector of its accent-free words (crc32 buckets), so texts that
+    share words point the same way. It records every text it embeds."""
+
+    def __init__(self, dims: int = 4096):
+        self.dims, self.texts = dims, []
+
+    def embed(self, texts: list[str]) -> np.ndarray:
+        self.texts += texts
+        vectors = np.zeros((len(texts), self.dims))
+        for row, text in enumerate(texts):
+            for word in tokenize(text):
+                vectors[row, zlib.crc32(word.encode()) % self.dims] += 1.0
+        norms = np.linalg.norm(vectors, axis=1, keepdims=True)
+        return vectors / np.where(norms == 0, 1.0, norms)
+
+
+class PresetEmbedder:
+    """Clause i of the corpus gets the i-th unit vector; any question gets the vector given."""
+
+    def __init__(self, question_vector):
+        self.passages = [f"passage: {c.index_text}" for c in CORPUS.clauses]
+        self.question_vector = np.asarray(question_vector, dtype=float)
+
+    def embed(self, texts: list[str]) -> np.ndarray:
+        identity = np.eye(len(self.passages))
+        return np.array([identity[self.passages.index(t)] if t in self.passages else self.question_vector for t in texts])
+
+
+def test_e5_embeds_each_clause_as_a_passage_and_the_question_as_a_query():
+    embedder = WordEmbedder()
+    retriever = E5Retriever(CORPUS, embedder)
+    assert embedder.texts == [f"passage: {c.index_text}" for c in CORPUS.clauses]  # the text BM25 indexes too
+    retriever.search("¿Cuánto tiempo tengo?", k=1)
+    assert embedder.texts[-1] == "query: ¿Cuánto tiempo tengo?"
+
+
+def test_e5_hits_are_the_cosine_similarities_best_first():
+    ids = [c.clause_id for c in CORPUS.clauses]
+    question = np.zeros(len(ids))
+    question[3], question[7] = 0.6, 0.8
+    hits = E5Retriever(CORPUS, PresetEmbedder(question)).search("any", k=3)
+    assert E5Retriever.name == "e5"
+    assert [h.clause_id for h in hits] == [ids[7], ids[3], ids[0]]  # equal scores keep the corpus order
+    assert [h.score for h in hits] == pytest.approx([0.8, 0.6, 0.0])
+
+
+def test_a_portuguese_question_against_the_spanish_corpus_is_answered_in_portuguese():
+    explainer = PolicyExplainer(CORPUS, E5Retriever(CORPUS, WordEmbedder()), ALWAYS_CONFIDENT)
+    explanation = explainer.explain("Quanto tempo tenho para contestar uma cobrança?", "pt")
+    assert explanation.cited_clauses == ["POL-WIN-60"]
+    assert explanation.reply == f"{CORPUS.clause('POL-WIN-60').answer('pt')} [POL-WIN-60]"
+
+
+def test_mean_pool_averages_only_the_tokens_the_mask_keeps_and_returns_unit_vectors():
+    hidden = np.array([[[1.0, 0.0], [3.0, 0.0], [100.0, 100.0]], [[0.0, 3.0], [0.0, 1.0], [0.0, 2.0]]])
+    mask = np.array([[1, 1, 0], [1, 1, 1]])
+    assert mean_pool(hidden, mask) == pytest.approx(np.array([[1.0, 0.0], [0.0, 1.0]]))
+
+
+def test_the_e5_embedder_refuses_a_missing_or_changed_model_file(tmp_path):
+    with pytest.raises(FileNotFoundError, match="download"):
+        OnnxE5Embedder(tmp_path)
+    for name in MODEL_FILES:
+        (tmp_path / name).write_bytes(b"not the pinned file")
+    with pytest.raises(ValueError, match="SHA-256"):
+        OnnxE5Embedder(tmp_path)
+
+
+def test_a_download_that_does_not_match_its_pinned_hash_is_not_kept(tmp_path, monkeypatch):
+    monkeypatch.setattr(onnx_retriever.urllib.request, "urlretrieve", lambda url, path: Path(path).write_bytes(b"tampered"))
+    with pytest.raises(ValueError, match="SHA-256"):
+        onnx_retriever.download_model(tmp_path)
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.skipif(not all((DEFAULT_MODEL_DIR / name).is_file() for name in MODEL_FILES),
+                    reason="E5 model not downloaded (uv run python -m src.rag.onnx_retriever download)")
+def test_the_real_e5_model_embeds_to_unit_vectors_of_384_dimensions():
+    pytest.importorskip("onnxruntime")
+    vectors = OnnxE5Embedder(DEFAULT_MODEL_DIR).embed(
+        ["query: ¿Cuánto tiempo tengo para disputar un cargo?", f"passage: {CORPUS.clause('POL-WIN-60').index_text}"])
+    assert vectors.shape == (2, 384)
+    assert np.linalg.norm(vectors, axis=1) == pytest.approx([1.0, 1.0])
 
 
 # ------------------------------------------------------------------ confidence gate

@@ -234,7 +234,7 @@ Medido en Linux con Python 3.12 (`site-packages` sin `__pycache__`): 595 MB ante
 | `psycopg-binary` | 20 | Postgres |
 | `cryptography` | 15 | La verificación ES256 de las sesiones |
 
-Sin E5 el bundle queda en unos 377 MB. Con E5 (6.5) llegaría a unos 609 MB: con el código de hoy no cabe. Servir el modelo de riesgo en ONNX (6.4, TQ-022) saca `scikit-learn` y `scipy` (143 MB) y lo deja en unos 466 MB; importar `duckdb` solo en el camino local ahorraría 58 MB más. El SDK de Anthropic y `onnxruntime` entran cuando haya código de la API que los use.
+Sin E5 el bundle queda en unos 377 MB. Con E5 (6.5) llegaría a unos 609 MB: con el código de hoy no cabe. Servir el modelo de riesgo en ONNX (6.4, TQ-022) saca `scikit-learn` y `scipy` (143 MB) y lo deja en unos 466 MB; importar `duckdb` solo en el camino local ahorraría 58 MB más. El SDK de Anthropic y `onnxruntime` entran cuando haya código de la API que los use; hasta entonces `onnxruntime` y `tokenizers` están en el grupo `dev`, para medir E5 offline (Tarea 2.3).
 
 ### 6.4 Riesgo del runtime de inferencia
 

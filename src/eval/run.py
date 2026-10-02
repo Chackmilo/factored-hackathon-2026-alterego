@@ -5,6 +5,12 @@ CLI: run a case suite through the proposed stack and the reference baseline, wri
 """
 from __future__ import annotations
 
+import os
+
+# The harness mints local tokens for its attack cases and never runs in production: without this, a .env that has a
+# SUPABASE_URL and no APP_ENV imports the app as production and those cases crash instead of being judged.
+os.environ.setdefault("APP_ENV", "test")
+
 import argparse
 import json
 import subprocess

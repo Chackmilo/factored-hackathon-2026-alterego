@@ -479,7 +479,7 @@ export default function Console({ session, onLogout }: Props) {
       <header className="page-header row">
         <div>
           <h1>HITL Console</h1>
-          <p className="muted">Agent <code>{session.customer_id}</code>. Decisions here are recorded; no money moves.</p>
+          <p className="muted">Agent <code>{session.label}</code>. Decisions here are recorded; no money moves.</p>
         </div>
         <div className="row-actions">
           <button type="button" className="btn btn-ghost" onClick={onLogout}>Log out</button>

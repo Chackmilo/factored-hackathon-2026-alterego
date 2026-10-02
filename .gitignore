@@ -20,6 +20,7 @@ htmlcov/
 # Local secrets and stray virtualenvs
 .env
 .env/
+personas.local.json
 
 # Data and database artifacts
 *.duckdb

@@ -29,7 +29,7 @@ El enunciado admite como fuente de identidad "mock OIDC/JWT or an identity servi
 
 ### 3.1 Modelo de personas (propuesta)
 
-- **Personas de prueba con email y contraseña.** Un script (`scripts/seed_personas.py`, frente B) las crea con la API de administración de Auth y la secret key, que vive solo en el `.env` local de quien corre el script. Cada persona de cliente lleva `app_metadata = {"customer_id": "CLI-...", "app_role": "customer"}`; la del agente de la consola lleva `{"app_role": "agent"}` y ningún `customer_id`.
+- **Personas de prueba con email y contraseña.** Un script (`src/auth/seed_personas.py`, implementado el 1 oct; spec `docs/specs/supabase-login-v1.md`) las crea con la API de administración de Auth y la secret key, que vive solo en el `.env` local de quien corre el script. Cada persona de cliente lleva `app_metadata = {"customer_id": "CLI-...", "app_role": "customer"}`; la del agente de la consola lleva `{"customer_id": null, "app_role": "agent"}`.
 - **Registro público deshabilitado.** Nadie crea cuentas desde la app. Una cuenta sin `customer_id` recibe 403 en los endpoints de cliente.
 - **Nunca `user_metadata`.** El usuario puede editarlo y aparece en el token: no sirve para autorizar. Solo `app_metadata`, que únicamente la secret key escribe.
 - **Sin magic links.** El SMTP por defecto envía 2 correos por hora por proyecto: no alcanza para una demo ni para el harness.
@@ -67,11 +67,15 @@ El token que FastAPI recibe como `Authorization: Bearer` se ve así (valores de 
 
 No hay secreto compartido en el API: SEC-03 desaparece en lugar de mitigarse. La documentación de Supabase ya no recomienda el secreto HS256 heredado.
 
+`GET /api/v1/auth/me` devuelve la identidad verificada (`app_role` y `customer_id`) con cualquier `APP_ENV`, y el front la lee después de ingresar para elegir entre el chat y la consola (implementado el 1 oct).
+
 ### 3.4 Emisor local para tests y harness (propuesta)
 
 Una interfaz `SessionVerifier` con dos implementaciones: la de JWKS de Supabase y una local que firma ES256 con un par de claves generado en cada corrida de tests. Usa el mismo contrato de claims. Sirve para los tests unitarios, para los casos de sesión vencida y de token forjado del harness y para `docker-compose up` sin cuenta de Supabase (el CLI de Supabase trae la misma idea: `supabase gen bearer-jwt`).
 
-Guarda obligatoria: el verificador local solo existe con `APP_ENV=test`. En producción la app se niega a arrancar si alguien lo configura, y un test lo prueba (SEC-03 revisado).
+Guarda obligatoria: el verificador local solo existe con `APP_ENV` en `test` o `development`. En producción la app se niega a arrancar si alguien lo configura, y un test lo prueba (SEC-03 revisado).
+
+Sin `APP_ENV`, en blanco o con un valor distinto de `development` o `test`, el código asume producción (falla cerrado), y ahí el app no arranca sin `SUPABASE_URL` (implementado el 1 oct).
 
 ### 3.5 Límites y trampas de Auth
 
@@ -312,14 +316,14 @@ Referencia para estimar, no para ejecutar hoy.
 | `src/data/db.py` | Queda para DuckDB (ingesta y notebook); una conexión nueva a Postgres para el API |
 | `src/data/publish_serving.py` | Nuevo (sección 4.3) |
 | `supabase/migrations/` | Nuevo: `bank`, `ops`, vistas, roles, grants, RLS |
-| `scripts/seed_personas.py` | Nuevo; secret key solo local |
+| `src/auth/seed_personas.py` | Implementado: personas desde `data/fixtures/personas.json`; secret key solo local |
 | `src/api/app.py` | Endpoints nuevos detrás de `get_current_session`; `/api/v1/canary` protegido con `CRON_SECRET`; la cola en memoria sale del despliegue |
 | `vercel.json`, `.github/workflows/canary.yml` | Cron diario de Vercel y workflow programado cada 12 h contra el canario |
 | `data/serving_customers.json` | Nuevo (`team-generated`): lista de clientes que se publican (suite, personas, canario) |
 | `pyproject.toml`, `.python-version`, `uv.lock` | Python 3.12, grupos de dependencias, `[tool.vercel]` |
 | `Dockerfile`, `docker-compose.yml` | Postgres local, emisor local |
 | `tests/test_dispute_flow.py` | Fixture de Postgres; tests del verificador |
-| `web/` | Nuevo (frente C): React con `@supabase/supabase-js` fijado, solo para ingresar; Node 22 o superior |
+| `frontend/` | Implementado: React con `@supabase/supabase-js` 2.117.2 fijado, solo para ingresar; Node 22 o superior |
 
 ## 9. Riesgos nuevos
 

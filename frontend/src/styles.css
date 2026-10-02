@@ -105,7 +105,9 @@ p { margin: 0 0 8px; }
 .btn-block { width: 100%; }
 .btn-small { padding: 5px 10px; font-size: 0.875rem; }
 
-input[type="text"] {
+input[type="text"],
+input[type="email"],
+input[type="password"] {
   font: inherit;
   padding: 9px 12px;
   border: 1px solid var(--border);
@@ -114,7 +116,9 @@ input[type="text"] {
   color: var(--text);
   min-width: 0;
 }
-input[type="text"]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 .checkbox { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
 

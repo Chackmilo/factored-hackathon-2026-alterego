@@ -1,6 +1,10 @@
 """
 Shared pytest fixtures for OmniGuard AI / Dispute Intake test suite.
 """
+import os
+
+os.environ.setdefault("APP_ENV", "test")  # before src is imported: without APP_ENV the app runs as production
+
 from datetime import date
 
 import pytest

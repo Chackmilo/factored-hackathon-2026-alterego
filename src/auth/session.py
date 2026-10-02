@@ -7,7 +7,9 @@ come only from `app_metadata`, which only the Supabase secret key can write. The
 in the API (SEC-03): HS256 and `alg: none` tokens get 401.
 
 A local issuer signs the same claims with an ES256 key pair generated per process. It exists only when
-APP_ENV is `test` or `development`; configuring it in production makes the app refuse to start.
+APP_ENV is `test` or `development`; without APP_ENV, or with any other value, the app runs as production,
+and configuring the issuer there makes the app refuse to start. Outside development and test the app also
+refuses to start without SUPABASE_URL: no session token could be verified.
 """
 from __future__ import annotations
 
@@ -48,19 +50,39 @@ class VerifiedSession:
         return self.customer_id or self.auth_user_id or "unknown"
 
 
+LOCAL_ENVS = ("development", "test")  # the only environments where the local issuer and its routes exist
+
+
 def _app_env() -> str:
-    return os.getenv("APP_ENV", "development").lower()
+    """APP_ENV, normalized. Missing or blank means production: the app fails closed."""
+    return (os.getenv("APP_ENV") or "production").strip().lower()
 
 
 def local_issuer_enabled() -> bool:
     """The local ES256 issuer is for tests, the harness and docker-compose without a Supabase account."""
-    configured = os.getenv("LOCAL_ISSUER_ENABLED")
+    configured = (os.getenv("LOCAL_ISSUER_ENABLED") or "").strip().lower()
     env = _app_env()
-    if env == "production":
-        if configured and configured.lower() == "true":
-            raise RuntimeError("LOCAL_ISSUER_ENABLED=true is not allowed with APP_ENV=production (SEC-03)")
+    if env not in LOCAL_ENVS:
+        if configured == "true":
+            raise RuntimeError(f"LOCAL_ISSUER_ENABLED=true is not allowed with APP_ENV={env} (SEC-03)")
         return False
-    return configured is None or configured.lower() == "true"
+    return configured in ("", "true")
+
+
+def configured_supabase_url(raw: str | None = None) -> str | None:
+    """SUPABASE_URL as the API uses it: stripped, without a trailing slash, and only an https URL.
+    None when it is unset, blank, or anything else (a comment a template left behind, an http URL, a typo)."""
+    value = (os.getenv("SUPABASE_URL") if raw is None else raw) or ""
+    value = value.strip().rstrip("/")
+    return value if value.startswith("https://") else None
+
+
+def check_production_identity() -> None:
+    """Outside development and test only Supabase tokens pass, so the project's https URL is required: without it nobody signs in."""
+    env = _app_env()
+    if env not in LOCAL_ENVS and configured_supabase_url() is None:
+        raise RuntimeError(f"APP_ENV={env} needs SUPABASE_URL: without it no session token can be verified. "
+                           "Set an https SUPABASE_URL, or APP_ENV=development for local work.")
 
 
 class LocalIssuer:
@@ -88,7 +110,7 @@ class SessionVerifier:
     """Verifies ES256 tokens from the Supabase project JWKS and, outside production, from the local issuer."""
 
     def __init__(self, supabase_url: str | None = None, jwks: dict[str, Any] | None = None, issuer: str | None = None):
-        self.supabase_url = (supabase_url or os.getenv("SUPABASE_URL", "")).rstrip("/")
+        self.supabase_url = configured_supabase_url(supabase_url) or ""
         self.supabase_issuer = issuer or (f"{self.supabase_url}/auth/v1" if self.supabase_url else None)
         self._static_jwks = jwks  # for tests: a JWKS dict standing in for the remote one
         self._jwk_client = jwt.PyJWKClient(f"{self.supabase_url}/auth/v1/.well-known/jwks.json", cache_keys=True) \

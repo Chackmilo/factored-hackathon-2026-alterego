@@ -300,7 +300,7 @@
       "recommendation": "Daniel creates alterego-dev and shares the URL; personas from data/fixtures/team_questions.json owner list",
       "source": "27-Sep loop, iteration 2",
       "status": "answered",
-      "answer": "Project created, URL shared: SUPABASE_URL=https://lrddokaihdwrdtwfiale.supabase.co (Daniel, 29-Sep). Its JWKS at /auth/v1/.well-known/jwks.json serves one ES256 P-256 signing key (kid 3ebd1a7b-b0fa-4dd9-87e0-0525eae1400a), which is what SessionVerifier expects. Pending: create the personas with app_metadata.customer_id and app_role, and switch the front from the local issuer to supabase-js.",
+      "answer": "Project created, URL shared: SUPABASE_URL=https://lrddokaihdwrdtwfiale.supabase.co (Daniel, 29-Sep). Its JWKS at /auth/v1/.well-known/jwks.json serves one ES256 P-256 signing key (kid 3ebd1a7b-b0fa-4dd9-87e0-0525eae1400a), which is what SessionVerifier expects. Personas created on 2026-10-02 with src.auth.seed_personas (three customers, one agent; data/fixtures/personas.json), and the front signs in with supabase-js (docs/specs/supabase-login-v1.md).",
       "answered_by": "Kmilo (chat, 29-Sep); project by Daniel",
       "answered_at": "2026-09-29T21:00:00"
     },

@@ -176,6 +176,18 @@ def test_the_cli_writes_the_report_and_writes_the_gate_only_when_asked(tmp_path)
     assert {"tau_upper": explainer.gate.tau_upper, "tau_lower": explainer.gate.tau_lower} == report["retrievers"]["bm25"]["gate"]
 
 
+def test_the_report_states_the_provenance_of_each_split_and_claims_no_authorship_of_its_own(tmp_path):
+    drafted = "team-generated, LLM-drafted"
+    dev = bank(tmp_path, "dev.jsonl", [dict(row("D-01", "¿Cuánto tiempo tengo para disputar un cargo?", "answer", ["POL-WIN-60"]),
+                                            provenance=drafted),
+                                       dict(row("D-02", "xyzzy plugh", "abstain", []), provenance=drafted)])
+    test = bank(tmp_path, "test.jsonl", [dict(row("T-01", "qwerty asdf", "abstain", []), provenance=drafted)])
+    out = tmp_path / "rag_benchmark"
+    main(["--dev", str(dev), "--test", str(test), "--out", str(out)])
+    report = out.with_suffix(".md").read_text(encoding="utf-8")
+    assert report.count(f"({drafted})") == 2 and "team-written" not in report
+
+
 class ConstantEmbedder:
     """Stands in for the E5 model in the CLI: every text gets the same unit vector."""
 

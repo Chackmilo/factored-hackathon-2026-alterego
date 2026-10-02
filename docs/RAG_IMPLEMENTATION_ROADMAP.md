@@ -1,6 +1,6 @@
 # Plan de Implementación y Roadmap: Motor RAG de Explicaciones de Política
 
-**Estado:** Aprobado con revisiones técnicas incorporadas. TQ-037 respondida el 30-Sep (opción 1); hechas la Tarea 1.1 (`data/policy_corpus.json`), el camino BM25 en `src/rag/` (2.1, 2.2, 3.1 a 3.3), el desvío al explicador (5.1), la herramienta de la 4.1, la medida de la 2.0 (E5 no cabe en el bundle con el código de hoy; cabría con el modelo de riesgo en ONNX, pero TQ-022 mantuvo scikit-learn el 2-Oct, así que en Vercel va BM25) y el buscador E5 de la 2.3, que se mide offline; el explicador sigue apagado hasta que la 4.1, corrida sobre el banco de la 1.2, escriba `data/rag_gate.json` con los umbrales calibrados.  
+**Estado:** Aprobado con revisiones técnicas incorporadas. TQ-037 respondida el 30-Sep (opción 1); hechas la Tarea 1.1 (`data/policy_corpus.json`), el camino BM25 en `src/rag/` (2.1, 2.2, 3.1 a 3.3), el desvío al explicador (5.1), la herramienta de la 4.1, la medida de la 2.0 (E5 no cabe en el bundle con el código de hoy; cabría con el modelo de riesgo en ONNX, pero TQ-022 mantuvo scikit-learn el 2-Oct, así que en Vercel va BM25) y el buscador E5 de la 2.3, que se mide offline; el 2-Oct la 4.1 corrió sobre el banco de la 1.2 (redactado por un LLM, con desviaciones declaradas) y el explicador quedó encendido con el gate de BM25 (`data/rag_gate.json`): en test acierta la acción en el 36,7 %, se abstiene en el 61,1 % de las preguntas que debía responder y cita una cláusula equivocada en el 27,3 % de sus respuestas.  
 **Fecha de Actualización:** 2026-10-01 (Tareas 4.1, 2.0 y 2.3; la segunda revisión del 30-Sep, con sus cambios y motivos, está en la sección 7)  
 **Basado en:** Hallazgos del Notebook *Augmented Generation* (`11d894be-6dd0-4680-ad7e-d9a2e8457d76`), reglas de [`AGENTS.md`](../AGENTS.md), especificación [`docs/specs/dispute-policy-v2.3.md`](specs/dispute-policy-v2.3.md), revisión tecnológica [`docs/reviews/2026-09-26-revision-tecnologica.md`](reviews/2026-09-26-revision-tecnologica.md), model card de [`intfloat/multilingual-e5-small`](https://huggingface.co/intfloat/multilingual-e5-small) y resolución de hallazgos **AUD-03 / AUD-15** de [`docs/reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md`](reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md).
 
@@ -116,12 +116,16 @@ Reglas del desvío:
   - Exposición decidida en TQ-037: `internal` para `POL-AUT-150`, `POL-SEC-SESSION` y `POL-ESC-ML-RISK`; `public_generic` (dice que un especialista revisa ciertos casos, sin listar los disparadores) para `POL-ESC-LEGAL` y `POL-ESC-DISTRESS`; `public` para el resto.
   - Las respuestas solo dan los parámetros que la política ya dice al cliente: 60 días ([`dispute_policy.py:401`](../src/rules/dispute_policy.py#L401)), 500 USD ([L200](../src/rules/dispute_policy.py#L200)), 48 horas ([L212](../src/rules/dispute_policy.py#L212)) y la respuesta formal en 3 a 5 días hábiles ([L186](../src/rules/dispute_policy.py#L186)). Nunca 150 USD, el umbral de riesgo ni el comportamiento de autenticación; nunca mencionan crédito ni prometen reembolso o bloqueo.
   - BM25 y E5 indexan el mismo texto (`official_text_es` + `keywords_es` + `keywords_pt`), para que la Hipótesis 5 no dependa de qué ve cada retriever.
-- [ ] **Tarea 1.2:** Crear el banco de preguntas de política en `data/eval/` (JSONL con LF, ya cubierto por `.gitattributes`):
+- [x] **Tarea 1.2:** Crear el banco de preguntas de política en `data/eval/` (JSONL con LF, ya cubierto por `.gitattributes`):
   - `policy_questions_test.jsonl`: las ~30 preguntas decididas para el reporte ([`TEAM_BRIEF_COMPLEMENTED.md:73`](TEAM_BRIEF_COMPLEMENTED.md#L73)), 15 ES (variantes de México, Colombia, Argentina) y 15 PT, congeladas con commit y `policy_questions_test.sha256` antes de calibrar nada.
   - `policy_questions_dev.jsonl`: otras ~30 con la misma mezcla, para calibrar umbrales.
   - Mezcla por split: ~18 directas sobre cláusulas, ~5 ambiguas y ~7 fuera de alcance, incluidas preguntas vecinas (saldo, préstamo, devolución del dinero) y preguntas que tocan cláusulas `internal`.
   - Campos: `question_id`, `language`, `text`, `expected_action` (`answer`, `clarify` o `abstain`), `expected_clause_ids` (vacío al abstenerse), `provenance`.
   - Autoría: las escriben integrantes distintos del autor del corpus, sin ver `keywords_*`. Un LLM solo parafrasea, con revisión humana ([`docs/PLAN.md:184`](PLAN.md#L184)).
+  - Hecha el 2-Oct con desviaciones que Daniel aceptó y que el reporte declara:
+    - las 60 preguntas las redactó un agente LLM del IDE después de leer `data/policy_corpus.json`, `keywords_*` incluidas, y borró su script generador; la procedencia dice `team-generated, LLM-drafted`;
+    - la primera corrida midió el test junto con la calibración, antes de commitearlo y sin la regla de la 4.2; después solo cambió la etiqueta de procedencia, y el test quedó congelado en `44e3e90` (SHA-256 `445ce4f8`);
+    - la contaminación de vocabulario es moderada: 8 de 18 preguntas de dev y 7 de 18 de test traen alguna keyword de su propia cláusula, casi siempre genéricas ("días", "compra").
 
 ### Fase 2: Retrievers y Dependencias Ligeras
 
@@ -163,7 +167,7 @@ Reglas del desvío:
 
 ### Fase 4: Benchmark y Validación de la Hipótesis 5
 
-- [ ] **Tarea 4.1:** Implementar `src/eval/rag_benchmark.py` (`uv run python -m src.eval.rag_benchmark`), junto al resto del harness (herramienta lista el 1-Oct; falta correrla con el banco de la 1.2):
+- [x] **Tarea 4.1:** Implementar `src/eval/rag_benchmark.py` (`uv run python -m src.eval.rag_benchmark`), junto al resto del harness (herramienta lista el 1-Oct; corrida el 2-Oct sobre el banco de la 1.2: gate en `data/rag_gate.json`, reporte en `reports/rag_benchmark.md`):
   - Corre BM25 y, con `--e5 models/e5-small`, E5 sobre dev y test; el archivo de compuerta sigue siendo el de BM25, el único que se puede servir hoy. Los umbrales de cada retriever se calibran solo en dev; test se mide una vez, con los umbrales fijados, y se rechaza si ya no coincide con su `.sha256`.
   - Calibración: entre los puntajes top observados en dev (más infinito), el par de umbrales que acierta más acciones; a igualdad, el más alto, que es el que menos responde y menos cita mal. Una redirección (cláusula interna) cuenta como respuesta que cita la cláusula recuperada.
   - `--write-gate data/rag_gate.json` escribe el archivo que enciende el explicador, con el SHA-256 del split dev y del corpus y el commit; commitearlo es la decisión de encenderlo.
@@ -177,7 +181,7 @@ Reglas del desvío:
 
 ### Fase 5: Integración con el Sistema y Cierre de Auditoría
 
-- [x] **Tarea 5.1:** Conectar `PolicyExplainer` al orquestador conversacional (hecha el 30-Sep, apagada hasta que exista `data/rag_gate.json`):
+- [x] **Tarea 5.1:** Conectar `PolicyExplainer` al orquestador conversacional (hecha el 30-Sep; encendida el 2-Oct con `data/rag_gate.json`):
   - Cambio frente al plan: en lugar del intent `consulta_politica` hay una señal `policy_question` en `UnderstandResult`, calculada por el extractor de palabras clave (que corre en cada turno, también con Jev). Un intent nuevo habría cambiado intents y resultados aun con el explicador apagado, y la lista de opciones de Jev que el equipo etiqueta; la señal no toca ninguno de los dos. `consulta_general` sigue siendo saldos y movimientos.
   - `DisputeOrchestrator` recibe `explainer` (por defecto `None`) y desvía un turno al explicador solo cuando pasa la guarda de la sección 4, con el mensaje enmascarado; si no, el turno sigue por `_handle_dispute_turn` como hoy.
   - `get_orchestrator` construye el explicador con `load_policy_explainer(RAG_GATE_PATH)` (por defecto `data/rag_gate.json`, con `retriever`, `tau_upper` y `tau_lower`). Sin ese archivo no hay explicador: encenderlo es commitear los umbrales de la 4.1.
@@ -196,7 +200,7 @@ Entrega: 2026-10-05 ([`AGENTS.md`](../AGENTS.md), sección 3). La corrida RAG co
 | Tarea / Hito | Responsable | Estimación | Estado | Evidencia / Archivo |
 | :--- | :---: | :---: | :---: | :--- |
 | **1.1 Corpus (13 cláusulas con exposición, respuestas ES/PT)** | B | 2.0 h | Hecha (falta revisar el portugués) | `data/policy_corpus.json` |
-| **1.2 Banco de preguntas (dev + test congelado)** | A / C (no B) | 2.5 h | Pendiente | `data/eval/policy_questions_{dev,test}.jsonl` |
+| **1.2 Banco de preguntas (dev + test congelado)** | A / C (no B) | 2.5 h | Hecha el 2-Oct por un LLM; desviación aceptada por Daniel | `data/eval/policy_questions_{dev,test}.jsonl` |
 | **2.0 Prueba de bundle y arranque en frío** | B | 1.0 h | Medida (1-Oct): E5 no cabe; TQ-022 (2-Oct) mantuvo scikit-learn, así que en Vercel va BM25 | `docs/SUPABASE_VERCEL.md` 6.3 y 6.5 |
 | **2.1 Dependencias `pyproject.toml`** | B | 0.5 h | Hecha (E5 en el grupo `dev` mientras no se despliegue) | `pyproject.toml` |
 | **2.2 Retriever BM25** | B | 1.0 h | Hecha | `src/rag/bm25_retriever.py` |
@@ -204,9 +208,9 @@ Entrega: 2026-10-05 ([`AGENTS.md`](../AGENTS.md), sección 3). La corrida RAG co
 | **3.1 Compuerta por retriever** | B | 1.0 h | Hecha (umbrales con la 4.1) | `src/rag/gate.py` |
 | **3.2 Explicador por plantillas** | B | 1.0 h | Hecha | `src/rag/policy_explainer.py` |
 | **3.3 Tests (precedencia y exposición incluidas)** | B | 2.0 h | Hecha | `tests/test_policy_rag.py` |
-| **4.1 Benchmark y calibración en dev** | A / B | 1.5 h | Herramienta lista con BM25 y E5 (1-Oct); espera el banco (1.2) | `src/eval/rag_benchmark.py` |
+| **4.1 Benchmark y calibración en dev** | A / B | 1.5 h | Corrida el 2-Oct: gate de BM25 escrito; test 36,7 % de acciones correctas | `src/eval/rag_benchmark.py` |
 | **4.2 Reporte y decisión H5** | A | 1.0 h | Pendiente | `reports/rag_evaluation_report.md` |
-| **5.1 Señal `policy_question` y desvío seguro** | B | 2.0 h | Hecha, apagada hasta `data/rag_gate.json` (4.1) | `src/understand/`, `src/orchestrator/` |
+| **5.1 Señal `policy_question` y desvío seguro** | B | 2.0 h | Hecha; encendida el 2-Oct (4.1) | `src/understand/`, `src/orchestrator/` |
 | **5.2 Bundle real en Vercel** | B | 0.5 h | Pendiente | Logs de deploy |
 | **5.3 AUD-03 / AUD-15, parte RAG** | B / PM | 0.5 h | Pendiente | `docs/reviews/` |
 
@@ -229,7 +233,7 @@ Total: 19 h. El camino BM25 de punta a punta (1.1, 2.1, 2.2, 3.1, 3.2, 3.3, 5.1)
 | Tarea 2.0 antes de E5 y carga perezosa | El bundle decide el despliegue de E5; cada arranque en frío carga 118 MB | [PLAN:211](PLAN.md#L211) |
 | CRAG, CAG y Self-RAG descritos como inspiración | La respuesta es una plantilla; declarar técnicas no implementadas repetiría AUD-03 | Auditoría, AUD-03 |
 | AUD-03 y AUD-15 se cierran solo en su parte RAG | AUD-03 incluye Claude; AUD-15 incluye LightGBM en ONNX | Auditoría, AUD-03 y AUD-15 |
-| Autores distintos para corpus y preguntas; regla de decisión previa | El vocabulario compartido favorece a BM25; una pregunta vale 6.7 puntos por idioma | Tareas 1.2 y 4.2 |
+| Autores distintos para corpus y preguntas; regla de decisión previa | El vocabulario compartido favorece a BM25; una pregunta vale 6.7 puntos por idioma | Tareas 1.2 y 4.2. No se cumplió el 2-Oct: el banco lo redactó un LLM que leyó el corpus (Tarea 1.2) |
 | Sin detector de idioma propio | Understand ya fija el idioma de la conversación | [dispute_orchestrator.py:166](../src/orchestrator/dispute_orchestrator.py#L166) |
 | Benchmark en `src/eval/` y preguntas en `data/eval/` | El harness vive en `src/eval/` y las suites en `data/eval/` | `CLAUDE.md` |
 

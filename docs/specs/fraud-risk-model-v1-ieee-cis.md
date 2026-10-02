@@ -258,7 +258,7 @@ opening dates are independent of the charges (section 10.3), so its value at sco
 `DEPLOYABLE_V1` in `src/ml/feature_contract.py` (19 features).
 
 Run: `uv run python -m src.ml.fraud_risk_transfer --competition data/kaggle --lakehouse data/lakehouse_full.duckdb --out reports/ml --model models/fraud_risk_ieee.joblib`
-(42 s; report in `reports/ml/fraud_risk_transfer.md`, bundle git-ignored).
+(42 s; report in `reports/ml/fraud_risk_transfer.md`, bundle git-ignored). Every run is also tracked in MLflow (TQ-021): `sqlite:///mlflow.db` with artifacts in `mlruns/`, both git-ignored; browse with `mlflow ui --backend-store-uri sqlite:///mlflow.db` after installing the full `mlflow` package.
 
 | Measure | Value |
 | --- | --- |

@@ -37,6 +37,7 @@ Prerequisites: Python 3.11 locally (`.python-version`; CI and the Docker images 
 uv sync                                               # install from the lockfile
 uv run pytest -v                                      # test suite
 docker compose run --rm dev                           # test suite as CI runs it (Linux, Python 3.12, Postgres 17), no local Python needed
+docker compose build dev                              # rebuild the dev image after a pull that changes uv.lock (it changed with #23 and #24)
 uv run uvicorn src.api.app:app --reload --port 8000   # API, Swagger at http://localhost:8000/docs; serves frontend/dist when built
 docker compose run --rm -p 8000:8000 dev uvicorn src.api.app:app --reload --host 0.0.0.0 --port 8000   # the same API from the dev container
 uv run python main.py                                 # baseline demo over data/synthetic_samples.json

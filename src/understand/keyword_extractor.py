@@ -119,6 +119,20 @@ DATE_EXPR_RE = re.compile(r"\b(?:anteayer|antier|anteontem|ayer|ontem|hoy|hoje|(
                           r"semana\s+passada|\d{1,2}\s+de\s+[a-z]+|\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?)\b")
 DATE_FILLER_WORDS = frozenset({"el", "la", "lo", "los", "las", "o", "a", "os", "as", "no", "na", "en", "em", "de", "del", "do", "da", "dia",
                                "fue", "foi", "era", "por", "tarde", "noche", "manana", "noite", "manha", "madrugada", "mediodia"})
+# A question about the dispute rules, for the policy explainer (docs/RAG_IMPLEMENTATION_ROADMAP.md, Task 5.1). It is a signal of
+# its own, never an intent: while the explainer is off nothing changes, and Jev's choices stay the ones the team labels.
+POLICY_QUESTION_RE = re.compile(
+    r"\b(?:cuanto\s+tiempo|cuantos\s+dias|plazo|hasta\s+cuando|fecha\s+limite|como\s+funciona|"
+    r"(?:cual|como)\s+es\s+el\s+(?:proceso|tramite|procedimiento)|que\s+pasa\s+(?:si|despues|cuando)|que\s+sigue|"
+    r"cuanto\s+(?:tarda|demora)|(?:puedo|se\s+puede|se\s+pueden|pueden)\s+(?:disputar|reclamar|impugnar)|politica|reglas?|"
+    r"requisitos?|devuelven|reembolso|reintegro|desbloque\w*|levantar\s+el\s+bloqueo|"
+    r"quanto\s+tempo|quantos\s+dias|prazo|ate\s+quando|data\s+limite|qual\s+e\s+o\s+(?:processo|procedimento)|o\s+que\s+acontece|"
+    r"quanto\s+(?:tempo\s+)?demora|(?:posso|pode|podem|da\s+para)\s+(?:contestar|reclamar)|podem\s+ser\s+contestad\w*|regras?|"
+    r"devolvem|devolucao|estorno)\b")
+QUESTION_RE = re.compile(r"[?¿]|^\W*(?:que|como|cuanto|cuantos|cuantas|cuando|cual|cuales|donde|puedo|pueden|hay|quanto|quantos|"
+                         r"quantas|quando|qual|quais|onde|posso|podem|pode|o\s+que)\b")
+DEMONSTRATIVE_CHARGE_RE = re.compile(rf"\b(?:este|ese|esta|esa|aquel|aquella|esse|essa|aquele|aquela|desse|dessa|deste|desta)\s+"
+                                     rf"(?:{CHARGE_NOUNS})\b")  # "este cargo" points at one charge
 
 
 @dataclass
@@ -136,6 +150,7 @@ class UnderstandResult:
     said_yes: bool = False
     said_no: bool = False
     selected_option: int | None = None
+    policy_question: bool = False  # a question about the dispute rules that names no charge of its own (Task 5.1)
     matched_keywords: list[str] = field(default_factory=list)
     message_lower: str = ""
     stolen_card_probability: float | None = None  # Jev Noul; None means keyword fallback inside the policy
@@ -152,6 +167,7 @@ class UnderstandResult:
             "currency_hint": self.currency_hint, "date_hint": self.date_hint.isoformat() if self.date_hint else None,
             "date_tolerance_days": self.date_tolerance_days, "stolen_card_claimed": self.stolen_card_claimed,
             "said_yes": self.said_yes, "said_no": self.said_no, "selected_option": self.selected_option,
+            "policy_question": self.policy_question,
             "stolen_card_probability": self.stolen_card_probability, "distress_score": self.distress_score,
             "extractor": self.engine, "model": self.model, "request_id": self.request_id,
         }
@@ -199,7 +215,18 @@ class KeywordIntentExtractor:
         if result.intent == "consulta_general" and (result.amount_hint is not None or "cargo" in low_plain
                                                     or "cobranca" in low_plain or "compra" in low_plain):
             result.intent = "cargo_no_reconocido"
+        result.policy_question = self._policy_question(low_plain, disputed, result)
         return result
+
+    @staticmethod
+    def _policy_question(low_plain: str, disputed: bool, result: UnderstandResult) -> bool:
+        """A question about the dispute rules that names no charge of its own: no amount, date, demonstrative, dispute phrase,
+        stolen card or other product. It errs towards no, which keeps a dispute in the dispute flow."""
+        if not (QUESTION_RE.search(low_plain) and POLICY_QUESTION_RE.search(low_plain)):
+            return False
+        names_a_charge = (disputed or result.amount_hint is not None or result.date_hint is not None
+                          or DEMONSTRATIVE_CHARGE_RE.search(low_plain) is not None or any(p in low_plain for p in DISPUTE_PHRASES))
+        return not (names_a_charge or result.stolen_card_claimed or result.intent == "fuera_de_alcance")
 
     @staticmethod
     def detect_language(low: str) -> str:

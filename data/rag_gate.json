@@ -1,0 +1,9 @@
+{
+  "retriever": "bm25",
+  "tau_upper": 3.862405871420239,
+  "tau_lower": 3.8349948793114086,
+  "calibrated_on": "data/eval/policy_questions_dev.jsonl",
+  "dev_sha256": "ed4ea7d8499f142fc9f46e761657b0c5712136bd86b3484fbe4aa9d235bf229e",
+  "corpus_sha256": "77776cbc70bd3c24e4dfe6dbea73bf97455f836a855972ca6aeb2304bc7dce3a",
+  "commit": "d67e055"
+}

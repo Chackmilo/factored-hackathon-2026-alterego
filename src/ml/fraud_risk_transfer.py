@@ -30,17 +30,15 @@ import numpy as np
 
 os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")
 import mlflow  # noqa: E402  (the hint switch has to precede the import)
-import pandas as pd
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.metrics import average_precision_score, roc_auc_score
 
-from src.ml.bank_adapter import load_bank_canonical, rows_to_canonical
+from src.ml.bank_adapter import load_bank_canonical
 from src.ml.feature_contract import (
     CARD_AGGREGATES,
     CONTRACT_VERSION,
     DEPLOYABLE_V1,
     DISCRETE,
-    FEATURE_PHRASES,
     LEAK_COLUMNS,
     NOT_DEPLOYABLE,
     QuantileRanker,
@@ -223,34 +221,6 @@ def render_markdown(r: dict[str, Any]) -> str:
         lines += [f"No lakehouse given: threshold = percentile of the competition holdout scores ({r['threshold']:.4f})."]
     lines += ["", "## Caveats", ""] + [f"- {c}" for c in r["caveats"]]
     return "\n".join(lines) + "\n"
-
-
-class TransferRiskScorer:
-    """Same signature as src.ml.fraud_risk.RiskScorer: (matched, history, profile) -> (score, top 3 contributions)."""
-
-    def __init__(self, model_path: str | Path = "models/fraud_risk_ieee.joblib"):
-        bundle = joblib.load(model_path)
-        self.model, self.features, self.ranker = bundle["model"], bundle["features"], bundle["ranker"]
-        self.medians, self.threshold, self.threshold_kind = bundle["medians"], bundle["threshold"], bundle["threshold_kind"]
-        self.policy_threshold = float(self.threshold)  # read by the orchestrator for POL-ESC-ML-RISK
-
-    def __call__(self, matched: dict[str, Any], history: list[dict[str, Any]], profile: dict[str, Any]) -> tuple[float, list[dict[str, Any]]]:
-        feats = build_contract_features(rows_to_canonical(matched, history, profile))
-        current = feats[feats["row_id"] == matched.get("transaction_id")].iloc[-1:]
-        x = self.ranker.transform(current[self.features]).iloc[0].astype(float)
-        x = x.fillna(pd.Series(self.medians))
-        score = self._predict(x.to_numpy())
-        contributions = []
-        for f in self.features:
-            alt = x.copy()
-            alt[f] = self.medians.get(f, 0.0)
-            delta = score - self._predict(alt.to_numpy())
-            contributions.append({"feature": f, "phrase": FEATURE_PHRASES.get(f, f), "value": float(x[f]), "contribution": round(float(delta), 4)})
-        contributions.sort(key=lambda c: abs(c["contribution"]), reverse=True)
-        return float(score), contributions[:3]
-
-    def _predict(self, x: np.ndarray) -> float:
-        return float(self.model.predict_proba(x.reshape(1, -1))[0, 1])
 
 
 def main() -> None:

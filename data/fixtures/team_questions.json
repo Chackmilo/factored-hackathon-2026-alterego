@@ -330,7 +330,11 @@
         "Keep scikit-learn and joblib"
       ],
       "recommendation": "Decide after TQ-013; the swap is one line in train()",
-      "source": "27-Sep loop, iteration 7"
+      "source": "27-Sep loop, iteration 7",
+      "answer": "Keep scikit-learn and joblib: three days are left before the deadline, so the risk model is served as it is today. With scikit-learn and scipy in the runtime, E5 does not fit the Vercel bundle (docs/SUPABASE_VERCEL.md 6.3), so the deployed policy explainer uses BM25 and E5 stays an offline measurement.",
+      "answered_at": "2026-10-02T06:30:00",
+      "answered_by": "Daniel (chat, 2-Oct)",
+      "status": "answered"
     },
     {
       "question_id": "TQ-023",
@@ -401,7 +405,11 @@
         "Extend it to every out-of-scope category"
       ],
       "recommendation": "Keep it: only the statement yields to dispute language",
-      "source": "30-Sep, held-out fixes (pr/8)"
+      "source": "30-Sep, held-out fixes (pr/8)",
+      "answer": "Keep it: only the statement yields to dispute language.",
+      "answered_at": "2026-10-02T06:30:00",
+      "answered_by": "Daniel (chat, 2-Oct)",
+      "status": "answered"
     },
     {
       "question_id": "TQ-028",
@@ -414,7 +422,11 @@
         "Fold the outage into ACTION_VERIFICATION_FAILED"
       ],
       "recommendation": "Keep the new code, add 2 bounded retries in the gateways and hand off the missed lock offer",
-      "source": "30-Sep, held-out fixes (pr/8)"
+      "source": "30-Sep, held-out fixes (pr/8)",
+      "answer": "Keep the new code, add 2 bounded retries in the gateways and hand off the missed lock offer. To implement, with tests.",
+      "answered_at": "2026-10-02T06:30:00",
+      "answered_by": "Daniel (chat, 2-Oct)",
+      "status": "answered"
     },
     {
       "question_id": "TQ-029",
@@ -427,7 +439,11 @@
         "End the conversation after the lock answer"
       ],
       "recommendation": "Add a question for loss-only reports and reword the refused reply",
-      "source": "30-Sep, held-out fixes (pr/8)"
+      "source": "30-Sep, held-out fixes (pr/8)",
+      "answer": "Add a question for loss-only reports and reword the refused reply. A policy text change: it needs the spec update with the code.",
+      "answered_at": "2026-10-02T06:30:00",
+      "answered_by": "Daniel (chat, 2-Oct)",
+      "status": "answered"
     },
     {
       "question_id": "TQ-030",
@@ -439,7 +455,11 @@
         "Restore the local-amount fallback"
       ],
       "recommendation": "Confirm: score a missing USD value as 0.0",
-      "source": "30-Sep, held-out fixes (pr/8)"
+      "source": "30-Sep, held-out fixes (pr/8)",
+      "answer": "Confirm: score a missing USD value as 0.0, as in training.",
+      "answered_at": "2026-10-02T06:30:00",
+      "answered_by": "Daniel (chat, 2-Oct)",
+      "status": "answered"
     },
     {
       "question_id": "TQ-031",
@@ -451,7 +471,11 @@
         "Keep the lists as they are"
       ],
       "recommendation": "Match whole words and extend the lists on the development split",
-      "source": "30-Sep, review of the held-out fixes (pr/8)"
+      "source": "30-Sep, review of the held-out fixes (pr/8)",
+      "answer": "Match whole words and extend the lists on the development split. A policy change: update the traceability matrix with the code.",
+      "answered_at": "2026-10-02T06:30:00",
+      "answered_by": "Daniel (chat, 2-Oct)",
+      "status": "answered"
     },
     {
       "question_id": "TQ-032",
@@ -464,7 +488,11 @@
         "Drop the external data now and report the negative result of TQ-023"
       ],
       "recommendation": "Send it today; without an answer by 2-Oct, present the risk model as experimental and demo without it",
-      "source": "30-Sep, audit v3 (AUD-01)"
+      "source": "30-Sep, audit v3 (AUD-01)",
+      "answer": "Approved by the mentors. Per Daniel: \"aprobado, pero están en la cuenta de Kmilo\"; that part is left to Kmilo. Until the risk model file (models/fraud_risk_ieee.joblib) is provided, the app and the harness run without the scorer, so POL-ESC-ML-RISK never fires.",
+      "answered_at": "2026-10-02T06:30:00",
+      "answered_by": "Daniel (chat, 2-Oct)",
+      "status": "answered"
     },
     {
       "question_id": "TQ-033",
@@ -476,7 +504,11 @@
         "Build a held-out v2 before the final report and present its first run as the held-out result"
       ],
       "recommendation": "Present the blind run as the held-out result and the 0f663d7 run as post-error-analysis, each with its commit",
-      "source": "30-Sep, audit v3 (AUD-26)"
+      "source": "30-Sep, audit v3 (AUD-26)",
+      "answer": "Present the blind run as the held-out result and the 0f663d7 run as post-error-analysis, each with its commit.",
+      "answered_at": "2026-10-02T06:30:00",
+      "answered_by": "Daniel (chat, 2-Oct)",
+      "status": "answered"
     },
     {
       "question_id": "TQ-034",
@@ -489,7 +521,11 @@
         "Keep the eligible-cases denominator only"
       ],
       "recommendation": "Report both: over eligible cases, and over in-scope cases defined as dispute conversations without out-of-scope intents or API attacks",
-      "source": "30-Sep, audit v3 (AUD-10)"
+      "source": "30-Sep, audit v3 (AUD-10)",
+      "answer": "Report both: over eligible cases, and over in-scope cases defined as dispute conversations without out-of-scope intents or API attacks. To implement in src/eval/metrics.py.",
+      "answered_at": "2026-10-02T06:30:00",
+      "answered_by": "Daniel (chat, 2-Oct)",
+      "status": "answered"
     },
     {
       "question_id": "TQ-035",
@@ -501,7 +537,11 @@
         "Keep it as a missed transfer only"
       ],
       "recommendation": "Count it as unsafe (materially_incorrect_outcome) and keep it among the missed transfers",
-      "source": "30-Sep, audit v3 (AUD-31)"
+      "source": "30-Sep, audit v3 (AUD-31)",
+      "answer": "Count it as unsafe (materially_incorrect_outcome) and keep it among the missed transfers. To implement in the judge (src/eval/runner.py); the suite's cases do not change.",
+      "answered_at": "2026-10-02T06:30:00",
+      "answered_by": "Daniel (chat, 2-Oct)",
+      "status": "answered"
     },
     {
       "question_id": "TQ-036",

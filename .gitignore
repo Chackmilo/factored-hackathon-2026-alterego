@@ -48,6 +48,9 @@ node_modules/
 # Trained models (regenerate with uv run python -m src.ml.fraud_risk)
 models/*.joblib
 
+# E5 model files, 135 MB (download with uv run python -m src.rag.onnx_retriever download)
+models/e5-small/
+
 # Kaggle competition data (IEEE-CIS), downloaded per docs/specs/fraud-risk-model-v1-ieee-cis.md
 data/kaggle/
 

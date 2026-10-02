@@ -17,6 +17,7 @@ from src.auth.session import VerifiedSession
 from src.domain.handoff import StructuredHandoffPacket, TriggeringTransaction
 from src.ops.store import OpsStore
 from src.privacy.pii_masker import PIIMasker
+from src.rag.policy_explainer import PolicyExplainer
 from src.rules.dispute_policy import (
     DISPUTABLE_STATUS,
     DISPUTABLE_TYPES,
@@ -96,6 +97,8 @@ TEXT = {
     },
 }
 
+OUTCOME_POLICY_EXPLANATION = "POLICY_EXPLANATION"  # the explainer answered, redirected or asked which topic; no case
+
 STATE_NEW = "new"
 STATE_AWAITING_CLARIFICATION = "awaiting_clarification"
 STATE_AWAITING_LOCK = "awaiting_lock_confirmation"
@@ -129,13 +132,15 @@ class TurnResult:
 class DisputeOrchestrator:
     def __init__(self, gateway: BankingToolGateway, ops: OpsStore, extractor: KeywordIntentExtractor | None = None,
                  risk_scorer: Callable[[dict[str, Any], list[dict[str, Any]], dict[str, Any]], tuple[float, list[dict[str, Any]]]] | None = None,
-                 today: date = date(2026, 6, 17), router: UnderstandRouter | None = None):
+                 today: date = date(2026, 6, 17), router: UnderstandRouter | None = None,
+                 explainer: PolicyExplainer | None = None):
         self.gateway = gateway
         self.ops = ops
         self.today = today
         self.extractor = extractor or KeywordIntentExtractor(today=today)
         self.router = router  # the smart agent of TQ-008: picks Jev, Claude or the offline path per turn
         self.risk_scorer = risk_scorer  # (matched, history, profile) -> (ml_risk_score, risk_top_features); src.ml.fraud_risk.RiskScorer
+        self.explainer = explainer  # the policy explainer (roadmap Task 5.1); None until its gate is calibrated (Task 4.1)
 
     # ------------------------------------------------------------------ public
     def start_conversation(self, session: VerifiedSession, language: str = "es") -> dict[str, Any]:
@@ -172,9 +177,35 @@ class DisputeOrchestrator:
             if conv["state"] in (STATE_CLOSED, STATE_ESCALATED):
                 conv = self.ops.update_conversation(conversation_id, state=STATE_NEW, candidate_ids=[],
                                                     matched_transaction_id=None, clarification_attempts=0)
-            result = self._handle_dispute_turn(session, conv, understanding, masked, language)
+            if self._asks_the_explainer(session, conv, understanding, masked):
+                result = self._explain_policy(session, conv, understanding, masked, language)
+            else:
+                result = self._handle_dispute_turn(session, conv, understanding, masked, language)
         self.ops.add_message(conversation_id, "assistant", result.reply, {"state": result.state, "outcome": result.policy_outcome})
         return result
+
+    # ------------------------------------------------------------ policy question
+    def _asks_the_explainer(self, session: VerifiedSession, conv: dict[str, Any], u: UnderstandResult, masked: str) -> bool:
+        """A policy question goes to the explainer only in state new, with no charge of its own, and never when POL-ESC-LEGAL or
+        POL-ESC-DISTRESS would fire on the message: those turns keep the dispute flow (roadmap section 4)."""
+        if self.explainer is None or conv["state"] != STATE_NEW or not u.policy_question:
+            return False
+        if u.intent == "fuera_de_alcance" or (u.stolen_card_probability is not None and u.stolen_card_probability >= 0.40):
+            return False
+        prior_distress = self.ops.case_memory(session.customer_id).get("prior_distress_max_30d")
+        return DisputePolicyEngine.message_escalation(masked, u.distress_score, prior_distress) is None
+
+    def _explain_policy(self, session: VerifiedSession, conv: dict[str, Any], u: UnderstandResult, masked: str,
+                        language: str) -> TurnResult:
+        """The explainer's answer from the corpus templates. It opens no case and leaves the conversation new."""
+        explanation = self.explainer.explain(masked, language)
+        self.ops.audit(conversation_id=conv["conversation_id"], customer_id=session.customer_id, actor="system",
+                       action="POLICY_EXPLAINED",
+                       details={"retriever": self.explainer.retriever.name, "action": explanation.action, "band": explanation.band.value,
+                                "hits": [{"clause_id": h.clause_id, "score": round(h.score, 4)} for h in explanation.hits]})
+        outcome = OUTCOME_ABSTENTION if explanation.action == "abstain" else OUTCOME_POLICY_EXPLANATION
+        return TurnResult(conversation_id=conv["conversation_id"], state=STATE_NEW, language=language, reply=explanation.reply,
+                          policy_outcome=outcome, cited_clauses=explanation.cited_clauses, signals=u.as_signals())
 
     # ------------------------------------------------------------ dispute turn
     def _handle_dispute_turn(self, session: VerifiedSession, conv: dict[str, Any], u: UnderstandResult, masked: str,

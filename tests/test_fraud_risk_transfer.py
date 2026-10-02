@@ -8,7 +8,8 @@ import pytest
 
 from src.eval.fixture_bank import BANK_SCHEMAS
 from src.ml.feature_contract import CONTRACT_V1, DEPLOYABLE_V1
-from src.ml.fraud_risk_transfer import TransferRiskScorer, train
+from src.ml.fraud_risk_transfer import train
+from src.ml.transfer_scorer import TransferRiskScorer
 
 
 @pytest.fixture

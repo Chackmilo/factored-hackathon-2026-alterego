@@ -177,3 +177,33 @@ def test_yes_or_no_is_read_without_the_dispute_phrases(text, said_yes, said_no):
 def test_a_lock_answer_locks_only_on_a_closed_yes(text, said_yes, said_no):
     result = extract(text)
     assert (result.said_yes, result.said_no) == (said_yes, said_no)
+
+
+@pytest.mark.parametrize("text", [
+    "¿Cuánto tiempo tengo para disputar un cargo?", "¿Cómo funciona la disputa de un cargo?", "¿Qué compras se pueden disputar?",
+    "¿Me devuelven el dinero mientras revisan?", "cuanto tiempo tengo para reclamar", "¿Cómo desbloqueo mi tarjeta después?",
+    "Quanto tempo tenho para contestar uma cobrança?", "Como funciona a contestação?", "Posso contestar um saque?",
+    "O que acontece depois que eu contesto?",
+])
+def test_a_question_about_the_dispute_rules_is_a_policy_question(text):
+    assert extract(text).policy_question is True
+
+
+@pytest.mark.parametrize("text", [
+    "¿Cuánto tiempo tengo para el cargo de 300 dólares que no reconozco?",  # an amount and a disputed charge
+    "¿Cuánto tiempo tengo para disputar un cargo de 300 dólares?",  # an amount alone names one charge
+    "¿Qué pasa si no fui yo?",  # a dispute phrase with no charge word
+    "¿Puedo disputar el cargo de ayer?",  # a date names one charge
+    "¿Puedo disputar este cargo?",  # so does a demonstrative
+    "No reconozco un cargo, ¿qué pasa ahora?",
+    "¿Qué pasa si me cobraron dos veces?",
+    "Me robaron la tarjeta, ¿cuánto tiempo tengo?",
+    "Tengo un problema con un cargo, ¿me ayudan?",  # asks for help with a charge, not about the rules
+    "Necesito disputar un cargo, el plazo se me vence",  # a request, not a question
+    "Buenas, tengo un cargo de 21.929,78 pesos el 10 de junio que no reconozco, ¿me ayudan?",
+    "¿Cuál es el plazo de mi préstamo?",  # another product
+    "Quanto tempo tenho para contestar a compra de 50 reais de ontem?",
+    "Não reconheço uma cobrança, o que acontece agora?",
+])
+def test_a_message_about_one_charge_or_another_product_is_never_a_policy_question(text):
+    assert extract(text).policy_question is False

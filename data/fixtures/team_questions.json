@@ -316,7 +316,7 @@
       "recommendation": "JSON report per run, MLflow only if a judge asks",
       "source": "27-Sep loop, iteration 7",
       "status": "answered",
-      "answer": "MLflow. Track each fraud-model run with MLflow on a local file store (mlruns/, no server), keeping the JSON and Markdown report per run as the human-readable artifact logged to the run.",
+      "answer": "MLflow. Implemented 1-Oct: one run per training of src/ml/fraud_risk_transfer.py (experiment fraud_risk_transfer) with params, metrics, the commit tag, and the JSON and Markdown reports plus the model bundle as artifacts. Store: sqlite:///mlflow.db with artifacts in mlruns/ (MLflow 3 retired the plain file store), no server; mlflow-skinny plus sqlalchemy and alembic.",
       "answered_by": "Kmilo (chat, 29-Sep)",
       "answered_at": "2026-09-29T20:00:00"
     },

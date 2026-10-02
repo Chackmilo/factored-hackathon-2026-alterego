@@ -199,7 +199,7 @@ def render_markdown(payload: dict[str, Any]) -> str:
              f"Test split: `{meta['test']['path']}`, {meta['test']['questions']} questions ({meta['test']['provenance']}), "
              f"{meta['test']['frozen']}. Corpus SHA-256 `{meta['corpus_sha256'][:12]}`; commit {meta['commit']}. "
              "The thresholds come from the development split only; the test split is measured once with them. Offline "
-             "results on team-written questions; the retrievers are deterministic, so one run."]
+             "results on the questions of the stated provenance; the retrievers are deterministic, so one run."]
     if "e5" in meta:
         lines[-1] += f" E5: `{meta['e5']['model']}` at revision `{meta['e5']['revision'][:12]}`, int8 ONNX, files checked against their SHA-256."
     for name, result in payload["retrievers"].items():

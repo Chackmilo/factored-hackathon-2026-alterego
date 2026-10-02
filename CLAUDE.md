@@ -7,7 +7,7 @@ Read `AGENTS.md` before any non-trivial change: it holds the hackathon rules (vi
 ## Commands
 
 ```bash
-uv sync                                               # install from the lockfile with the dev group (tests, notebooks, training; --no-dev installs only what the API imports). .python-version still pins 3.11; CI and the Docker images run 3.12, the decided version
+uv sync                                               # install from the lockfile with the dev group (tests, notebooks, training; --no-dev installs only what the API imports). Python 3.12 everywhere: .python-version, CI, the Docker images and Vercel
 uv run pytest -v                                      # full suite
 uv run pytest tests/test_dispute_policy.py::test_pol_esc_500_above_500_escalates -v   # single test
 docker compose run --rm dev                           # suite as CI runs it (Linux, Python 3.12, Postgres 17), the same on Mac and Windows
@@ -38,7 +38,7 @@ Ruff config lives in `pyproject.toml`. The tree is not lint-clean, so lint and `
 
 The repo holds two decision paths. Know which one you are touching.
 
-**Decided 26-Sep, not yet in code:** the Vercel deployment on free plans (the repo has no Vercel config) and moving `.python-version` to 3.12 (the Docker `dev` service already runs 3.12). The Supabase Auth verification and the Postgres path (`bank` read-only serving copy, `ops` for writes) decided the same day are in code, described below. Read `docs/SUPABASE_VERCEL.md` before touching auth, the gateway or deployment.
+**Decided 26-Sep, configured on 2-Oct, not yet deployed:** the Vercel deployment on free plans. `[tool.vercel]` in `pyproject.toml` names `src.api.app:app` (the root `main.py` is the baseline demo), `scripts/deploy/vercel_build.py` builds the front after the Python install (on Vercel it stops when a `VITE_SUPABASE_*` variable is missing), and `vercel.json` trims the function bundle, which otherwise carries every file present at build time: a new file the API reads at runtime must stay outside its `excludeFiles`, and `tests/test_vercel_config.py` keeps the entrypoint, the function key and those excludes in step. The Supabase Auth verification and the Postgres path (`bank` read-only serving copy, `ops` for writes) decided the same day are in code, described below. Read `docs/SUPABASE_VERCEL.md` before touching auth, the gateway or deployment.
 
 **Baseline (wired to the API and `main.py`).** `src/api/app.py` calls `HybridOrchestrator` in `src/agents/orchestrator.py`: a single-shot pipeline of `PIIMasker`, then `DeterministicRulesEngine` (`src/rules/engine.py`), then the hand-tuned `MLFraudDetector`, then a keyword branch calling always-succeeding mocks in `src/agents/tools.py`, with escalations going to the in-memory `hitl_queue`. It takes `customer_id` from the request body, is USD only and simulates LLM tokens. The team decided (26-Sep) to measure it as the reference baseline as is, with only its crash fixed: do not repair its unsafe behavior (it counts in the report), build dispute features in the dispute stack, and never deploy it (its in-memory queue cannot work on stateless Vercel functions). Its four routes (`/api/v1/sanitize`, `/triage`, `/hitl/queue`, `/hitl/resolve`) answer only when `APP_ENV` is `development` or `test` (404 otherwise, as the local issuer); the harness drives it through `src/eval/baseline_adapter.py`, not the routes.
 

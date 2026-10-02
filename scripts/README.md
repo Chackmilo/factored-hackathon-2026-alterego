@@ -14,6 +14,8 @@ scripts/
 ├── data_ops/
 │   ├── inspect_s3_schemas.py       # Flexible S3 partition & schema inspector (CLI parameterized)
 │   └── verify_s3_connection.py     # End-to-end Boto3 & DuckDB HTTPFS connectivity tester
+├── deploy/
+│   └── vercel_build.py             # Vercel build step: compiles the React front (pyproject [tool.vercel.scripts])
 └── notebooks/
     └── run_notebook.py             # Headless execution of Jupyter notebooks (nbclient)
 ```

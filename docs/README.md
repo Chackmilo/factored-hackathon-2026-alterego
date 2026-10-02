@@ -36,6 +36,8 @@ As established in `AGENTS.md` Section 2:
   - `2026-09-26-revision-adversarial-plan.md`: Adversarial review of team plan, risk mitigations, and blindspot analysis.
   - `2026-09-26-revision-tecnologica.md`: Technical stack evaluation (ONNX vs PyTorch, Vercel vs Render, Supabase vs SQLite).
   - `2026-09-26-reuso-lead-agent-crm-starter.md`: Starter code reuse analysis and extraction plan.
+  - `2026-09-30-auditoria-adversarial-docs-resultados-codigo.md`: Audit v3, each finding of v2 checked against code, git history and real runs (AUD-01 to AUD-31); phased remediation plan.
+  - `2026-09-29-adversarial-audit-code-and-docs.md` (+ paired `.json`): Second-pass, partial multi-agent audit (6 of 14 lenses completed before session-limit interruptions); reconciled against audit v3 in its section 0; two confirmed new findings (`orchestrator-1`, `gateway-1`) not in audit v3.
 - [**`docs/prompts/`**](prompts/):
   - `fable_sdd_tdd.md`: Prompt engineering guides for Schema-Driven & Test-Driven Development.
 - [**`docs/reference/`**](reference/):

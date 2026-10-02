@@ -54,8 +54,8 @@ def test_the_function_bundle_leaves_out_the_build_and_dev_files():
 
 
 def test_the_build_step_is_the_front_build_script():
-    assert _pyproject()["tool"]["vercel"]["scripts"]["build"] == "python scripts/vercel_build.py"
-    assert (ROOT / "scripts" / "vercel_build.py").is_file()
+    assert _pyproject()["tool"]["vercel"]["scripts"]["build"] == "python scripts/deploy/vercel_build.py"
+    assert (ROOT / "scripts" / "deploy" / "vercel_build.py").is_file()
 
 
 def test_a_vercel_build_without_the_supabase_keys_fails_before_building(monkeypatch):
@@ -64,7 +64,7 @@ def test_a_vercel_build_without_the_supabase_keys_fails_before_building(monkeypa
     monkeypatch.setenv("VERCEL", "1")
     monkeypatch.delenv("VITE_SUPABASE_URL", raising=False)
     monkeypatch.delenv("VITE_SUPABASE_PUBLISHABLE_KEY", raising=False)
-    build = runpy.run_path(str(ROOT / "scripts" / "vercel_build.py"))
+    build = runpy.run_path(str(ROOT / "scripts" / "deploy" / "vercel_build.py"))
     assert build["main"]() == 1
 
 

@@ -97,12 +97,32 @@ def test_an_answer_that_did_not_end_its_turn_is_unusable_but_still_counted(stop_
 @pytest.mark.parametrize("answer", [
     "<html>Bad gateway</html>",  # a 200 that is not JSON: the SDK hands back the decoded text
     NS(content=[], stop_reason="end_turn", model="claude-haiku-4-5-20251001", usage=None),  # a 200 without usage
+    NS(content=[], stop_reason="end_turn", model="claude-haiku-4-5-20251001",
+       usage=NS(input_tokens=None, output_tokens=None)),  # usage without counts: no cost to record
 ])
 def test_an_answer_without_the_messages_shape_is_unusable(answer):
     budget = LlmBudget(OpsStore(":memory:"), daily_budget_usd=2.0)
     with pytest.raises(WriterUnavailable, match="malformed response"):
         writer(FakeClient(answer), budget).draft(SKELETON, "hola", "es")
     assert budget.spent_today() == 0  # nothing to record: the answer carries no usage
+
+
+def test_a_billed_answer_without_content_is_unusable_but_still_counted():
+    budget = LlmBudget(OpsStore(":memory:"), daily_budget_usd=2.0)
+    answer = NS(content=None, stop_reason="end_turn", model="claude-haiku-4-5-20251001",
+                usage=NS(input_tokens=300, output_tokens=40))
+    with pytest.raises(WriterUnavailable, match="malformed response"):
+        writer(FakeClient(answer), budget).draft(SKELETON, "hola", "es")
+    assert budget.spent_today() > 0
+
+
+def test_a_billed_answer_with_a_text_block_without_text_is_unusable_but_still_counted():
+    budget = LlmBudget(OpsStore(":memory:"), daily_budget_usd=2.0)
+    answer = NS(content=[NS(type="text", text=None)], stop_reason="end_turn", model="claude-haiku-4-5-20251001",
+                usage=NS(input_tokens=300, output_tokens=40))
+    with pytest.raises(WriterUnavailable, match="malformed response"):
+        writer(FakeClient(answer), budget).draft(SKELETON, "hola", "es")
+    assert budget.spent_today() > 0
 
 
 def test_a_timeout_is_retried_once():

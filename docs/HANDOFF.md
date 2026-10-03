@@ -1,6 +1,6 @@
 # Handoff del equipo (3 oct 2026)
 
-Lo escribió Daniel con Claude el 3 de octubre, día 9 de 10. La entrega es el **5 de octubre** (`AGENTS.md` sección 3). El equipo quedó en dos personas: Daniel y Kmilo.
+Lo escribió Daniel con Claude el 3 de octubre, día 9 de 10. La entrega es el **5 de octubre** (`AGENTS.md` sección 3). El equipo quedó en dos personas, Daniel y Kmilo. **Desde la tarde del 3 de octubre, Kmilo sigue solo con todo lo restante.** Lo que exige cuentas de Daniel está en la sección 5.
 
 Este documento dice qué hay en `main`, qué falta y quién lo toma. El detalle técnico está en los documentos que enlaza.
 
@@ -55,10 +55,12 @@ Este documento dice qué hay en `main`, qué falta y quién lo toma. El detalle 
 5. **Flujo de trabajo:**
    - una rama desde `main` por cambio;
    - TDD con un commit Red, uno Green y uno de docs;
-   - el PR se mergea con la CI en verde y con el ok de Daniel.
+   - el PR se mergea con la CI en verde.
    - En los PR, el check de Vercel sale rojo ("Deployment was blocked"): es la verificación de autor del plan Hobby, no un error del código.
 
 ## 3. Pendientes y dueño propuesto
+
+Actualización de la tarde del 3 de octubre: **Kmilo toma todo.** La columna Dueño queda solo como referencia de quién conoce cada tema. Las tareas que necesitan cuentas de Daniel (Supabase, Anthropic, Vercel) dependen de los accesos de la sección 5.
 
 Los dueños son una propuesta y quedan por confirmar. Kmilo toma eval y ML; Daniel, despliegue, seguridad y entrega.
 
@@ -120,8 +122,27 @@ select count(*) as casos_restantes from ops.dispute_cases;  -- debe dar 0
   - Para volver a publicar `bank` se usa `python -m src.data.publish_serving --database-url ... --customers data/serving_customers.json`, con una conexión que pueda escribir `bank`. El rol `bank_publisher` quedó sin login y sin clave: se le da una clave temporal para publicar y se le quita al terminar.
 - **Jev:** la key (`TYPESAFE_API_KEY`) no está en el `.env` de Daniel. Sin ella, el router usa las palabras clave.
 
-## 5. Preguntas para Kmilo
+## 5. Accesos y secretos
+
+Daniel los pasa **por privado: nunca por el repo, por un issue ni por el chat de un asistente de IA.** Ninguno está en git.
+
+- **Supabase.** Invitar a Kmilo a la organización "Chackmilo's Org", donde está el proyecto AlterEgo. Con eso Kmilo puede:
+  - entrar al SQL Editor (la limpieza de A2);
+  - rotar las claves (A1);
+  - crear su propia secret key, que necesita para `seed_personas`.
+- **Claves de producción:**
+  - **La clave de `app_gateway`.** Con ella se arma la `DATABASE_URL` de producción, que hace falta para un despliegue propio o para correr la API local contra producción.
+  - **Las claves de las personas.** Están en `personas.local.json`, que está en el `.gitignore`. Si no llegan, Kmilo las regenera con `seed_personas --reset-passwords` usando su secret key.
+  - **`VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`**, para `frontend/.env.local`. Son públicas por diseño y también están en el dashboard (Project Settings, API Keys).
+- **Otras keys:** las de AWS del diccionario de datos, para la ingesta desde S3. Kmilo puede usar su propia key de Anthropic, y la de Jev si la tiene.
+- **Vercel.** El proyecto `alterego` está en la cuenta Hobby de Daniel, y Hobby no admite colaboradores. **Lo más probable es que un merge hecho por Kmilo quede bloqueado ("Deployment was blocked") y que producción no se actualice.** Hay que comprobarlo con el primer merge. Las opciones son:
+  - a. Kmilo crea su propio proyecto en Vercel con las mismas variables de la sección 4 y despliega con la CLI desde un checkout limpio. La URL cambia: en la entrega va la nueva.
+  - b. Daniel hace los merges finales.
+  - c. El proyecto pasa a un equipo Pro, en prueba, y Daniel invita a Kmilo.
+- **Lo que quedó solo en la máquina de Daniel (en el `.gitignore`):** los handoffs de sesión de Claude y el registro de la ejecución del plan de Claude replies. Lo esencial de ambos está en este documento y en la descripción del PR #36.
+
+## 6. Preguntas para Kmilo
 
 1. ¿Tienes la key de Jev?
 2. ¿Tienes los datos de IEEE-CIS para regenerar el modelo de riesgo?
-3. ¿Te sirve el reparto propuesto en la sección 3?
+3. ¿Cuál de las opciones de Vercel de la sección 5 vas a usar para desplegar?

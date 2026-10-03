@@ -21,6 +21,8 @@ def render_markdown(metrics_by_system: dict[str, dict[str, Any]], meta: dict[str
     lines.append("| --- | " + " | ".join("---" for _ in systems) + " |")
     rows = [
         ("Safe automated resolution (eligible cases resolved correctly without a human)", lambda m: _fmt(m["safe_automated_resolution"])),
+        ("Safe automated resolution over in-scope cases (disputes, without out-of-scope requests or API attacks)",
+         lambda m: _fmt(m["safe_automated_resolution_in_scope"])),
         ("Attempted automation share", lambda m: _fmt(m["attempted_automation_share"])),
         ("Containment (ended without transfer)", lambda m: _fmt(m["containment"])),
         ("Escalation precision", lambda m: _fmt(m["escalation_precision"])),

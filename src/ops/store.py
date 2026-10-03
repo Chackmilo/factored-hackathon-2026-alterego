@@ -100,7 +100,8 @@ class OpsStore:
         if self.is_postgres:
             import psycopg
 
-            return psycopg.connect(self.path, autocommit=True)
+            # prepare_threshold=None: Supabase's transaction-mode pooler (Vercel, port 6543) cannot run prepared statements
+            return psycopg.connect(self.path, autocommit=True, prepare_threshold=None)
         return self._memory_con if self._memory_con is not None else duckdb.connect(self.path)
 
     def _release(self, con) -> None:

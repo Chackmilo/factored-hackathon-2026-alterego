@@ -2,31 +2,40 @@
 
 Team AlterEgo's submission to the **Factored AI & Data Hackathon 2026**: an AI-first customer-service system for one workflow, **transaction-dispute intake**, in Spanish and Portuguese. The agent finds the charge the customer does not recognize, checks it against a written dispute policy, opens a case and confirms it only after reading it back, protects the customer with a card lock they confirm, and hands off to a human with a structured packet when the case needs one. It never moves money.
 
-> **Status (2026-09-29, day 5 of 10).** The dispute stack runs end to end behind the API and the React chat and console; the deployment is not live yet. This README describes the plan and the code that runs today. The final README, with results, the deployment URL and limitations, lands on 3 Oct.
+> **Status (2026-10-03, day 9 of 10).** The dispute stack runs end to end behind the API and the React chat and console, with Supabase sign-in. The Vercel deployment is configured but not deployed, so there is no public URL yet. This README separates what is delivered from what was planned and not delivered, and states the results and the limitations.
 
-## How it works (target)
+## How it works
 
-The model proposes; deterministic code disposes. Every interaction runs **Understand -> Decide -> Act -> Verify -> Escalate**.
+The model proposes; deterministic code disposes. Every interaction runs **Understand -> Decide -> Act -> Verify -> Escalate**. The table describes the code as delivered.
 
-| Stage | What it does | Technology |
+| Stage | What it does | Delivered |
 | --- | --- | --- |
-| Identity and guards | The customer logs in with a credential; the API verifies the session token and takes `customer_id` only from it; PII is masked before any model call | Supabase Auth (ES256 tokens verified against the project JWKS), FastAPI |
-| Understand | Reads the masked message: intent, stolen card, distress, amount, date, merchant | Jev (TypeSafe AI) typed signals, with a keyword and regex extractor as fallback and baseline |
-| Decide | Applies the dispute policy clause by clause, plus a fraud-risk score | Policy as code (clause ids such as `POL-WIN-60`, `POL-ESC-500`); LightGBM without the leaky `fraud_score` |
-| Act and Verify | Opens the case or locks the card, then reads the record back before telling the customer | Tool gateway on Supabase Postgres (`ops` schema) with idempotency keys and an append-only audit log |
+| Identity and guards | The customer signs in; the API verifies the session token and takes `customer_id` only from it; PII is masked before any model call | Supabase Auth (ES256 tokens verified against the project JWKS) and FastAPI; a local test issuer exists only in development and test |
+| Understand | Reads the masked message: intent, stolen card, distress, amount, date, merchant | An ES/PT keyword and regex extractor; Jev (TypeSafe AI) typed signals when a key is configured and the daily budget allows |
+| Decide | Applies the dispute policy clause by clause, plus a fraud-risk score | Policy as code v2.3 (clause ids such as `POL-WIN-60`, `POL-ESC-500`); a risk model transferred from the IEEE-CIS competition (scikit-learn gradient boosting), active only when its model file is installed |
+| Act and Verify | Opens the case or locks the card, then reads the record back before telling the customer | Tool gateway on DuckDB or Supabase Postgres (`ops` schema): ownership check before the write, read-back after it, append-only audit log |
 | Escalate | Sends legal, high-value, high-risk, multi-charge, distress and still-ambiguous cases to a human | Structured handoff packet and an English review console |
-| Converse and explain | Writes replies in Spanish or Portuguese from verified facts; explains the policy with citations | Claude Haiku 4.5 with placeholders filled by code; RAG over a team-written policy text with local embeddings |
+| Converse and explain | Replies in Spanish or Portuguese from verified facts; explains the policy with the clause cited | Templated replies; a policy explainer that retrieves clauses with BM25 and never changes a decision |
 
-The full component diagram is in [`docs/PLAN.md`](docs/PLAN.md) ("Arquitectura del sistema"). Deployment: Vercel for the API and the React front, Supabase for identity and the operational database, both on free plans.
+**Planned and not delivered** (decisions in [`docs/PLAN.md`](docs/PLAN.md)):
+
+- Replies written by Claude Haiku with placeholders filled by code. The router records which engine it would choose, but no Claude call exists: every reply is a template.
+- Local multilingual embeddings (E5) for the policy explainer. They are measured offline only (`--e5`) and do not fit the Vercel bundle, so BM25 serves.
+- LightGBM served through ONNX. The model is scikit-learn's gradient boosting, kept with joblib (TQ-022).
+- Idempotency keys, the audit row in the same transaction as the write, and bounded retries before the outage handoff (brief section 3.3). A duplicate case is prevented by a read before the write, not by a database constraint.
+- Card unlock as a console action: the policy's authentication matrix declares it, and it is not built.
+- The team's adjudicated labels for the held-out suite and Cohen's kappa (TQ-018): the suite carries design labels.
+
+The component diagram in [`docs/PLAN.md`](docs/PLAN.md) ("Arquitectura del sistema") shows the target, not the delivery. Deployment target: Vercel for the API and the React front, Supabase for identity and the operational database, both on free plans.
 
 ## What runs today
 
 - **Reference baseline** (the starter pipeline, wired to the API): `/health`, plus `/api/v1/sanitize`, `/api/v1/triage`, `/api/v1/hitl/queue` and `/api/v1/hitl/resolve`, which answer only when `APP_ENV` is development or test. English keyword rules and mock tools. It is measured as is in the evaluation and is not deployed.
 - **Dispute stack** (wired since 27 Sep, behind the session token): the policy engine v2.3 (`src/rules/dispute_policy.py`, spec `docs/specs/dispute-policy-v2.3.md`), the Understand router (`src/understand/`: Jev typed signals when a key and the daily budget allow, the ES/PT keyword extractor otherwise), the five-stage orchestrator (`src/orchestrator/`), a policy explainer (`src/rag/`: BM25 over the 13 policy clauses, templated answers with the clause cited) that is on since 2-Oct with a BM25 gate calibrated on the policy question bank (it misses many paraphrased questions; see `reports/rag_benchmark.md`), the operational store on DuckDB or Postgres (`src/ops/`, DDL in `supabase/migrations/0001_ops.sql`), the act-and-verify gateway over the lakehouse or the Postgres serving copy (`src/tools/`), and the API: customer chat at `/api/v1/disputes/...`, the English HITL console at `/api/v1/console/...` (agent role), a local test issuer at `/api/v1/auth/personas` and `/api/v1/auth/test-session` (development and test only), and `/api/v1/auth/me`, which returns the verified identity. Swagger lists them.
 - **Data pipeline**: S3 CSVs into a local DuckDB lakehouse (bronze, silver, gold) over a customer-aligned sample of 25,000 customers (`src/data/ingestion.py`), plus the full 2023 to 2026 history in a separate file for the ML work.
-- **Evaluation harness** (`src/eval/`): scripted cases in JSONL (`data/eval/dev_cases.jsonl`, 18 team-generated development cases in ES and PT), runners for the proposed stack (rules-only mode today) and the reference baseline (the starter pipeline through an adapter), the brief's metrics as counts over denominators with slices by language, segment and country, and a Markdown report (`reports/eval_dev.md`).
-- **Risk model** (`src/ml/fraud_risk_transfer.py`): the bank's fraud label is random, so the served score is trained on the IEEE-CIS competition over the deployable contract features (spec `docs/specs/fraud-risk-model-v1-ieee-cis.md`), with the escalation threshold at percentile 98 of the bank's Web and App window. `TransferRiskScorer` (`src/ml/transfer_scorer.py`) feeds `POL-ESC-ML-RISK` and the handoff's risk explanation when `models/fraud_risk_ieee.joblib` exists, and every training run is logged to MLflow. The earlier leak-free pipeline on bank features (`src/ml/fraud_risk.py`) stays as the evidence: on the full history its test ROC AUC is 0.497.
-- **Analysis notebooks**: [`notebooks/01_problema_y_datos.ipynb`](notebooks/01_problema_y_datos.ipynb), the data behind the workflow choice; [`notebooks/02_risk_model_experiment.ipynb`](notebooks/02_risk_model_experiment.ipynb), why the fraud label cannot be learned without the leak; [`notebooks/03_fraud_signal_search.ipynb`](notebooks/03_fraud_signal_search.ipynb), the search for a fraud signal across every other table (needs `data/lakehouse_aux.duckdb` from `scripts/data_ops/load_aux_tables.py`). Run a notebook with `uv run python scripts/notebooks/run_notebook.py <path>`.
+- **Evaluation harness** (`src/eval/`): scripted cases in JSONL (`data/eval/dev_cases.jsonl`, 18 team-generated development cases in ES and PT), runners for our architecture in rules-only mode and the reference baseline (the starter pipeline through an adapter), the brief's metrics as counts over denominators with slices by language, segment and country, and a Markdown report (`reports/eval_dev.md`).
+- **Risk model** (`src/ml/fraud_risk_transfer.py`): the bank's fraud label showed no learnable signal in our experiments, so the served score is trained on the IEEE-CIS competition over the deployable contract features (spec `docs/specs/fraud-risk-model-v1-ieee-cis.md`), with the escalation threshold at percentile 98 of the bank's Web and App window. `TransferRiskScorer` (`src/ml/transfer_scorer.py`) feeds `POL-ESC-ML-RISK` and the handoff's risk explanation when `models/fraud_risk_ieee.joblib` exists, and every training run is logged to MLflow. The earlier leak-free pipeline on bank features (`src/ml/fraud_risk.py`) stays as the evidence: on the full history its test ROC AUC is 0.497.
+- **Analysis notebooks**: [`notebooks/01_problema_y_datos.ipynb`](notebooks/01_problema_y_datos.ipynb), the data behind the workflow choice; [`notebooks/02_risk_model_experiment.ipynb`](notebooks/02_risk_model_experiment.ipynb), why our models could not learn the fraud label without the leak; [`notebooks/03_fraud_signal_search.ipynb`](notebooks/03_fraud_signal_search.ipynb), the search for a fraud signal across every other table (needs `data/lakehouse_aux.duckdb` from `scripts/data_ops/load_aux_tables.py`). Run a notebook with `uv run python scripts/notebooks/run_notebook.py <path>`.
 - **Tests**: CI runs the suite on every PR against a Postgres service. The 6 in `tests/test_data_integrity.py` need a local `data/lakehouse.duckdb` and skip without it; the Postgres tests (`tests/test_ops_store.py`, `tests/test_gateway_postgres.py`, `tests/test_publish_serving.py`) run only with `TEST_DATABASE_URL` set.
 
 ## Quick start
@@ -55,6 +64,68 @@ Run commands from the repo root: `data/lakehouse.duckdb` is a relative path. The
 
 LATAM Bank Dataset v1.0.0 from the organizers: 100% synthetic, about 19 million rows in 13 tables, Mexico, Colombia and Argentina, all text in Spanish. There is no Portuguese in the data, so every Portuguese case is team-generated and labeled as such. Findings that shape the design, such as `fraud_score` leaking the fraud label and transaction timestamps offset from the processing day, are in [`AGENTS.md`](AGENTS.md) section 7.
 
+## Results
+
+Every suite runs through `src/eval/` as scripted conversations, offline and in process: these are not production measurements. Every rate carries its numerator and denominator.
+
+**What the runs compare.** The reference baseline is the starter pipeline the repository began with, measured as is through an adapter (only its crash fixed), so its card lock on an unrecognized charge and its refund promise count as unsafe. The other system is our architecture in rules-only mode: keyword extractor and policy as code, with no risk model, no Jev, no LLM and no policy explainer. The brief names this rules-only stack our main baseline. The runs therefore show what the architecture and the policy deliver; they attribute nothing to the learned components, which no end-to-end run has measured yet.
+
+**Metric definitions** (`src/eval/metrics.py`). Safe automated resolution: the cases whose label expects an autonomous resolution and that end correctly with no human, over those cases (107 of the 250 held-out cases). Unsafe outcomes: the cases with at least one unsafe result (unauthorized access or disclosure, a case opened or a card locked that the label forbids, an action not verified, a false confirmation, a promise of money, a crash, or a materially incorrect outcome), over all cases; the reasons are counted apart, so no case counts twice. Cost: rules-only mode spends no model tokens, and compute is not measured.
+
+### Held-out suite: 250 conversations, frozen on 30 Sep
+
+150 Spanish and 100 Portuguese conversations: 63 derived from unchanged rows of the dataset and 187 team-generated (every Portuguese case and every fabricated or altered fact). The labels are design labels written from the spec; the team's adjudicated labels have not replaced them yet (TQ-018).
+
+First run, before any fix (30 Sep, 3 identical repeats, recorded in PR #12):
+
+| Metric | Reference baseline | Our architecture, rules-only |
+| --- | --- | --- |
+| Safe automated resolution | 3.7 % (4 of 107) | 63.6 % (68 of 107) |
+| Containment | 44.0 % (110 of 250) | 76.4 % (191 of 250) |
+| Escalation precision | 48.6 % (68 of 140) | 96.6 % (57 of 59) |
+| Escalation recall | 69.4 % (68 of 98) | 58.2 % (57 of 98) |
+| Unsafe outcomes | 48.8 % (122 of 250) | 12.4 % (31 of 250) |
+| Crashes | 0 | 9 |
+
+That run found seven problems. The six in the code were fixed the same day, each with a test of its own, and the suite was not edited. Every later run reuses the cases that drove those fixes, so it is a measurement after error analysis, not a second blind evaluation.
+
+Rerun on `main` at `e52a5ec` (3 Oct, 3 repeats with the same safe automated resolution rate in each), after those fixes and the later ones:
+
+| Metric | Reference baseline | Our architecture, rules-only |
+| --- | --- | --- |
+| Safe automated resolution | 3.7 % (4 of 107) | 98.1 % (105 of 107) |
+| Containment | 44.0 % (110 of 250) | 68.8 % (172 of 250) |
+| Escalation precision | 48.6 % (68 of 140) | 100.0 % (78 of 78) |
+| Escalation recall | 69.4 % (68 of 98) | 79.6 % (78 of 98) |
+| Unsafe outcomes | 48.8 % (122 of 250) | 8.0 % (20 of 250) |
+| Exact outcome accuracy | 52.4 % (131 of 250) | 90.8 % (227 of 250) |
+| Crashes | 0 | 0 |
+
+The 20 unsafe outcomes left are the 20 high-risk foreign online purchases of the suite: with no risk model in the run, the system opens a case where the label expects a human, and the same 20 cases are the missed transfers. By language: Spanish 59 of 61 safe resolutions and 12 of 150 unsafe outcomes, Portuguese 46 of 46 and 8 of 100. Latency p50 / p95 is 142 / 503 ms, in process and with no network. Reproduce it with `uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out /tmp/eval_heldout --repeats 3`; the report is not committed while TQ-019 (where reports live) is open.
+
+### Development split: 18 cases
+
+Team-generated cases used while building the system, so they show that it handles the cases it was built for, not that it generalizes. Reference baseline: 0 of 9 safe automated resolutions and 11 of 18 unsafe outcomes. Our architecture in rules-only mode: 9 of 9 and 0 of 18 ([`reports/eval_dev.md`](reports/eval_dev.md), 3 repeats; CI reruns the split on every pull request).
+
+### Policy explainer
+
+Measured on the test split of the policy question bank, which an LLM drafted and the team accepted with its deviations declared: 36.7 % of its actions are right, it abstains on 61.1 % of the answerable questions, and 27.3 % of its answers cite a wrong clause ([`reports/rag_benchmark.md`](reports/rag_benchmark.md)). BM25 misses paraphrased questions. The explainer never decides an outcome and never takes a turn that names a charge or fires a legal or distress escalation, but a wrong citation can mislead the customer. The team kept it on for the demo with these limits; removing `data/rag_gate.json` turns it off.
+
+### Risk model
+
+A leak-free gradient boosting on the bank's own features scores a test ROC AUC of 0.497 on the full 2023 to 2026 history ([`reports/ml_full/`](reports/ml_full/)): our experiments found no learnable signal in the bank's fraud label, and `fraud_score` is excluded everywhere because it leaks that label. The served score is transferred from the IEEE-CIS competition: ROC AUC 0.817 and PR AUC 0.165 on the competition's own test split ([`reports/ml/fraud_risk_transfer.md`](reports/ml/fraud_risk_transfer.md)). Those numbers measure the source domain. No bank label can validate the transfer, so the score routes charges to a human; it is not a fraud detector validated on LATAM Bank. The model file is not in the repository, and without it `POL-ESC-ML-RISK` never fires, which is the state of every run above.
+
+## Limitations
+
+- **Languages.** The dataset holds no Portuguese, so every Portuguese case is team-generated. Slices by language, country and segment are small samples.
+- **Labels.** The held-out suite carries design labels until the team's adjudicated labels and kappa replace them (TQ-018).
+- **What was measured.** Only the rules-only configuration has end-to-end results. The policy explainer and the risk model have the offline measurements above; Jev has none.
+- **Held-out reuse.** Numbers after the first run come from the same cases that drove the fixes.
+- **Risk model.** The transfer from IEEE-CIS is not validated on bank data, and without the model file no charge escalates for risk. The IEEE-CIS data falls under the competition's rules (competition and non-commercial use); the team recorded the mentors' approval of this data use (TQ-032).
+- **Write path.** There are no idempotency keys, the audit row is written apart from the action, and there are no bounded retries. Concurrent requests are not tested.
+- **Deployment and capacity.** There is no public URL yet. The target runs on Vercel Hobby and Supabase Free; locally, DuckDB allows one writer process. No load test has been run.
+- **Business date.** Window and account-age math use 2026-06-17, the end date of the dataset, not the wall clock.
+
 ## Documentation
 
 | Document | Language | What it holds |
@@ -66,7 +137,8 @@ LATAM Bank Dataset v1.0.0 from the organizers: 100% synthetic, about 19 million 
 | [`docs/SUPABASE_VERCEL.md`](docs/SUPABASE_VERCEL.md) | Spanish | Identity, database schemas, database security, deployment and their risks |
 | [`docs/JEV_TYPESAFE_AI.md`](docs/JEV_TYPESAFE_AI.md) | Spanish | Jev integration design: typed signals and the policy clauses they feed |
 | [`docs/SECURITY_AUDIT_PLAN.md`](docs/SECURITY_AUDIT_PLAN.md) | Spanish | Security findings SEC-01 to SEC-10 and acceptance criteria per gate |
-| [`docs/reviews/`](docs/reviews/) | Spanish | Adversarial review of the plan and reuse review of a starter repo |
+| [`docs/specs/`](docs/specs/) | English | Specs of the dispute policy v2.3, the transferred risk model and the Supabase sign-in; a customer-profile risk explanation proposal (not decided, not built) |
+| [`docs/reviews/`](docs/reviews/) | Spanish | Adversarial reviews of the plan, audits of the code and docs against real runs, and a reuse review of a starter repo |
 
 ## Ground rules
 

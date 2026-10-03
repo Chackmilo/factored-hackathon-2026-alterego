@@ -8,6 +8,7 @@ every branch here is a clause outcome or a customer confirmation. State lives in
 """
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, timedelta
@@ -186,25 +187,46 @@ class DisputeOrchestrator:
 
     # ------------------------------------------------------------ policy question
     def _asks_the_explainer(self, session: VerifiedSession, conv: dict[str, Any], u: UnderstandResult, masked: str) -> bool:
-        """A policy question goes to the explainer only in state new, with no charge of its own, and never when POL-ESC-LEGAL or
-        POL-ESC-DISTRESS would fire on the message: those turns keep the dispute flow (roadmap section 4)."""
-        if self.explainer is None or conv["state"] != STATE_NEW or not u.policy_question:
+        """A policy question goes to the explainer in state new, with no charge of its own, and never when POL-ESC-LEGAL or
+        POL-ESC-DISTRESS would fire on the message: those turns keep the dispute flow (roadmap section 4). During a clarification it
+        goes there only when nothing was disputed before (a greeting that drew the list of recent charges); a dispute in progress keeps
+        the dispute flow."""
+        if self.explainer is None or not u.policy_question:
+            return False
+        if conv["state"] == STATE_AWAITING_CLARIFICATION:
+            if self._disputed_earlier(conv):
+                return False
+        elif conv["state"] != STATE_NEW:
             return False
         if u.intent == "fuera_de_alcance" or (u.stolen_card_probability is not None and u.stolen_card_probability >= 0.40):
             return False
         prior_distress = self.ops.case_memory(session.customer_id).get("prior_distress_max_30d")
         return DisputePolicyEngine.message_escalation(masked, u.distress_score, prior_distress) is None
 
+    def _disputed_earlier(self, conv: dict[str, Any]) -> bool:
+        """Whether an earlier customer message of the conversation disputed something (an intent, an amount, a date, a loss),
+        unlike a greeting. The last customer message is this turn's own."""
+        earlier = [m for m in self.ops.list_messages(conv["conversation_id"]) if m["role"] == "customer"][:-1]
+        for message in earlier:
+            signals = message.get("signals") or {}
+            if isinstance(signals, str):
+                signals = json.loads(signals)
+            if (signals.get("intent") not in (None, "consulta_general") or signals.get("amount_hint") is not None
+                    or signals.get("date_hint") is not None or signals.get("stolen_card_claimed")):
+                return True
+        return False
+
     def _explain_policy(self, session: VerifiedSession, conv: dict[str, Any], u: UnderstandResult, masked: str,
                         language: str) -> TurnResult:
-        """The explainer's answer from the corpus templates. It opens no case and leaves the conversation new."""
+        """The explainer's answer from the corpus templates. It opens no case and leaves the conversation where it was: new, or
+        a pending clarification whose listed charges the customer can still pick."""
         explanation = self.explainer.explain(masked, language)
         self.ops.audit(conversation_id=conv["conversation_id"], customer_id=session.customer_id, actor="system",
                        action="POLICY_EXPLAINED",
                        details={"retriever": self.explainer.retriever.name, "action": explanation.action, "band": explanation.band.value,
                                 "hits": [{"clause_id": h.clause_id, "score": round(h.score, 4)} for h in explanation.hits]})
         outcome = OUTCOME_ABSTENTION if explanation.action == "abstain" else OUTCOME_POLICY_EXPLANATION
-        return TurnResult(conversation_id=conv["conversation_id"], state=STATE_NEW, language=language, reply=explanation.reply,
+        return TurnResult(conversation_id=conv["conversation_id"], state=conv["state"], language=language, reply=explanation.reply,
                           policy_outcome=outcome, cited_clauses=explanation.cited_clauses, signals=u.as_signals())
 
     # ------------------------------------------------------------ dispute turn
@@ -343,7 +365,7 @@ class DisputeOrchestrator:
     def _identify_charge(self, conv: dict[str, Any], rows: list[dict[str, Any]], u: UnderstandResult):
         """Match the customer's hints against the session customer's own charges. Returns (candidates, matched or None, named):
         named holds the charges one message names at once when there are three or more, which count for POL-ESC-MULTI."""
-        if u.intent == "fuera_de_alcance":
+        if u.intent == "fuera_de_alcance" or u.policy_question:  # a rules question names no charge of its own: never one of the list
             return [], None, []
         pool = rows
         if conv["state"] == STATE_AWAITING_CLARIFICATION and conv.get("candidate_ids"):

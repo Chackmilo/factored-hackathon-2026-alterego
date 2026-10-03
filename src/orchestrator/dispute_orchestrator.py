@@ -67,6 +67,10 @@ TEXT = {
         "es": "No entendí su respuesta. ¿Desea que bloqueemos la tarjeta {product} ahora? Responda Sí o No.",
         "pt": "Não entendi sua resposta. Deseja que bloqueemos o cartão {product} agora? Responda Sim ou Não.",
     },
+    "lock_which_card": {
+        "es": " Como tiene varias tarjetas activas, no elegimos una por usted: un especialista confirmará con usted cuál bloquear.",
+        "pt": " Como você tem vários cartões ativos, não escolhemos um por você: um especialista confirmará com você qual bloquear.",
+    },
     "lock_pending": {
         "es": "No pudimos confirmar el bloqueo en el sistema. Un especialista lo completará y le confirmará; mientras tanto queda registrado como pendiente.",
         "pt": "Não conseguimos confirmar o bloqueio no sistema. Um especialista concluirá e confirmará; enquanto isso fica registrado como pendente.",
@@ -285,7 +289,8 @@ class DisputeOrchestrator:
                     self.ops.update_conversation(cid, state=STATE_AWAITING_LOCK)
                     result.state, result.candidates = STATE_AWAITING_LOCK, []
                     return result
-                result.reply = clarification  # no active card to lock: the plain clarification
+                # no card offered: the plain clarification, plus the note when a specialist confirms which card to lock
+                result.reply = clarification + result.reply[len(TEXT["lock_first"][language]):]
             return result
 
         next_state = STATE_CLOSED
@@ -335,6 +340,8 @@ class DisputeOrchestrator:
                                              candidate_ids=[])
                 result.state = STATE_AWAITING_LOCK
                 return result
+            if result.handoff_id and next_state == STATE_CLOSED:
+                next_state = STATE_ESCALATED  # the card to lock is left to a specialist
         self.ops.update_conversation(cid, state=next_state, matched_transaction_id=matched["transaction_id"] if matched else None)
         result.state = next_state
         return result
@@ -442,9 +449,12 @@ class DisputeOrchestrator:
             self.ops.audit(conversation_id=conv["conversation_id"], customer_id=session.customer_id, actor="system", action="LOCK_NOT_OFFERED",
                            details={"reason": decision.card_lock_reason, "why": "system of record unavailable", "error": str(exc)})
             return False
-        card_ids = {c["product_id"] for c in cards}
-        if product_id not in card_ids:
-            product_id = cards[0]["product_id"] if cards else None
+        card_ids = [c["product_id"] for c in cards]
+        if product_id not in card_ids:  # the charge sits on no active card: only a customer's one card is beyond doubt
+            if len(card_ids) > 1:
+                self._hand_over_the_card_choice(session, conv, decision, matched, card_ids, language, result)
+                return False
+            product_id = card_ids[0] if card_ids else None
         if product_id is None:
             self.ops.audit(conversation_id=conv["conversation_id"], customer_id=session.customer_id, actor="system",
                            action="LOCK_NOT_OFFERED", details={"reason": decision.card_lock_reason, "why": "no active card product"})
@@ -461,6 +471,33 @@ class DisputeOrchestrator:
                              "required_authentication": decision.card_lock_required_authentication}
         result.lock_status = "offered"
         return True
+
+    def _hand_over_the_card_choice(self, session: VerifiedSession, conv: dict[str, Any], decision: DisputePolicyDecision,
+                                   matched: dict[str, Any] | None, card_ids: list[str], language: str, result: TurnResult) -> None:
+        """Several active cards and none holds the charge: the bot never picks one. A specialist confirms the card with the
+        customer through a verified handoff, or through the turn's own handoff when it already escalated (that packet
+        already recommends the lock)."""
+        cid = conv["conversation_id"]
+        self.ops.audit(conversation_id=cid, customer_id=session.customer_id, actor="system", action="LOCK_NOT_OFFERED",
+                       details={"reason": decision.card_lock_reason, "why": "several active cards, none tied to the charge",
+                                "active_cards": len(card_ids)})
+        result.reply += TEXT["lock_which_card"][language]
+        if result.handoff_id:
+            return
+        requests = [m["masked_text"] for m in self.ops.list_messages(cid) if m["role"] == "customer"]
+        facts = ["Customer authenticated via a valid session token",
+                 f"Customer holds {len(card_ids)} active cards and the report names none of them"]
+        if matched:
+            facts.append(f"Disputed charge {matched['transaction_id']} is on product {matched['product_id']}, which is not an active card")
+        packet = {"customer_id": session.customer_id, "customer_request": requests[-1] if requests else "",
+                  "escalation_reason": "LOCK_CARD_AMBIGUOUS", "verified_facts": facts, "applicable_policy_clauses": ["POL-AUT-LOCK"],
+                  "card_lock": {"recommended": True, "reason": decision.card_lock_reason, "status": "not_offered",
+                                "candidate_products": card_ids},
+                  "open_questions": ["Which card does the customer want to lock?"]}
+        handoff_id = self._insert_verified_handoff(session, cid, "LOCK_CARD_AMBIGUOUS", packet)
+        result.handoff_id = handoff_id
+        result.reply += TEXT["handoff_ref"][language].format(handoff_id=handoff_id)
+        result.actions.append({"action": "CREATE_HANDOFF", "handoff_id": handoff_id, "verified": self.ops.get_handoff(handoff_id) is not None})
 
     def _handle_lock_confirmation(self, session: VerifiedSession, conv: dict[str, Any], u: UnderstandResult, language: str) -> TurnResult:
         cid = conv["conversation_id"]

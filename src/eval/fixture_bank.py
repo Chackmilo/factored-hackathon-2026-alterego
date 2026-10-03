@@ -53,13 +53,14 @@ def build_bank_fixture(path: str | Path, customers: list[dict[str, Any]], cards:
         for ddl in BANK_SCHEMAS.values():
             con.execute(ddl)
         for c in customers:
-            con.execute("""INSERT INTO gold_customers (customer_id, full_name, email, country, segment, account_age_days,
-                is_account_mature, complaints_last_90d, active_products) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                        [c["customer_id"], c.get("full_name", "Eval Customer"), None, c["country"], c["segment"],
+            con.execute("""INSERT INTO gold_customers (customer_id, full_name, email, country, city, segment, account_age_days,
+                is_account_mature, complaints_last_90d, active_products) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        [c["customer_id"], c.get("full_name", "Eval Customer"), None, c["country"], c.get("city"), c["segment"],
                          int(c["account_age_days"]), int(c["account_age_days"]) > 180, int(c.get("complaints_last_90d", 0)), len(cards)])
         for card in cards:
-            con.execute("INSERT INTO silver_products (product_id, customer_id, product_type, product_status) VALUES (?, ?, ?, ?)",
-                        [card["product_id"], card["customer_id"], card.get("product_type", "Tarjeta Crédito"), card.get("product_status", "Active")])
+            con.execute("INSERT INTO silver_products (product_id, customer_id, product_type, product_status, currency) VALUES (?, ?, ?, ?, ?)",
+                        [card["product_id"], card["customer_id"], card.get("product_type", "Tarjeta Crédito"), card.get("product_status", "Active"),
+                         card.get("currency")])
         for t in transactions:
             process_date = t["process_date"]
             tx_date = t.get("transaction_date", f"{process_date} 12:00:00")
@@ -67,15 +68,18 @@ def build_bank_fixture(path: str | Path, customers: list[dict[str, Any]], cards:
             days = (_date(ANCHOR) - _date(process_date)).days
             con.execute("""INSERT INTO gold_transactions (transaction_id, transaction_date, process_date, customer_id, product_id,
                 product_type, product_status, transaction_type, amount, currency, amount_usd, amount_usd_source, merchant_name,
-                merchant_category, transaction_status, is_within_60_days, days_since_transaction)
-                VALUES (?, ?, ?, ?, ?, 'Tarjeta Crédito', 'Active', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                merchant_category, transaction_status, is_within_60_days, days_since_transaction, channel, transaction_country, transaction_city)
+                VALUES (?, ?, ?, ?, ?, 'Tarjeta Crédito', 'Active', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                         [t["transaction_id"], tx_date, process_date, t["customer_id"], t.get("product_id"), t.get("transaction_type", "Purchase"),
                          float(t["amount"]), t.get("currency", "USD"), amount_usd, t.get("amount_usd_source", "same_currency" if t.get("currency", "USD") == "USD" else "native"), t.get("merchant_name"),
-                         t.get("merchant_category"), t.get("transaction_status", "Approved"), 0 <= days <= 60, days])
+                         t.get("merchant_category"), t.get("transaction_status", "Approved"), 0 <= days <= 60, days,
+                         t.get("channel"), t.get("transaction_country"), t.get("transaction_city")])
             con.execute("""INSERT INTO silver_transactions (transaction_id, transaction_date, process_date, product_id, customer_id,
-                transaction_type, amount, currency, merchant_name, transaction_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                transaction_type, amount, currency, merchant_name, transaction_status, channel, transaction_country, transaction_city)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                         [t["transaction_id"], tx_date, process_date, t.get("product_id"), t["customer_id"], t.get("transaction_type", "Purchase"),
-                         float(t["amount"]), t.get("currency", "USD"), t.get("merchant_name"), t.get("transaction_status", "Approved")])
+                         float(t["amount"]), t.get("currency", "USD"), t.get("merchant_name"), t.get("transaction_status", "Approved"),
+                         t.get("channel"), t.get("transaction_country"), t.get("transaction_city")])
     finally:
         con.close()
     return str(path)

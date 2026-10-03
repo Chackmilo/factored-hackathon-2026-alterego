@@ -230,7 +230,7 @@ Reading: there is no fraud content in the calls to bring into the model. Text si
 
 ## 7. Decision proposal: the fraud risk score comes from a model transferred from the IEEE-CIS competition (28 September)
 
-Sections 5 and 6 leave `POL-ESC-ML-RISK` without a trainable target: `is_fraud` is random and `fraud_score` is derived from it. The team proposed bringing a model from a Kaggle fraud competition. The variable mapping and the approach are in `docs/specs/fraud-risk-model-v1-ieee-cis.md`; the summary:
+Sections 5 and 6 leave `POL-ESC-ML-RISK` without a trainable target: `is_fraud` carries no learnable signal (its rate is flat across every feature) and `fraud_score` is derived from it. The team proposed bringing a model from a Kaggle fraud competition. The variable mapping and the approach are in `docs/specs/fraud-risk-model-v1-ieee-cis.md`; the summary:
 
 1. Competition of record: IEEE-CIS Fraud Detection (Vesta data, 590,540 labeled card-not-present transactions, 3.5% fraud, metric ROC AUC). Its winning recipe is client-id aggregation (a uid built from `card1`, `addr1` and the normalized `D1`, then amounts and counts aggregated per uid respecting time). Our client id is native (`customer_id`, `product_id`), so that recipe is the cheapest part of the transfer.
 2. What maps: amount in USD, processing-clock time, credit or debit card, card age, days since the previous charge, counts per card and per customer in 1, 7 and 30 days, expanding mean, std and z-score of the amount per card, ratio to the customer's average, an address distance bucket (same city, same country, abroad), the consistency checks (the `M` flags), the email domain frequency and card-not-present.

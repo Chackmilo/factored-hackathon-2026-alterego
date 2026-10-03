@@ -22,7 +22,7 @@ of "component selection, leakage prevention, held-out evaluation, error analysis
 The idea is a transfer, not a copy: train on the competition data a model that sees only features
 we can compute on our charges, validate it on the competition's own time-based holdout, then serve
 it on our charges through a shared feature contract. Our data is used to calibrate the escalation
-threshold as a percentile, never to train (its label is random).
+threshold as a percentile, never to train (its label carries no learnable signal: section 5 of the discussion doc).
 
 ## 2. The competition in one page
 
@@ -63,7 +63,7 @@ auxiliary tables (`data/lakehouse_aux.duckdb`).
 
 | Competition | Our source | Contract feature | Feasibility |
 | --- | --- | --- | --- |
-| `isFraud` | `silver_transactions.is_fraud` | training label on Kaggle only | Ours is random (section 5); used only to report agreement, never to train |
+| `isFraud` | `silver_transactions.is_fraud` | training label on Kaggle only | Ours carries no learnable signal (section 5); used only to report agreement, never to train |
 | `TransactionDT` | `transaction_date` minus 6 h (processing clock), `process_date` | `hour_sin`, `hour_cos`, `day_of_week` | Full |
 | `TransactionAmt` | `amount_usd` (fixed at silver, `amount_usd_source`) | `amount_usd`, `log_amount_usd` | Full; both in USD |
 | `TransactionAmt` decimal part | `amount` in the local currency | `amount_has_cents` | Weak: COP has no cents, MXN and ARS do |

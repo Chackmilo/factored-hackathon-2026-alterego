@@ -62,7 +62,7 @@ flowchart TD
 
     subgraph Stage2["2. Decide (política y ML)"]
         PolicyEngine["Motor de política determinista (cláusulas v2.3)<br/>POL-SEC-SESSION, POL-ESC-LEGAL, POL-CLARIFY,<br/>POL-DISP-TYPE, POL-WIN-60, POL-ESC-*, POL-AUT-*"]
-        MLRisk["Modelo de riesgo LightGBM, servido en ONNX<br/>(sin fraud_score, umbral por costo)"]
+        MLRisk["Modelo de riesgo transferido de IEEE-CIS<br/>(scikit-learn y joblib, sin fraud_score, umbral percentil 98)"]
     end
 
     subgraph Stage3_4["3 y 4. Act y Verify (tool gateway)"]
@@ -130,7 +130,7 @@ flowchart TD
    - Extracción de slots (monto, fecha, comercio): regex determinista primero; si falla, un LLM de apoyo con salida estructurada (`json_schema`).
 3. **Decide:**
    - Motor de política determinista en Python con las cláusulas del brief v2.3 en su orden canónico.
-   - Modelo de riesgo LightGBM entrenado sobre `transactions.is_fraud` sin la fuga `fraud_score`, con el umbral fijado por el costo asimétrico de una transferencia omitida. Se sirve exportado a ONNX (propuesta, fila "Runtime de inferencia").
+   - Modelo de riesgo LightGBM entrenado sobre `transactions.is_fraud` sin la fuga `fraud_score`, con el umbral fijado por el costo asimétrico de una transferencia omitida. Se sirve exportado a ONNX (propuesta, fila "Runtime de inferencia"). Estado (3 oct): `is_fraud` no tiene señal aprendible (TQ-023), así que el modelo servido es el transferido de la competencia IEEE-CIS (TQ-026), con scikit-learn y joblib en vez de LightGBM y ONNX (TQ-022), y su umbral es el percentil 98 de los cargos Web y App de la ventana.
 4. **Act y Verify (tool gateway):**
    - El gateway escribe en Supabase Postgres con el rol restringido `app_gateway` (esquema `ops`: `conversations`, `dispute_cases`, `card_locks`, `handoffs`, `audit_log`) usando claves de idempotencia.
    - Lee los cargos candidatos del `customer_id` de la sesión en `bank`, la copia de servicio de solo lectura publicada desde gold.
@@ -180,7 +180,7 @@ G0 se cerró el 26 de sep en una sesión de grilling. Se consulta al equipo ante
 | Embeddings del RAG | Decidida (26 sep; respaldo revisado el mismo día por Vercel) | Modelo multilingüe local en ONNX, sin torch, cuantizado a int8 para caber en el bundle de 500 MB de Vercel. Respaldo: Large Functions de Vercel (beta, hasta 5 GB); la instancia paga con torch deja de aplicar porque no se paga ningún plan. Los embeddings del corpus se calculan en el build. Ningún texto sale a un tercero |
 | Profundidad en portugués | Decidida (26 sep) | Solo para la interacción con el cliente; el texto de política queda en español |
 | Baselines | Decidida (26 sep) | Dos. Principal: la arquitectura propia en versión solo reglas (palabras clave, política v2.3, riesgo por reglas sin `fraud_score`, plantillas; sin Jev, LightGBM, LLM ni RAG). Referencia: el pipeline inicial con un adaptador y su crash arreglado; sus bloqueos sin verificar y su promesa de reembolso cuentan como resultados inseguros |
-| Componentes aprendidos | Decidida (26 sep) | LightGBM de fraude (obligatorio), Jev para intención y la recuperación del RAG, cada uno contra su baseline: reglas, palabras clave y BM25 |
+| Componentes aprendidos | Decidida (26 sep); el modelo de fraude cambió el 29 sep y el 2 oct (TQ-026, TQ-022) | Modelo de fraude (obligatorio; hoy el transferido de IEEE-CIS con scikit-learn, no LightGBM), Jev para intención y la recuperación del RAG, cada uno contra su baseline: reglas, palabras clave y BM25 |
 | Suite de evaluación | Decidida (26 sep) | 250 casos held-out y 60 de desarrollo. Cada persona escribe casos desde cargos reales (`synthetic-organizer`) con mensajes `team-generated`; se puede parafrasear con un LLM, con revisión humana. Etiquetado repartido entre los 4, con kappa sobre 50 casos etiquetados dos veces. La suite se congela con commit y hash el 30 sep, antes de ajustar umbrales. Congelada el 30 sep: `data/eval/heldout_cases.jsonl` (250 casos, 150 ES y 100 PT, generados por `src/eval/heldout.py` desde la muestra reconstruida), SHA-256 en `data/eval/heldout_cases.sha256`; sus expectativas son etiquetas de diseño hasta el etiquetado humano con las planillas de `data/eval/labeling/` (TQ-018). La primera corrida (30 sep) encontró 7 problemas; los 6 de código se arreglaron ese día, cada uno con su propio test, sin tocar la suite ni los umbrales (PR apilado `pr/8`); el que queda (compras extranjeras sin puntaje de riesgo) depende de evaluar con el modelo cargado |
 | UI | Decidida (26 sep) | Chat ES/PT con los cargos candidatos y la confirmación del bloqueo como botones. Consola en inglés con casos, handoffs, candidatos a crédito y visor del log de auditoría. Sin dashboard; un panel con resultados de la evaluación solo si sobra tiempo el día 8 |
 | Acceso a la consola | Decidida (26 sep, revisada el mismo día) | Token de Supabase con `app_metadata.app_role = "agent"` en los endpoints de la consola (el claim `role` de Supabase está reservado para el rol de Postgres); la suite incluye un cliente que intenta abrirla y recibe 403 |

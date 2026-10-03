@@ -22,6 +22,7 @@ As established in `AGENTS.md` Section 2:
 
 | Document | Language | Purpose & Content |
 | :--- | :--- | :--- |
+| [**`HANDOFF.md`**](HANDOFF.md) | Spanish | **Team Handoff (3 Oct).** State of `main` and production, how to start, pending work with proposed owners (blocking, high-impact, optional), how the Vercel and Supabase production is wired, and open questions. |
 | [**`PLAN.md`**](PLAN.md) | Spanish | **Canonical Master Plan.** Problem question, 5-stage architecture diagram, decision log with closed/open gates, team ownership lanes, and day-by-day roadmap. |
 | [**`TEAM_BRIEF_COMPLEMENTED.md`**](TEAM_BRIEF_COMPLEMENTED.md) | English | **Dispute Policy Specification (v2.5).** Exact clause IDs (`POL-WIN-60`, `POL-ESC-500`, etc.), data contracts, structured handoff packet, held-out evaluation suite design, and official metric formulas. |
 | [**`SUPABASE_VERCEL.md`**](SUPABASE_VERCEL.md) | Spanish | **Identity, Data & Deployment Architecture.** Supabase Auth (ES256 JWKS), `bank` (read-only serving) & `ops` schemas, database security/RLS, Vercel Hobby deployment, and double canary design. |

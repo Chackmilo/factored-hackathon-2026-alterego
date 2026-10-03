@@ -569,3 +569,46 @@ def test_same_charge_is_not_opened_twice(orchestrator, owner_session, ops_store)
     assert len(ops_store.list_cases(customer_id="CLI-FIX-OWNER")) == 1
     assert "ya" in second.reply and first.case_id in second.reply
     assert any(a["action"] == "DUPLICATE_CASE_PREVENTED" for a in ops_store.list_audit(conversation_id=cid))
+
+
+class _FixedRiskScorer:
+    """A loaded risk model that scores every charge 0.12 against its own policy threshold."""
+    policy_threshold = 0.30
+
+    def __call__(self, matched, history, profile):
+        return 0.12, []
+
+
+def _risk_fact(ops_store, handoff_id):
+    facts = ops_store.get_handoff(handoff_id)["packet"]["verified_facts"]
+    return [fact for fact in facts if fact.startswith("ML risk score")]
+
+
+def test_a_handoff_without_a_risk_model_never_reads_as_a_zero_risk(orchestrator, owner_session, ops_store):
+    """With no model file the scorer is off: the agent must not read a measured 0.00 against an unused 0.70 threshold."""
+    cid = start(orchestrator, owner_session)
+    turn = orchestrator.handle_message(owner_session, cid, "En el estado de cuenta me sale una compra de 850 dólares en Super Ahorro que no es mía")
+    [fact] = _risk_fact(ops_store, turn.handoff_id)
+    assert "not scored" in fact and "no risk model" in fact
+    assert "0.00" not in fact and "0.70" not in fact
+
+
+def test_a_handoff_with_a_risk_model_states_the_score_and_its_threshold(bank_fixture_db, ops_store, owner_session):
+    from src.orchestrator.dispute_orchestrator import DisputeOrchestrator
+    from src.tools.gateway import BankingToolGateway
+    orchestrator = DisputeOrchestrator(gateway=BankingToolGateway(db_path=bank_fixture_db), ops=ops_store, risk_scorer=_FixedRiskScorer())
+    cid = start(orchestrator, owner_session)
+    turn = orchestrator.handle_message(owner_session, cid, "En el estado de cuenta me sale una compra de 850 dólares en Super Ahorro que no es mía")
+    assert _risk_fact(ops_store, turn.handoff_id) == ["ML risk score: 0.12 (escalation threshold 0.30)"]
+
+
+def test_a_handoff_before_any_charge_says_the_risk_was_not_scored(bank_fixture_db, ops_store, owner_session):
+    """A legal citation escalates before a charge is identified: the loaded model had nothing to score."""
+    from src.orchestrator.dispute_orchestrator import DisputeOrchestrator
+    from src.tools.gateway import BankingToolGateway
+    orchestrator = DisputeOrchestrator(gateway=BankingToolGateway(db_path=bank_fixture_db), ops=ops_store, risk_scorer=_FixedRiskScorer())
+    cid = start(orchestrator, owner_session)
+    turn = orchestrator.handle_message(owner_session, cid, "Si no me resuelven voy a la CONDUSEF")
+    assert turn.escalation_reason == "REGULATOR_OR_LEGAL_CITING"
+    [fact] = _risk_fact(ops_store, turn.handoff_id)
+    assert "not scored" in fact and "no charge" in fact and "0.00" not in fact

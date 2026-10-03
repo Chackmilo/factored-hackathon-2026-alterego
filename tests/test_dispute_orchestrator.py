@@ -612,3 +612,86 @@ def test_a_handoff_before_any_charge_says_the_risk_was_not_scored(bank_fixture_d
     assert turn.escalation_reason == "REGULATOR_OR_LEGAL_CITING"
     [fact] = _risk_fact(ops_store, turn.handoff_id)
     assert "not scored" in fact and "no charge" in fact and "0.00" not in fact
+
+
+# ------------------------------------------------- which card a preventive lock may take
+def add_card(db_path, product_id, product_type="Tarjeta Crédito"):
+    """One more active card for the fixture owner (team-generated)."""
+    import duckdb
+    con = duckdb.connect(db_path)
+    try:
+        con.execute("INSERT INTO silver_products (product_id, customer_id, product_type, product_status) VALUES (?, 'CLI-FIX-OWNER', ?, 'Active')",
+                    [product_id, product_type])
+    finally:
+        con.close()
+
+
+def add_account_transfer(db_path, transaction_id="TRX-A-ACC90", amount=90.0, merchant="Tienda Este"):
+    """An in-window transfer out of the owner's savings account, so a charge that sits on no card (team-generated)."""
+    import duckdb
+    con = duckdb.connect(db_path)
+    try:
+        con.execute("""INSERT INTO gold_transactions (transaction_id, transaction_date, process_date, customer_id, product_id,
+            product_type, product_status, transaction_type, amount, currency, amount_usd, merchant_name, transaction_status,
+            is_within_60_days, days_since_transaction)
+            VALUES (?, TIMESTAMP '2026-06-12 15:00:00', DATE '2026-06-12', 'CLI-FIX-OWNER', 'PRD-ACC-1', 'Cuenta Ahorros', 'Active',
+                    'Transfer', ?, 'USD', ?, ?, 'Approved', true, 5)""", [transaction_id, amount, amount, merchant])
+        con.execute("""INSERT INTO silver_transactions (transaction_id, transaction_date, process_date, product_id, customer_id,
+            transaction_type, amount, currency, merchant_name, transaction_status)
+            VALUES (?, TIMESTAMP '2026-06-12 15:00:00', DATE '2026-06-12', 'PRD-ACC-1', 'CLI-FIX-OWNER', 'Transfer', ?, 'USD', ?, 'Approved')""",
+                    [transaction_id, amount, merchant])
+    finally:
+        con.close()
+
+
+def owner_product_statuses(db_path):
+    return dict(fetch(db_path, "SELECT product_id, product_status FROM silver_products WHERE customer_id = 'CLI-FIX-OWNER'", []))
+
+
+@pytest.mark.parametrize("message", [
+    "Me robaron la tarjeta y no reconozco una transferencia de 90 dólares en Tienda Este",
+    "Roubaram meu cartão e não reconheço uma transferência de 90 dólares na Tienda Este",
+])
+def test_a_stolen_card_claim_never_picks_one_of_several_cards_for_a_charge_on_none(orchestrator, owner_session, ops_store,
+                                                                                    bank_fixture_db, message):
+    add_card(bank_fixture_db, "PRD-CARD-3")
+    add_account_transfer(bank_fixture_db)
+    cid = start(orchestrator, owner_session)
+    turn = orchestrator.handle_message(owner_session, cid, message)
+    assert turn.case_id  # the dispute itself is still opened and verified
+    assert turn.lock_offer is None and turn.state == "escalated"
+    assert ops_store.list_locks(conversation_id=cid) == []
+    assert set(owner_product_statuses(bank_fixture_db).values()) == {"Active"}
+    handoff = ops_store.get_handoff(turn.handoff_id)
+    assert handoff["escalation_reason"] == "LOCK_CARD_AMBIGUOUS"
+    assert sorted(handoff["packet"]["card_lock"]["candidate_products"]) == ["PRD-CARD-1", "PRD-CARD-3"]
+    assert turn.handoff_id in turn.reply and "especialista" in turn.reply
+    audit = ops_store.list_audit(conversation_id=cid)
+    assert any(a["action"] == "CREATE_HANDOFF" and a["verified"] for a in audit)
+    assert any(a["action"] == "LOCK_NOT_OFFERED" and a["details"]["why"] == "several active cards, none tied to the charge" for a in audit)
+
+
+def test_a_lost_card_report_with_several_cards_asks_for_the_charge_and_leaves_the_card_to_a_specialist(
+        orchestrator, owner_session, ops_store, bank_fixture_db):
+    add_card(bank_fixture_db, "PRD-CARD-3")
+    cid = start(orchestrator, owner_session)
+    turn = orchestrator.handle_message(owner_session, cid, "Anteayer extravié la tarjeta de crédito")
+    assert turn.policy_outcome == "CLARIFICATION_REQUIRED" and turn.state == "awaiting_clarification"
+    assert turn.lock_offer is None and ops_store.list_locks(conversation_id=cid) == []
+    assert len(turn.candidates) == 5  # the charge question goes on as if no lock had been recommended
+    assert ops_store.get_handoff(turn.handoff_id)["escalation_reason"] == "LOCK_CARD_AMBIGUOUS"
+    assert turn.handoff_id in turn.reply and "especialista" in turn.reply
+
+
+def test_a_charge_on_one_of_several_cards_offers_that_card(orchestrator, owner_session, bank_fixture_db):
+    add_card(bank_fixture_db, "PRD-CARD-0")  # sorts first by id, so a first-card pick would take the wrong one
+    cid = start(orchestrator, owner_session)
+    turn = orchestrator.handle_message(owner_session, cid, "Me robaron la tarjeta y no reconozco un cargo de 80 dólares en Oxxo")
+    assert turn.lock_offer["product_id"] == "PRD-CARD-1" and turn.handoff_id is None
+
+
+def test_a_charge_on_no_card_offers_the_only_active_card(orchestrator, owner_session, bank_fixture_db):
+    add_account_transfer(bank_fixture_db)
+    cid = start(orchestrator, owner_session)
+    turn = orchestrator.handle_message(owner_session, cid, "Me robaron la tarjeta y no reconozco una transferencia de 90 dólares en Tienda Este")
+    assert turn.lock_offer["product_id"] == "PRD-CARD-1"  # one active card: no doubt about which one was stolen

@@ -10,6 +10,7 @@ from fastapi import HTTPException
 
 from src.auth.session import VerifiedSession, create_test_session, decode_session_token
 from src.tools.gateway import (
+    ActionVerificationError,
     BankingToolGateway,
     RecordNotFoundError,
     UnauthorizedAccessError,
@@ -221,6 +222,23 @@ def test_lock_card_with_an_unknown_reason_code_changes_nothing(fixture_db):
     with pytest.raises(ValueError):
         gateway.execute_lock_card(_session("CLI-FIX-OWNER"), "PRD-FIX-OWNER", reason_code="Preventive hold")
     assert _fetch(fixture_db, "SELECT product_status FROM silver_products WHERE product_id = ?", ["PRD-FIX-OWNER"]) == [("Active",)]
+
+def test_lock_card_refuses_an_owned_product_that_is_not_a_card(bank_fixture_db):
+    """The lock enforces what the orchestrator offers (an active card), so a caller that skips the offer cannot block an account."""
+    gateway = BankingToolGateway(db_path=bank_fixture_db)
+    with pytest.raises(ActionVerificationError):
+        gateway.execute_lock_card(_session("CLI-FIX-OWNER"), "PRD-ACC-1")
+    assert _fetch(bank_fixture_db, "SELECT product_status FROM silver_products WHERE product_id = ?", ["PRD-ACC-1"]) == [("Active",)]
+
+@pytest.mark.parametrize("status", ["Blocked", "Cancelled"])
+def test_lock_card_refuses_an_owned_card_that_is_not_active(bank_fixture_db, status):
+    con = duckdb.connect(bank_fixture_db)
+    con.execute("UPDATE silver_products SET product_status = ? WHERE product_id = 'PRD-CARD-1'", [status])
+    con.close()
+    gateway = BankingToolGateway(db_path=bank_fixture_db)
+    with pytest.raises(ActionVerificationError):
+        gateway.execute_lock_card(_session("CLI-FIX-OWNER"), "PRD-CARD-1")
+    assert _fetch(bank_fixture_db, "SELECT product_status FROM silver_products WHERE product_id = ?", ["PRD-CARD-1"]) == [(status,)]
 
 
 def test_search_escapes_merchant_text_inside_untrusted_tags(tmp_path):

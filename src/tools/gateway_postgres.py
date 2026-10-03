@@ -21,6 +21,7 @@ from src.tools.gateway import (
     SystemOfRecordUnavailableError,
     UnauthorizedAccessError,
     check_lock_reason,
+    check_lockable,
 )
 
 BUSINESS_TODAY = date(2026, 6, 17)
@@ -102,11 +103,13 @@ class PostgresBankingGateway:
         """Act: mark the offered lock as locked and verified in ops.card_locks (or insert one). Verify: read the effective status back."""
         check_lock_reason(reason_code)
         with self._con() as con:
-            owner = con.execute("SELECT customer_id FROM bank.products WHERE product_id = %s", [product_id]).fetchone()
+            owner = con.execute("SELECT customer_id, product_type, product_status FROM ops.v_product_status WHERE product_id = %s",
+                                [product_id]).fetchone()
             if not owner:
                 raise ActionVerificationError(f"Product {product_id} not found in system of record.")
             if owner[0] != session.customer_id:
                 raise UnauthorizedAccessError(f"Cross-customer violation: Product {product_id} does not belong to authenticated customer {session.customer_id}.")
+            check_lockable(product_id, owner[1], owner[2])  # live status: a card our own lock blocked is not locked twice
             updated = 0
             if lock_id:
                 updated = con.execute("""UPDATE ops.card_locks SET status = 'locked', verified = TRUE, updated_at = now()

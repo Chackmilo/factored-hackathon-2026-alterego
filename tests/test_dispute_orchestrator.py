@@ -612,3 +612,18 @@ def test_a_handoff_before_any_charge_says_the_risk_was_not_scored(bank_fixture_d
     assert turn.escalation_reason == "REGULATOR_OR_LEGAL_CITING"
     [fact] = _risk_fact(ops_store, turn.handoff_id)
     assert "not scored" in fact and "no charge" in fact and "0.00" not in fact
+
+
+@pytest.mark.parametrize("messages", [
+    ["¿Cuántos días tengo para disputar un cargo?"],
+    ["Hola", "¿Cuántos días tengo para disputar un cargo?"],
+    ["Oi", "Quanto tempo tenho para contestar uma cobrança?"],
+])
+def test_a_rules_question_never_opens_the_case_of_a_customers_only_charge(orchestrator, other_session, ops_store, messages):
+    """A question about the dispute rules names no charge of its own: with the explainer off it asks which charge, it never
+    takes the customer's only one."""
+    cid = start(orchestrator, other_session)
+    for text in messages:
+        turn = orchestrator.handle_message(other_session, cid, text)
+    assert ops_store.list_cases(customer_id="CLI-FIX-OTHER") == []
+    assert turn.case_id is None and turn.policy_outcome == "CLARIFICATION_REQUIRED"

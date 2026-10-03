@@ -77,15 +77,20 @@ class ClaudeReplyWriter:
                 f"<customer_message>{message}</customer_message>\n"
                 f"<prose>{skeleton}</prose>")
         response = self._create(user)
-        tokens_in, tokens_out = response.usage.input_tokens, response.usage.output_tokens
+        try:  # a 200 that is not a Messages object (an HTML page, a body without usage) is unusable, not a crash
+            tokens_in, tokens_out = response.usage.input_tokens, response.usage.output_tokens
+            stop_reason = response.stop_reason
+            texts = [block.text for block in response.content if block.type == "text"]
+        except (AttributeError, TypeError) as exc:
+            raise WriterUnavailable(f"malformed response: {type(response).__name__}") from exc
         request_id = getattr(response, "_request_id", None)  # set only on objects that came over HTTP
         if self.budget is not None:
             self.budget.record(provider="anthropic", model=self.model, purpose="reply", tokens_in=tokens_in,
                                tokens_out=tokens_out, cost_usd=claude_cost_usd(tokens_in, tokens_out),
                                conversation_id=conversation_id, request_id=request_id)
-        if response.stop_reason != "end_turn":
-            raise WriterUnavailable(f"stop_reason {response.stop_reason}")
-        text = "".join(block.text for block in response.content if block.type == "text").strip()
+        if stop_reason != "end_turn":
+            raise WriterUnavailable(f"stop_reason {stop_reason}")
+        text = "".join(texts).strip()
         return ReplyDraft(text=text, model=self.model, request_id=request_id, tokens_in=tokens_in, tokens_out=tokens_out,
                           prompt_version=self.prompt_version)
 

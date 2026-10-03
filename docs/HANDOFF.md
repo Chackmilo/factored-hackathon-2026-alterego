@@ -146,3 +146,40 @@ Daniel los pasa **por privado: nunca por el repo, por un issue ni por el chat de
 1. ¿Tienes la key de Jev?
 2. ¿Tienes los datos de IEEE-CIS para regenerar el modelo de riesgo?
 3. ¿Cuál de las opciones de Vercel de la sección 5 vas a usar para desplegar?
+
+## 7. Bloqueos al 3 de octubre (tarde)
+
+Revisado por Kmilo con Claude el 3 de octubre sobre `main` en `d657f85`. Lista lo que no se puede hacer sin una cuenta, una clave o una persona, y lo que sí avanza sin ellas. Ninguna clave va en este archivo: solo los nombres.
+
+### 7.1 Lo que falta y quién lo destraba
+
+| # | Tarea | Qué la bloquea | Quién lo destraba |
+| --- | --- | --- | --- |
+| 1 | A1: rotar la secret key de Supabase y la contraseña de la base | Acceso al proyecto AlterEgo (organización "Chackmilo's Org") | Daniel invita a Kmilo |
+| 2 | A1: rotar la key de Anthropic | La key es de Daniel | Daniel |
+| 3 | A1: nuevas claves de las personas (`seed_personas --reset-passwords`) | Una secret key de Supabase vigente. En el `.env` de Kmilo la variable se llama `SUPABASE_SECRET`, pero el código lee `SUPABASE_SECRET_KEY`; y si es la key que quedó en un chat el 2 de octubre, deja de servir al rotarla | Kmilo, con la key nueva del punto 1 |
+| 4 | A1: confirmar que la Data API no expone `bank` ni `ops` | Ninguna migración activa RLS, así que la Data API es la única barrera. Se ve en el dashboard (Settings, Data API) | Kmilo, con el acceso del punto 1 |
+| 5 | A2: borrar las filas de la prueba de humo | SQL Editor de producción (el MCP de Supabase rechaza `DELETE`) | Kmilo, con el acceso del punto 1 |
+| 6 | A5: hacer público el repo y renombrarlo `factored-hackathon-2026-alterego` | El repo es de la cuenta `Chackmilo`; la cuenta de Kmilo (`Trajano81`) tiene push, no admin | Daniel lo hace o le da admin a Kmilo |
+| 7 | A5: video, correo de entrega y credenciales de los jurados | Lo graba y lo envía una persona; las credenciales salen del punto 3 | Kmilo |
+| 8 | Desplegar en producción lo que se mergee | El proyecto de Vercel está en la cuenta Hobby de Daniel; un merge de Kmilo probablemente queda bloqueado (sección 5) | Kmilo elige la opción a, b o c. La a necesita además la clave de `app_gateway` para armar `DATABASE_URL` |
+| 9 | B1: llevar el modelo de riesgo a producción | El `.joblib` está en el `.gitignore` y el despliegue depende del punto 8 | Decisión de Kmilo |
+| 10 | B2: etiquetas humanas y kappa (TQ-018) | Hacen falta dos personas que etiqueten los 50 casos dobles | Kmilo y una segunda persona |
+| 11 | B3: canario contra la pausa de Supabase | Un cron de GitHub Actions necesita las credenciales de una persona como secretos del repo (hoy hay 0). En un repo personal, crear secretos suele exigir ser el dueño: por comprobar con la cuenta de Kmilo | Kmilo lo prueba; si no puede, Daniel, o revisión manual del proyecto el 8, el 12 y el 15 de octubre con el acceso del punto 1 |
+| 12 | C: verificación manual de las respuestas con Claude, y que producción redacte | `ANTHROPIC_API_KEY` está vacía en el `.env` de Kmilo y no hay key en Vercel | Kmilo pone su propia key en el `.env` local (nunca en el chat) |
+| 13 | C: aplicar la migración 0005 (`search_path`) | Producción, punto 1 | Kmilo, con el acceso del punto 1 |
+
+No bloquea: la key de Jev (`TYPESAFE_API_KEY`) está en el `.env` de Kmilo, y los datos de IEEE-CIS (`data/kaggle`) y `data/lakehouse_full.duckdb` están en su máquina, así que B1 se puede entrenar y medir en local.
+
+### 7.2 Lo que avanza sin cuentas
+
+Cada punto va en su propio PR desde `main`, con TDD y la CI en verde, y Kmilo aprueba cada merge:
+
+- B4: el bloqueo no elige una tarjeta al azar cuando el cliente tiene varias activas y el cargo no está en ninguna (PR #39, con su efecto en el held-out descrito ahí).
+- A1: `read_only=true` en el MCP de Supabase de `.mcp.json`, y gitleaks sobre todo el historial (con la imagen de Docker, sin instalar nada).
+- A4: TQ-034 y TQ-035 en `src/eval`, las cifras del held-out recalculadas y el reporte commiteado (TQ-019).
+- A3: los docs que dicen que no hay despliegue.
+- B1: entrenar el modelo con los datos locales, un modo del harness que lo cargue y la corrida del held-out.
+- C: el bug de `awaiting_clarification`, el nombre de `/health`, el archivo de la migración 0005, la baja de la TQ-036, las inconsistencias de docs, los commits de docs de MLflow del 2 de octubre (solo en el reflog de la máquina de Kmilo) y el hallazgo gateway-8.
+
+Pendiente de la decisión de Kmilo, sin tocar todavía: quitar las rutas locales y corregir la sección 0 de `docs/reviews/2026-09-29-adversarial-audit-code-and-docs.md` y su `.json`.

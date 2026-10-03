@@ -9,6 +9,7 @@ link or email the code did not put there, nor a promise or a confirmation that o
 from __future__ import annotations
 
 import re
+import unicodedata
 from collections.abc import Iterable
 
 MAX_CHARS = 600
@@ -21,7 +22,7 @@ DATUM_PATTERNS = (
     r"\$?\d{1,3}(?:,\d{3})+(?:\.\d+)?|\$?\d+(?:\.\d+)?",  # amounts as the policy prints them, and any other number
 )
 FORBIDDEN_MARKS = ("@", "<", ">", "{", "}", "⟦", "⟧", "REDACTED")
-LINK_RE = re.compile(r"https?://|www\.|\w\.\w", re.IGNORECASE)  # on the bare text, a dot between two word characters is a host
+LINK_RE = re.compile(r"https?://|www\.|\w[.。]\w", re.IGNORECASE)  # each token reads as a word in the scan (⟦1⟧.com is x.com); NFKC folds full-width and other compatibility dots
 # What src/eval/runner.py counts as money_promise or false_confirmation, plus any lock claim: in-scope prose never says it.
 UNSAFE_RE = re.compile(r"reembols|refund|devolv|devolu[cç]|estorn|cr[eé]dito (?:aplicado|provisional|provis[oó]rio)"
                        r"|n[úu]mero d[eo] caso|bloque|verificad", re.IGNORECASE)
@@ -61,7 +62,8 @@ def restore(draft: str, values: dict[str, str], skeleton: str) -> str:
             raise GuardRejected(f"token {token} appears {tokens.count(token)} times")
     if tokens != list(values):  # an amount keeps its currency, and the limit stays the limit
         raise GuardRejected("tokens out of order")
-    bare = TOKEN_RE.sub(" ", text)
+    bare = unicodedata.normalize("NFKC", TOKEN_RE.sub("x", text))  # a token reads as a word: ⟦1⟧.com is x.com
+    bare = "".join(ch for ch in bare if unicodedata.category(ch) != "Cf")  # zero-width and soft hyphens hide words
     if any(ch.isdigit() for ch in bare):  # str.isdigit also catches full-width and other Unicode digits
         raise GuardRejected("digit outside tokens")
     for mark in FORBIDDEN_MARKS:

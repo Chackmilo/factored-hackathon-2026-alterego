@@ -39,6 +39,12 @@ def check_lock_reason(code: str) -> str:
         raise ValueError(f"Unknown card lock reason code {code!r}; expected one of {', '.join(LOCK_REASON_CODES)}.")
     return code
 
+
+def check_lockable(product_id: str, product_type: str | None, product_status: str | None) -> None:
+    """The lock takes only what the orchestrator may offer, an active card (list_customer_cards), whoever calls it."""
+    if not (product_type or "").startswith("Tarjeta") or product_status != "Active":
+        raise ActionVerificationError(f"Product {product_id} is not an active card ({product_type}, {product_status}); nothing was locked.")
+
 def _records(frame) -> list[dict[str, Any]]:
     """Rows with None for SQL NULL, as the Postgres gateway returns them: pandas reads NULL as NaN or NaT, and NaN passes `is not None`."""
     return frame.astype(object).where(frame.notna(), None).to_dict(orient="records")
@@ -199,7 +205,7 @@ class BankingToolGateway:
         try:
             # 1. AUTHORIZATION CHECK
             owner_row = con.execute(
-                "SELECT customer_id FROM silver_products WHERE product_id = ?",
+                "SELECT customer_id, product_type, product_status FROM silver_products WHERE product_id = ?",
                 [product_id]
             ).fetchone()
 
@@ -210,6 +216,7 @@ class BankingToolGateway:
                 raise UnauthorizedAccessError(
                     f"Cross-customer violation: Product {product_id} does not belong to authenticated customer {session.customer_id}."
                 )
+            check_lockable(product_id, owner_row[1], owner_row[2])
 
             # 2. ACT: Update product status in DB
             con.execute(

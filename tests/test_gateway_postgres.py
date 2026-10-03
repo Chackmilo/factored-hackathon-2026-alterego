@@ -21,7 +21,9 @@ def pg_stack(tmp_path):
     bank = build_bank_fixture(tmp_path / "bank.duckdb",
                               [{"customer_id": "CLI-PG-1", "segment": "Plus", "country": "Colombia", "account_age_days": 250, "complaints_last_90d": 0},
                                {"customer_id": "CLI-PG-2", "segment": "Basic", "country": "Argentina", "account_age_days": 90, "complaints_last_90d": 1}],
-                              [{"product_id": "PRD-PG-1", "customer_id": "CLI-PG-1"}, {"product_id": "PRD-PG-2", "customer_id": "CLI-PG-2"}],
+                              [{"product_id": "PRD-PG-1", "customer_id": "CLI-PG-1"}, {"product_id": "PRD-PG-2", "customer_id": "CLI-PG-2"},
+                               {"product_id": "PRD-PG-ACC", "customer_id": "CLI-PG-2", "product_type": "Cuenta Ahorros"},
+                               {"product_id": "PRD-PG-OFF", "customer_id": "CLI-PG-2", "product_status": "Cancelled"}],
                               [{"transaction_id": "TRX-PG-1", "customer_id": "CLI-PG-1", "product_id": "PRD-PG-1", "process_date": "2026-06-10", "amount": 80.0, "merchant_name": "Oxxo"},
                                {"transaction_id": "TRX-PG-2", "customer_id": "CLI-PG-2", "product_id": "PRD-PG-2", "process_date": "2026-06-12", "amount": 50.0, "merchant_name": "Oxxo"}])
     publish(url, bank)
@@ -90,3 +92,31 @@ def test_postgres_gateway_rejects_other_customers_card(pg_stack):
     orchestrator, _ = pg_stack
     with pytest.raises(UnauthorizedAccessError):
         orchestrator.gateway.execute_lock_card(make_session("CLI-PG-2"), "PRD-PG-1")
+
+
+@pytest.mark.parametrize("product_id", ["PRD-PG-ACC", "PRD-PG-OFF"])
+def test_postgres_lock_refuses_an_owned_product_that_is_not_an_active_card(pg_stack, product_id):
+    """The lock enforces what the orchestrator offers (an active card), whoever calls it."""
+    import psycopg
+
+    from src.tools.gateway import ActionVerificationError
+    from tests.conftest import make_session
+    orchestrator, url = pg_stack
+    with pytest.raises(ActionVerificationError):
+        orchestrator.gateway.execute_lock_card(make_session("CLI-PG-2"), product_id)
+    with psycopg.connect(url, autocommit=True) as con:
+        assert con.execute("SELECT count(*) FROM ops.card_locks WHERE product_id = %s", [product_id]).fetchone() == (0,)
+
+
+def test_postgres_lock_of_a_card_already_locked_writes_no_second_lock(pg_stack):
+    import psycopg
+
+    from src.tools.gateway import ActionVerificationError
+    from tests.conftest import make_session
+    orchestrator, url = pg_stack
+    session = make_session("CLI-PG-1")
+    orchestrator.gateway.execute_lock_card(session, "PRD-PG-1")
+    with pytest.raises(ActionVerificationError):
+        orchestrator.gateway.execute_lock_card(session, "PRD-PG-1")
+    with psycopg.connect(url, autocommit=True) as con:
+        assert con.execute("SELECT count(*) FROM ops.card_locks WHERE product_id = 'PRD-PG-1'").fetchone() == (1,)

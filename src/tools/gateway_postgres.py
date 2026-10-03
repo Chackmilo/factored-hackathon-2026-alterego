@@ -33,7 +33,8 @@ class PostgresBankingGateway:
     @contextmanager
     def _con(self):
         try:
-            with psycopg.connect(self.database_url, autocommit=True, connect_timeout=5) as con:
+            # prepare_threshold=None: Supabase's transaction-mode pooler (Vercel, port 6543) cannot run prepared statements
+            with psycopg.connect(self.database_url, autocommit=True, connect_timeout=5, prepare_threshold=None) as con:
                 yield con
         except psycopg.OperationalError as exc:  # unreachable or dropped connection, connect timeout, a server-set statement timeout
             raise SystemOfRecordUnavailableError(str(exc)) from exc  # queries get no client-side timeout here (TQ-028)

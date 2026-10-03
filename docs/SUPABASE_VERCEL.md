@@ -274,7 +274,7 @@ Vercel escala a varias instancias y ninguna guarda estado entre peticiones. La c
 
 ### 6.7 Conexión a Postgres
 
-Pooler de Supabase (Supavisor) en modo transacción, puerto 6543, que funciona por IPv4 (la conexión directa del plan Free es solo IPv6). psycopg 3 con `prepare_threshold=None`, porque el modo transacción no admite sentencias preparadas. Un cliente a nivel de módulo, pool de 1 conexión y `sslmode=require`. Usuario `app_gateway.<project-ref>`.
+Pooler de Supabase (Supavisor) en modo transacción, puerto 6543, que funciona por IPv4 (la conexión directa del plan Free es solo IPv6). psycopg 3 con `prepare_threshold=None`, porque el modo transacción no admite sentencias preparadas. Un cliente a nivel de módulo, pool de 1 conexión y `sslmode=require`. Usuario `app_gateway.<project-ref>`. En código desde el 3 oct para las conexiones del gateway y del ops store (`tests/test_pooler_connections.py`); el código abre una conexión por llamada, no un pool, y `sslmode=require` va en la propia `DATABASE_URL`.
 
 ### 6.8 Pausa de Supabase y monitoreo
 

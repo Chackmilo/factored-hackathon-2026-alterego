@@ -589,7 +589,12 @@ class DisputeOrchestrator:
                 transaction_date=str(matched["transaction_date"]),
             )
         facts.append(f"Customer has {policy_input.complaints_last_90d} complaints in the last 90 days")
-        facts.append(f"ML risk score: {policy_input.ml_risk_score:.2f} (escalation threshold {policy_input.ml_risk_threshold:.2f})")
+        if self.risk_scorer is None:  # no model file: POL-ESC-ML-RISK was not evaluated, so no score is a fact
+            facts.append("ML risk score: not scored, no risk model is loaded")
+        elif matched is None:
+            facts.append("ML risk score: not scored, no charge identified")
+        else:
+            facts.append(f"ML risk score: {policy_input.ml_risk_score:.2f} (escalation threshold {policy_input.ml_risk_threshold:.2f})")
         facts.append(f"{policy_input.recent_disputed_charges_count} distinct charge(s) disputed within 48 hours")
         if named:
             facts.append(f"Charges named in the customer's message: {', '.join(r['transaction_id'] for r in named)}")

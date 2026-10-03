@@ -8,13 +8,17 @@ build leaves behind never reaches the bundle.
 """
 
 import json
+import os
 import re
 import runpy
+import subprocess
+import sys
 import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ENTRYPOINT_FILE = "src/api/app.py"
+NO_DOTENV = "import dotenv; dotenv.load_dotenv = lambda *args, **kwargs: False; "  # python -c finds the .env of any parent folder
 
 
 def _pyproject() -> dict:
@@ -38,6 +42,20 @@ def test_vercel_builds_the_dispute_api_from_its_entrypoint():
     assert _pyproject()["tool"]["vercel"]["entrypoint"] == "src.api.app:app"
     assert set(_functions()) == {ENTRYPOINT_FILE}
     assert (ROOT / ENTRYPOINT_FILE).is_file()
+
+
+def test_the_entrypoint_loads_the_way_the_vercel_runtime_imports_it():
+    """Vercel's runtime executes the entrypoint file as module src.api.app before it imports the src.api package. On
+    3 Oct every API route of the first deployment answered FUNCTION_INVOCATION_FAILED: the package __init__ imported the
+    app back from the half-loaded module. uvicorn imports the package first, so a local run never saw it."""
+    load = ("import importlib.util, sys; "
+            f"spec = importlib.util.spec_from_file_location('src.api.app', '{ENTRYPOINT_FILE}'); "
+            "module = importlib.util.module_from_spec(spec); sys.modules['src.api.app'] = module; "
+            "spec.loader.exec_module(module); print(type(module.app).__name__)")
+    result = subprocess.run([sys.executable, "-c", NO_DOTENV + load], cwd=ROOT, env={**os.environ, "APP_ENV": "test"},
+                            capture_output=True, text=True, timeout=120)
+    assert result.returncode == 0, result.stderr[-1500:]
+    assert result.stdout.strip() == "FastAPI"
 
 
 def test_the_function_bundle_keeps_every_file_the_api_reads():

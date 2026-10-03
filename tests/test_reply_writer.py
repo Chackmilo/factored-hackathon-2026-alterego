@@ -94,6 +94,17 @@ def test_an_answer_that_did_not_end_its_turn_is_unusable_but_still_counted(stop_
     assert budget.spent_today() > 0
 
 
+@pytest.mark.parametrize("answer", [
+    "<html>Bad gateway</html>",  # a 200 that is not JSON: the SDK hands back the decoded text
+    NS(content=[], stop_reason="end_turn", model="claude-haiku-4-5-20251001", usage=None),  # a 200 without usage
+])
+def test_an_answer_without_the_messages_shape_is_unusable(answer):
+    budget = LlmBudget(OpsStore(":memory:"), daily_budget_usd=2.0)
+    with pytest.raises(WriterUnavailable, match="malformed response"):
+        writer(FakeClient(answer), budget).draft(SKELETON, "hola", "es")
+    assert budget.spent_today() == 0  # nothing to record: the answer carries no usage
+
+
 def test_a_timeout_is_retried_once():
     client = FakeClient(anthropic.APITimeoutError(request=REQ), message())
     assert writer(client).draft(SKELETON, "hola", "es").text.startswith("Entiendo") and len(client.calls) == 2

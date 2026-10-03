@@ -85,7 +85,7 @@ def test_the_walk_reaches_module_level_and_lazy_imports():
 
 def test_the_lock_separates_runtime_from_dev():
     runtime = runtime_packages()
-    assert {"fastapi", "starlette", "cryptography", "psycopg-binary"} <= runtime  # direct, transitive, through extras
+    assert {"fastapi", "starlette", "cryptography", "psycopg-binary", "anthropic"} <= runtime  # direct, transitive, through extras
     assert not {"pytest", "mlflow-skinny", "ipykernel", "matplotlib"} & runtime
 
 

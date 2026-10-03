@@ -5,6 +5,7 @@ description = "AlterEgo / OmniGuard AI - AI-First Banking Dispute Intake Engine"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "anthropic==1.11.0",
     "duckdb>=1.5.5",
     "fastapi>=0.141.1",
     "numpy>=2.4.6",

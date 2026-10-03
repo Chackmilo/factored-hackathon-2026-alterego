@@ -70,3 +70,12 @@ def test_the_postgres_migrations_are_read_as_utf8(tmp_path):
         OpsStore.apply_postgres_migration({os.environ["TEST_DATABASE_URL"]!r})
         """, tmp_path)
     assert done.returncode == 0, done.stderr
+
+
+def test_the_reply_prompt_is_read_as_utf8(tmp_path):
+    done = run_reader("""
+        from src.llm.reply_writer import load_prompt
+        text, version = load_prompt()
+        assert "⟦1⟧" in text and len(version) == 12
+    """, tmp_path)
+    assert done.returncode == 0, done.stderr

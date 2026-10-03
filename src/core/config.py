@@ -6,7 +6,7 @@ from pydantic import BaseModel
 load_dotenv()
 
 class Settings(BaseModel):
-    app_name: str = "OmniGuard AI - Hybrid Fraud & Customer Resolution Engine"
+    app_name: str = "AlterEgo dispute intake"
     app_version: str = "0.1.0"
     app_env: str = (os.getenv("APP_ENV") or "production").strip().lower()  # missing or blank: production (fails closed)
     debug: bool = os.getenv("DEBUG", "True").lower() == "true"

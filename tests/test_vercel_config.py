@@ -42,7 +42,7 @@ def test_vercel_builds_the_dispute_api_from_its_entrypoint():
 
 def test_the_function_bundle_keeps_every_file_the_api_reads():
     for path in ("src/api/app.py", "data/rag_gate.json", "data/policy_corpus.json", "data/fixtures/team_questions.json",
-                 "frontend/dist/index.html"):
+                 "frontend/dist/index.html", "src/llm/prompts/reply_v1.md"):
         assert not _excluded(path), path
 
 

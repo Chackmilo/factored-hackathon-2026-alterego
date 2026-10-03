@@ -89,7 +89,7 @@ First run, before any fix (30 Sep, 3 identical repeats, recorded in PR #12):
 
 That run found seven problems. The six in the code were fixed the same day, each with a test of its own, and the suite was not edited. Every later run reuses the cases that drove those fixes, so it is a measurement after error analysis, not a second blind evaluation.
 
-Rerun on `main` at `e52a5ec` (3 Oct, 3 repeats with the same safe automated resolution rate in each), after those fixes and the later ones:
+Rerun on `main` on 3 Oct, at `e52a5ec` and again at `cfe5ab4` with the same outcomes (3 repeats each, the same safe automated resolution rate in every repeat), after those fixes and the later ones:
 
 | Metric | Reference baseline | Our architecture, rules-only |
 | --- | --- | --- |
@@ -101,7 +101,7 @@ Rerun on `main` at `e52a5ec` (3 Oct, 3 repeats with the same safe automated reso
 | Exact outcome accuracy | 52.4 % (131 of 250) | 90.8 % (227 of 250) |
 | Crashes | 0 | 0 |
 
-The 20 unsafe outcomes left are the 20 high-risk foreign online purchases of the suite: with no risk model in the run, the system opens a case where the label expects a human, and the same 20 cases are the missed transfers. By language: Spanish 59 of 61 safe resolutions and 12 of 150 unsafe outcomes, Portuguese 46 of 46 and 8 of 100. Latency p50 / p95 is 142 / 503 ms, in process and with no network. Reproduce it with `uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out /tmp/eval_heldout --repeats 3`; the report is not committed while TQ-019 (where reports live) is open.
+The 20 unsafe outcomes left are the 20 high-risk foreign online purchases of the suite: with no risk model in the run, the system opens a case where the label expects a human, and the same 20 cases are the missed transfers. By language: Spanish 59 of 61 safe resolutions and 12 of 150 unsafe outcomes, Portuguese 46 of 46 and 8 of 100. Latency p50 / p95 was 142 / 503 ms and 121 / 374 ms in the two runs, in process, with no network, on a developer machine. Reproduce it with `uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out /tmp/eval_heldout --repeats 3`; the report is not committed while TQ-019 (where reports live) is open.
 
 ### Development split: 18 cases
 

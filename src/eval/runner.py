@@ -73,8 +73,8 @@ class _Faulty:
         return failing
 
 
-def run_case_proposed(case: EvalCase, workdir: str | Path) -> CaseResult:
-    """The proposed stack in rules-only mode (keyword extractor, policy v2.3, no model, no LLM)."""
+def run_case_proposed(case: EvalCase, workdir: str | Path, risk_scorer: Any = None) -> CaseResult:
+    """The proposed stack: keyword extractor, policy v2.3, no LLM, and the risk scorer when one is given (rules-only without)."""
     if case.attack:
         return _run_attack(case, workdir)
     bank_path = Path(workdir) / f"{case.case_id}.duckdb"
@@ -86,6 +86,7 @@ def run_case_proposed(case: EvalCase, workdir: str | Path) -> CaseResult:
     orchestrator = DisputeOrchestrator(
         gateway=_Faulty(gateway, fault["method"], fault["mode"]) if fault.get("target") == "gateway" else gateway,
         ops=_Faulty(ops, fault["method"], fault["mode"]) if fault.get("target") == "ops" else ops,
+        risk_scorer=risk_scorer,
     )
     session = VerifiedSession(customer_id=case.customer_id, name="Eval", country=case.customer.get("country", ""),
                               segment=case.customer.get("segment", ""), session_id=f"SESS-{case.case_id}", exp=9999999999)

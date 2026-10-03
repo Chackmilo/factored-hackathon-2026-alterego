@@ -92,3 +92,18 @@ def test_team_questions_seed_and_answer(store):
     assert store.get_question("TQ-019")["status"] == "open"
     new_id = store.insert_question(topic="Loop", question="A new question?", options=["a", "b"])
     assert store.get_question(new_id)["status"] == "open"
+
+
+def test_postgres_functions_the_advisor_flags_have_a_fixed_search_path():
+    """Supabase's security advisor flags a mutable search_path on ops.reject_audit_change and ops.business_today (migration 0005)."""
+    url = os.getenv("TEST_DATABASE_URL")
+    if not url:
+        pytest.skip("TEST_DATABASE_URL not set")
+    import psycopg
+
+    OpsStore.apply_postgres_migration(url)
+    with psycopg.connect(url, autocommit=True) as con:
+        rows = dict(con.execute("""SELECT p.proname, p.proconfig FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+                                   WHERE n.nspname = 'ops' AND p.proname IN ('reject_audit_change', 'business_today')""").fetchall())
+    assert set(rows) == {"reject_audit_change", "business_today"}
+    assert all(config is not None and any(c.startswith("search_path=") for c in config) for config in rows.values())

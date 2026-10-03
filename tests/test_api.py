@@ -40,7 +40,8 @@ def test_health_check():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
-    assert "OmniGuard" in data["app"]
+    assert data["app"] == "AlterEgo dispute intake"  # the starter's name "OmniGuard AI" is gone from /health and Swagger
+    assert app.title == "AlterEgo dispute intake"
 
 def test_sanitize_endpoint():
     payload = {"text": "Call me at +1 555-123-4567 or email test@gmail.com"}

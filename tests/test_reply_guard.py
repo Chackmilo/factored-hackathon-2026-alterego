@@ -47,6 +47,11 @@ def test_a_faithful_draft_gets_its_values_back():
     assert restore(draft, values, skeleton) == draft.replace("⟦1⟧", "48")
 
 
+def test_a_draft_that_keeps_every_token_in_place_gets_every_value_back():
+    skeleton, values = protect(ESC_500_ES)
+    assert restore("Con gusto le ayudo. " + skeleton, values, skeleton) == "Con gusto le ayudo. " + ESC_500_ES
+
+
 def test_a_draft_with_line_breaks_and_padding_comes_back_on_one_line():
     skeleton, values = protect("Encontramos varios cargos que podrían coincidir. ¿Cuál de ellos desea disputar?")
     draft = "  ¡Hola!\n\nEncontramos varios cargos.\n¿Cuál desea disputar?  \n"
@@ -71,6 +76,8 @@ def test_a_draft_that_moves_a_value_to_another_datum_is_refused():
     ("En menos de ⟦1⟧ horas. Acuda a condusef.gob.mx.", "link"),  # a regulator's site: POL-ESC-LEGAL is in scope
     ("En menos de ⟦1⟧ horas. Vea procon.sp.gov.br", "link"),
     ("En menos de ⟦1⟧ horas. Escriba a t.me/bancoayuda", "link"),
+    ("En menos de ⟦1⟧.com horas.", "link"),  # a dot next to a token: the value plus .com would be a host
+    ("En menos de ⟦1⟧ horas. Visite condusef。gob。mx", "link"),  # an ideographic full stop reads as a dot
     ("En menos de ⟦1⟧ horas. Le daremos un reembolso.", "promise or confirmation"),
     ("En menos de ⟦1⟧ horas. Su tarjeta quedó bloqueada.", "promise or confirmation"),
     ("En menos de ⟦1⟧ horas. Número de caso registrado.", "promise or confirmation"),

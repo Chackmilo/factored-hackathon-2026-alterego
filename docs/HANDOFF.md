@@ -183,8 +183,13 @@ Cada punto va en su propio PR desde `main`, con TDD y la CI en verde. Ninguno es
 | #43 | A3: los docs que decían que no había despliegue | Listo. La URL responde en producción (revisado el 3 oct) |
 | #44 | B1: el harness corre el held-out con el modelo de riesgo (`--model`) | Listo. Primera medición de punta a punta: 9 de 250 inseguros en vez de 20 |
 | #45 | B1: el modelo ve al servir lo que vio al calibrarse (AUD-27) | Listo. Con #44: 11 de 20 casos de alto riesgo detectados, 4 escalamientos de más en vez de 8, p50 de 28 ms |
+| #46 | C: una pregunta de reglas nunca abre el caso del único cargo de un cliente, y el explicador responde después de un saludo | Listo. En `main`, "Hola" y "¿Cuántos días tengo para disputar un cargo?" abrían un caso real; DEV-019 lo cubre |
+| #47 | C: `/health` dice AlterEgo, y la migración 0005 fija el `search_path` que marca el advisor | Listo. Falta aplicar 0005 en producción (punto 13) |
+| #48 | C: los commits de docs de MLflow del 2 oct recuperados, y las tres inconsistencias de docs | Listo |
 
-Siguen sin PR, en este orden: el bug de `awaiting_clarification`, el nombre de `/health`, el archivo de la migración 0005, la baja de la TQ-036, las inconsistencias de docs, los commits de docs de MLflow del 2 de octubre (solo en el reflog de la máquina de Kmilo) y el hallazgo gateway-8.
+Sin PR, a propósito:
+- **gateway-8** (el gateway de Postgres inserta una segunda fila de bloqueo si no hay oferta, y su verificación lee la fila que acaba de escribir): el primer caso solo pasa si falta la fila de la oferta, y el segundo es un límite del diseño (`bank` es de solo lectura, así que ningún sistema del banco recibe el bloqueo). Se declara en las limitaciones del README en vez de tocar el código del bloqueo el día 9.
+- **Pasada final de docs**, después de los merges: las cifras del README, los "18 casos de desarrollo" (ahora 19) en `README.md`, `AGENTS.md`, `CLAUDE.md` y `docs/technical-discuss-points.md`, y la frase "is_fraud itself is random" de `CLAUDE.md`. Varios PRs abiertos editan esas mismas líneas.
 
 ### 7.3 Decisiones de Kmilo
 
@@ -194,3 +199,5 @@ Siguen sin PR, en este orden: el bug de `awaiting_clarification`, el nombre de `
 4. **Cómo llega el modelo a Vercel:** el `.joblib` está en el `.gitignore` y sale de los datos de una competencia de Kaggle, cuya licencia sigue pendiente con los mentores. Sin el archivo, producción corre en modo solo reglas, y el handoff dice "riesgo no calificado".
 5. **TQ-019:** confirmar que los reportes de evaluación viven commiteados en `reports/`.
 6. **La auditoría del 29 sep:** si se corrige su sección 0 y se quitan las rutas locales de `docs/reviews/2026-09-29-adversarial-audit-code-and-docs.*`.
+7. **TQ-036 (OpenTelemetry):** el handoff recomienda darla de baja formalmente; es una decisión, así que no se registra sin Kmilo.
+8. **Orden de merge con los PRs nuevos:** #47 y #48 junto con #41 y #43 (independientes); #46 antes de regenerar el reporte del split de desarrollo.

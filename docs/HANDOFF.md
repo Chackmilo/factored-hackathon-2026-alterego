@@ -171,15 +171,26 @@ Revisado por Kmilo con Claude el 3 de octubre sobre `main` en `d657f85`. Lista l
 
 No bloquea: la key de Jev (`TYPESAFE_API_KEY`) está en el `.env` de Kmilo, y los datos de IEEE-CIS (`data/kaggle`) y `data/lakehouse_full.duckdb` están en su máquina, así que B1 se puede entrenar y medir en local.
 
-### 7.2 Lo que avanza sin cuentas
+### 7.2 Lo que avanza sin cuentas, y dónde quedó
 
-Cada punto va en su propio PR desde `main`, con TDD y la CI en verde, y Kmilo aprueba cada merge:
+Cada punto va en su propio PR desde `main`, con TDD y la CI en verde. Ninguno está mergeado: Kmilo aprueba cada merge.
 
-- B4: el bloqueo no elige una tarjeta al azar cuando el cliente tiene varias activas y el cargo no está en ninguna (PR #39, con su efecto en el held-out descrito ahí).
-- A1: `read_only=true` en el MCP de Supabase de `.mcp.json`, y gitleaks sobre todo el historial (con la imagen de Docker, sin instalar nada).
-- A4: TQ-034 y TQ-035 en `src/eval`, las cifras del held-out recalculadas y el reporte commiteado (TQ-019).
-- A3: los docs que dicen que no hay despliegue.
-- B1: entrenar el modelo con los datos locales, un modo del harness que lo cargue y la corrida del held-out.
-- C: el bug de `awaiting_clarification`, el nombre de `/health`, el archivo de la migración 0005, la baja de la TQ-036, las inconsistencias de docs, los commits de docs de MLflow del 2 de octubre (solo en el reflog de la máquina de Kmilo) y el hallazgo gateway-8.
+| PR | Tarea | Estado |
+| --- | --- | --- |
+| #39 | B4: el bloqueo no elige una tarjeta al azar cuando el cliente tiene varias activas y el cargo no está en ninguna | Listo. Cambia 6 casos del held-out cuyas etiquetas de diseño premiaban el bloqueo de una tarjeta arbitraria (detalle en el PR) |
+| #41 | A1: `read_only=true` en el MCP de Supabase, y gitleaks sobre todo el historial | Listo. Gitleaks: 319 commits, un falso positivo (el SHA-256 del tokenizer de E5), registrado en `.gitleaksignore` |
+| #42 | A4: TQ-034 y TQ-035, las cifras del held-out recalculadas y los dos reportes del held-out commiteados | Listo. Corrida ciega: 68 de 230 en alcance y 39 de 250 inseguros. Posterior: 105 de 230 y 20 de 250 |
+| #43 | A3: los docs que decían que no había despliegue | Listo. La URL responde en producción (revisado el 3 oct) |
+| #44 | B1: el harness corre el held-out con el modelo de riesgo (`--model`) | Listo. Primera medición de punta a punta: 9 de 250 inseguros en vez de 20 |
+| #45 | B1: el modelo ve al servir lo que vio al calibrarse (AUD-27) | Listo. Con #44: 11 de 20 casos de alto riesgo detectados, 4 escalamientos de más en vez de 8, p50 de 28 ms |
 
-Pendiente de la decisión de Kmilo, sin tocar todavía: quitar las rutas locales y corregir la sección 0 de `docs/reviews/2026-09-29-adversarial-audit-code-and-docs.md` y su `.json`.
+Siguen sin PR, en este orden: el bug de `awaiting_clarification`, el nombre de `/health`, el archivo de la migración 0005, la baja de la TQ-036, las inconsistencias de docs, los commits de docs de MLflow del 2 de octubre (solo en el reflog de la máquina de Kmilo) y el hallazgo gateway-8.
+
+### 7.3 Decisiones de Kmilo
+
+1. **Orden de merge sugerido:** #41 y #43 (independientes), después #42 (las definiciones de las métricas), #44 y #45 (el modelo), y al final #39 (cambia casos del held-out). Después de cada merge que toque las cifras se regeneran `reports/eval_heldout.*` y la tabla del README.
+2. **#39:** mergear y declarar los 6 casos como etiquetas de diseño que premian una elección arbitraria (las corrigen las etiquetas humanas, TQ-018), o esperar a congelar las cifras del reporte.
+3. **El modelo de registro:** el bundle local del 29 de septiembre (ROC AUC 0,817, umbral 0,0669) o el reentrenado el 3 de octubre en el contenedor, con MLflow (0,815 y 0,0694). En el held-out los dos dan lo mismo.
+4. **Cómo llega el modelo a Vercel:** el `.joblib` está en el `.gitignore` y sale de los datos de una competencia de Kaggle, cuya licencia sigue pendiente con los mentores. Sin el archivo, producción corre en modo solo reglas, y el handoff dice "riesgo no calificado".
+5. **TQ-019:** confirmar que los reportes de evaluación viven commiteados en `reports/`.
+6. **La auditoría del 29 sep:** si se corrige su sección 0 y se quitan las rutas locales de `docs/reviews/2026-09-29-adversarial-audit-code-and-docs.*`.

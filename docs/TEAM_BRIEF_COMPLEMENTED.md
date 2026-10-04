@@ -6,7 +6,7 @@
 >
 > **v2.4.0 (26-Sep-2026):** identity moves from a self-minted HS256 JWT to Supabase Auth, and the operational store from SQLite to Supabase Postgres (`ops` schema, with a read-only `bank` serving copy of gold), decided by the team. Deployment moves from Render to Vercel (decided the same day). Supabase and Vercel stay on free plans. Policy clauses and their order are unchanged. Design: `docs/SUPABASE_VERCEL.md`.
 >
-> **v2.3.0 (26-Sep-2026):** G0 closed (decision log in `docs/PLAN.md`). The customer confirms the card lock; human approval of credit candidates in the HITL console; Claude Haiku 4.5 writes replies; RAG over a team-written policy text with local multilingual embeddings; React + TypeScript served by FastAPI on Render; two baselines; held-out suite of 250 cases plus a 60-case development split, frozen before tuning. The clause order is unchanged from v2.2; only the card-lock confirmation is new.
+> **v2.3.0 (26-Sep-2026):** G0 closed (decision log in `docs/PLAN.md`). The customer confirms the card lock; human approval of credit candidates in the HITL console; Claude Haiku 4.5 writes replies; RAG over a team-written policy text with local multilingual embeddings; React + TypeScript served by FastAPI on Render; two baselines; held-out suite of 250 cases plus a 60-case development split (19 cases on 4-Oct), frozen before tuning. The clause order is unchanged from v2.2; only the card-lock confirmation is new.
 >
 > **v2.2.0 (26-Sep-2026):** Jev (TypeSafe AI) typed signals feed `POL-CLARIFY`, `POL-ESC-DISTRESS` and the card-lock rule; keyword rules stay as fallback. Integration design: `docs/JEV_TYPESAFE_AI.md`.
 >
@@ -46,7 +46,7 @@ This complemented document **proposes answers to 5 open decisions**, details the
 | **Operational System of Record** | **Supabase Postgres, `ops` schema, decided 26-Sep (replaces SQLite)** | SQLite `data/ops.sqlite`, DuckDB `silver_*` | Conversations, dispute cases, card locks, handoffs and the append-only audit log live here. It survives redeploys, takes concurrent writers, and lets policy facts read `bank` plus `ops` live, so new cases count toward `POL-AUT-150` at once. |
 | **Identity** | **Supabase Auth, decided 26-Sep** | Self-minted HS256 JWT | An identity service the official statement accepts. Test personas log in with a credential; the API verifies ES256 tokens against the project JWKS, so it holds no shared secret. `customer_id` and `app_role` come from `app_metadata`. |
 | **API & Gateway** | **FastAPI + Pydantic v2** | Flask / Django | Asynchronous, typed, auto-generates OpenAPI docs, built-in dependency injection for verifying the Supabase session token. |
-| **ML Models & Tracking** | **LightGBM / scikit-learn + MLflow (local); served through ONNX Runtime (proposed 26-Sep)** | XGBoost / Sagemaker | Extremely fast training, native handling of categorical features, low inference latency (< 5ms). The Linux `lightgbm` wheel needs the system `libgomp` and pulls `scipy` (112 MB), so the deployed function serves the model exported to ONNX with the same runtime as the RAG embeddings (`docs/SUPABASE_VERCEL.md` section 6.4). |
+| **ML Models & Tracking** | **LightGBM / scikit-learn + MLflow (local); served through ONNX Runtime (proposed 26-Sep)** | XGBoost / Sagemaker | Extremely fast training, native handling of categorical features, low inference latency (< 5ms). The Linux `lightgbm` wheel needs the system `libgomp` and pulls `scipy` (112 MB), so the deployed function serves the model exported to ONNX with the same runtime as the RAG embeddings (`docs/SUPABASE_VERCEL.md` section 6.4). TQ-022 (2-Oct): the risk model stays scikit-learn, served from a joblib file, with no LightGBM or ONNX. |
 | **Understand and conversation** | **Jev (TypeSafe AI) for typed signals (intent, stolen card, distress); regex plus a helper LLM for amount, date and merchant; Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) writes replies with placeholders, decided 26-Sep** | One LLM for every step | Every decision and action stays deterministic in code, and no model sees dataset rows. Jev is in early access with no key yet: the ES/PT keyword and regex extractor is the default, the fallback and the baseline Jev is measured against. Design: `docs/JEV_TYPESAFE_AI.md`. |
 | **Policy explanations** | **Policy-as-code with clause ids, plus RAG over a team-written Spanish policy text (about 15 chunks, one per clause), decided 26-Sep** | Clause ids only | Clause ids cite every decision. The RAG answers informational policy questions only: it never changes a decision, cites the clause it retrieved and abstains when similarity is low. Local multilingual embeddings in ONNX (no torch, quantized to int8 to fit Vercel's 500 MB function bundle; fallback: Vercel Large Functions, beta, up to 5 GB), computed for the corpus at build time, so no text leaves the app. BM25 is its baseline. |
 | **Frontend UI** | **React + TypeScript (Vite), decided 26-Sep** | Streamlit | Two views: customer chat in ES/PT, and an English HITL console (cases, handoffs, credit candidates, audit log) behind `app_metadata.app_role = "agent"` in the Supabase token (Supabase reserves the `role` claim for the Postgres role). The front uses Supabase only to log in; all data goes through the API. Types are generated from the OpenAPI contract; a Playwright smoke test covers the three case types and the console 403. |
@@ -60,7 +60,7 @@ This complemented document **proposes answers to 5 open decisions**, details the
 * **Resolution**:
   1. **Dual-Model Benchmark Architecture**:
      - **Baseline Model**: Deterministic heuristics only (Amount > $1000, Card Not Present, Ratio > 3.0x avg, foreign country). No `fraud_score`.
-     - **Learned Component (ML Challenge)**: Gradient Boosting (LightGBM) trained strictly on **pre-authorization behavioral features WITHOUT using `fraud_score`**:
+     - **Learned Component (ML Challenge)**: Gradient Boosting (LightGBM; built with scikit-learn per TQ-022, and the served model is the IEEE-CIS transfer of TQ-026) trained strictly on **pre-authorization behavioral features WITHOUT using `fraud_score`**:
        - `amount_usd`: the native column for COP/ARS rows; `amount` itself for USD rows, where `amount_usd` is NULL
        - `velocity_24h` / `velocity_7d` (transaction count & sum in rolling windows)
        - `ratio_to_historical_avg`
@@ -150,11 +150,11 @@ Transactions carry no MXN: Mexican customers transact in USD. MXN appears only i
 | Role / Discipline | Primary Owner | Concrete Deliverables |
 |---|---|---|
 | **Data Engineering** | *Engineer 1* | S3 Ingestion pipeline; Pandera schema contracts; DuckDB Bronze/Silver/Gold marts; Business-key deduplication; Late-arrival partition stitcher; Timezone and country-name normalization; Customer-aligned sampling. |
-| **Machine Learning** | *Engineer 2* | Leak-free LightGBM fraud model on all years; Feature engineering; Intent classifier evaluation on ES/PT (Jev against keywords, calibration per language); MLflow tracking; Baseline comparison benchmarks. |
+| **Machine Learning** | *Engineer 2* | Leak-free LightGBM fraud model on all years (delivered with scikit-learn, TQ-022); Feature engineering; Intent classifier evaluation on ES/PT (Jev against keywords, calibration per language); MLflow tracking; Baseline comparison benchmarks. |
 | **AI & Backend** | *Engineer 3* | FastAPI gateway; Supabase session verification; State Machine (Understand→Decide→Act→Verify→Escalate); Tool registry with read-back verification; Supabase `ops` schema and audit log; Indirect prompt injection defenses. |
 | **Analytics & UI/Docs**| *Engineer 4* | Contact-reason EDA & business case charts; Data-quality findings report; Interactive Frontend (Client chat + HITL review console); Held-out benchmark harness; Slide deck & Video pitch script. |
 
-The team has 4 people in three fronts (26-Sep): A for data, ML and evaluation, B for agent and backend, C (2 people) for the React front. Details in `docs/PLAN.md`.
+The team has 4 people in three fronts (26-Sep): A for data, ML and evaluation, B for agent and backend, C (2 people) for the React front. Details in `docs/PLAN.md`. The team ended as two people, Daniel and Kmilo (`docs/HANDOFF.md`).
 
 ---
 
@@ -350,7 +350,7 @@ The test suite consists of **250 scripted conversations** (60% Spanish, 40% Port
 
 **Baselines (decided 26-Sep):** the main baseline is our own architecture in rules-only mode (keyword extractor, policy v2.3, rule-based risk without `fraud_score`, templated replies; no Jev, LightGBM, LLM or RAG). The starter pipeline is measured as a reference through a minimal adapter, with only its known crash fixed; its unverified card locks and refund promise count as unsafe outcomes.
 
-**Development split and freeze (decided 26-Sep):** 60 development cases, separate from the 250 held-out, tune every threshold (Jev, RAG, LightGBM). Cases are written from real dataset charges (`synthetic-organizer`) with `team-generated` messages; an LLM may paraphrase variants under human review. Labeling is split among the 4 team members, with Cohen's kappa on 50 double-labeled cases. The held-out suite is frozen with a commit and a hash on 30-Sep, before any tuning.
+**Development split and freeze (decided 26-Sep):** 60 development cases (19 on 4-Oct), separate from the 250 held-out, tune every threshold (Jev, RAG, the risk model). Cases are written from real dataset charges (`synthetic-organizer`) with `team-generated` messages; an LLM may paraphrase variants under human review. Labeling is split among the 4 team members (the team ended as two people), with Cohen's kappa on 50 double-labeled cases. The held-out suite is frozen with a commit and a hash on 30-Sep, before any tuning.
 
 **Reporting rules (official statement):** compare baseline and proposed system on the same cases; slice every metric by language, segment and country with small-sample caveats; run 3 repeats and report the spread; record model, prompt and extractor versions; if an LLM judge is used, publish its rubric and validate a sample against human labels; label offline results, simulations and projected savings separately, never as production gains.
 
@@ -386,11 +386,11 @@ A second root prefix, `data_backup_20260831/`, also exists. It is a different, p
 - [ ] **Public GitHub Repo**: `factored-hackathon-2026-[team-name]` with full commit history and Clean Architecture. Team AlterEgo: `factored-hackathon-2026-alterego`. The current remote is `Chackmilo/Factored_Hackaton`: rename or mirror before submitting.
 - [ ] **Repeatable Pipeline**: DuckDB ingestion + Pandera data contracts + unit tests (`pytest`) + publication of the minimized serving subset to Supabase `bank` with parity contracts.
 - [ ] **Data-Quality & Insights Report**: contact-reason evidence, the verified data traps (`AGENTS.md` section 7) and how each is handled.
-- [ ] **Learned Components**: LightGBM fraud risk model benchmarked against a baseline without `fraud_score`, tracked in MLflow; Jev intent against keywords; RAG retrieval against BM25.
+- [ ] **Learned Components**: LightGBM fraud risk model (delivered with scikit-learn per TQ-022, transferred from IEEE-CIS per TQ-026) benchmarked against a baseline without `fraud_score`, tracked in MLflow; Jev intent against keywords; RAG retrieval against BM25.
 - [ ] **Working System**: FastAPI backend with Supabase Auth session verification + Act & Verify tool gateway on Supabase Postgres, wired end to end.
 - [ ] **Agent UI (React)**: customer chat (ES/PT) + English HITL console with credit-candidate approval and an audit-log viewer.
 - [ ] **Held-Out Evaluation Report**: markdown report with the section 5 metrics and reporting rules, plus error analysis.
-- [ ] **Live Deployment**: public URL on Vercel, backed by the `alterego-demo` Supabase Free project; a double canary (Vercel cron and GitHub Actions) and manual checks on 8, 12 and 15 Oct keep it from pausing through the judging window.
+- [ ] **Live Deployment**: public URL on Vercel, backed by the `alterego-demo` Supabase Free project; a double canary (Vercel cron and GitHub Actions) and manual checks on 8, 12 and 15 Oct keep it from pausing through the judging window. Delivered: one Supabase Free project, also production, and no canary; manual checks keep it awake.
 - [ ] **Slide Deck (4-6 slides)**: Problem justification, Architecture, Benchmark results, Limitations & Route to Production.
 - [ ] **Video Pitch (Mandatory)**: 3-minute screen-recorded walkthrough demonstrating Normal, Ambiguous, and Escalation flows.
 - [ ] **Submission email** to `hackathon.admin@factored.ai` with the repo link, deployment link, slides and video.

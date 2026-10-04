@@ -32,7 +32,7 @@ Read these before inventing anything. Content in them was written by the team or
 | `docs/SUPABASE_VERCEL.md` | Supabase Auth identity model, the `bank` and `ops` Postgres schemas mapped from our lakehouse, database security, the Vercel deployment, the serving-subset data probe, new risks |
 | Official Problem Statement (Google Doc) | https://docs.google.com/document/d/18AwONT8hQupRcfNPLFrPo6fHOJ_OUn1nBf-3jMnla2c/edit |
 | LATAM Bank Dataset Summary (PDF) | https://drive.google.com/file/d/1V7n9v0zuv9SYzpW2AzPnssgAp5X_buXc/view |
-| LATAM Bank Complete Data Dictionary (PDF) | [link to the organizer's data dictionary removed] |
+| LATAM Bank Complete Data Dictionary (PDF) | Shared by the organizer; not linked from the repo because it holds the AWS keys |
 | `docs/*.pdf` | Local copies of the official statement, kickoff slides, dataset summary and dictionary (git-ignored: the dictionary holds AWS keys) |
 
 **Precedence when sources disagree:** official problem statement and kickoff slides, then the section 4
@@ -300,7 +300,7 @@ against a Postgres service; the 6 tests in `tests/test_data_integrity.py` need a
 skip without it (CI deselects them), and the Postgres tests (`test_ops_store.py`, `test_gateway_postgres.py`,
 `test_publish_serving.py`) run only with `TEST_DATABASE_URL`. The Supabase decisions are in code (ES256
 verification against the project JWKS; the `bank` serving copy and the `ops` schema behind `DATABASE_URL`); the
-Vercel deployment is configured (2-Oct: `[tool.vercel]`, `vercel.json`, `scripts/deploy/vercel_build.py`) and live at https://alterego-silk.vercel.app (checked on 3-Oct; production serves `main`, over one Supabase project that is also production).
+Vercel deployment is configured (2-Oct: `[tool.vercel]`, `vercel.json`, `scripts/deploy/vercel_build.py`) and live at https://alterego-silk.vercel.app (checked on 3-Oct), over one Supabase project that is also production. While the repo is private, the Hobby plan deploys only the commits that GitHub attributes to the account owner, such as the merges Daniel makes on GitHub: a merge by another collaborator shows `Deployment was blocked` and production keeps the previous deployment (none of the ten merges of #39 to #48 on 3-Oct deployed).
 
 | Area | What exists | Gap vs plan |
 | --- | --- | --- |

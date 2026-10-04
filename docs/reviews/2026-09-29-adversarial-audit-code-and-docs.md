@@ -6,6 +6,17 @@ This document and its companion machine-readable file, [`2026-09-29-adversarial-
 
 ## 0. Read this first: a more current, more rigorous audit already exists on `origin/main`
 
+> **Update on `main` at `9efb497` (4-Oct-2026).** Several statements in this section no longer hold; the rest of the document is unchanged.
+>
+> - `orchestrator-1` was already fixed on `main` before this document was compiled: PR #14 (merge `eded63d`, 30-Sep) brought the lock-answer reading of `src/understand/keyword_extractor.py` (`LOCK_REFUSAL_RE`, `_lock_answer`), so a refusal such as "Não quero" never locks the card.
+> - `auth-7`: the Supabase sign-in exists since PR #29 (merge `32a6d1f`, 2-Oct): `frontend/src/Login.tsx`, `frontend/src/supabase.ts`, and the demo personas of `src/auth/seed_personas.py`.
+> - `auth-3`: since PR #29 the app runs as production when `APP_ENV` is unset, blank or unknown (`src/auth/session.py`), refuses to start there without `SUPABASE_URL`, and the Dockerfile sets `APP_ENV=production`.
+> - `policy-2`: since PR #32 (merge `cfe5ab4`, 3-Oct) the handoff says the risk was not scored, and why, instead of reporting a 0.00 score.
+> - `gateway-1`: since PR #39 (merge `9efb497`, 3-Oct) the lock offer goes to the card that holds the disputed charge, or else to the customer's only active card; with several active cards and none holding the charge, no card is offered and a `LOCK_CARD_AMBIGUOUS` handoff asks a specialist.
+> - `manual-1` (section 6): since PR #41 (merge `16be1d6`, 3-Oct) the repo's Supabase MCP runs with `read_only=true`; its `features` list is still broad.
+> - Still open: the structural half of `gateway-8`; of the four lenses recommended at the end of this section, only part of `supply` ran (a gitleaks scan of the whole history, PR #41).
+> - The five reproduction paths that pointed at the auditor's home directory now read `<local scratchpad of the audit session, not in the repo>`: those scripts were never committed.
+
 Two things became clear only after this fan-out had already run and been compiled: the local branch it ran against was stale, and a separate, more thorough audit of the same system had already been done, merged and partly acted on. Read this section before touching anything below.
 
 **The branch audited here (`feat/dispute-policy-v2.3`, commit `5812c80`) is 41 commits behind `origin/main`.** Those 41 commits include an already-merged, already-partly-executed adversarial audit, [`docs/reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md`](2026-09-30-auditoria-adversarial-docs-resultados-codigo.md) ("audit v3", PR #15, 31 findings labeled AUD-01 to AUD-31, filed as team questions TQ-032 to TQ-036), plus a remediation batch, `fix/audit-v3-lote-a` (PR #17), that fixes several of its findings in code. Audit v3 is more rigorous than this one in every way that matters: it actually ran the held-out suite in a container and the real code, instead of reading only; it assigns each finding a verdict (Confirmado, Parcial, Exagerado, Refutado) against concrete evidence; and it ships a phased remediation plan with effort estimates. **Read it before this document, not after.**
@@ -388,7 +399,7 @@ In the awaiting_lock_confirmation state the orchestrator executes the card lock 
 
 **Proposed change.** Parse the confirmation as a short-answer grammar, not a bag of substrings: accept yes only when the message is a bare affirmative or starts with one ('sí', 'si', 'sim', 'claro', 'ok', 'dale', 'confirmo', 'bloquéala', 'pode bloquear'); treat any negation particle ('no', 'não', 'nao', 'nunca', 'todavía') anywhere before a verb as no; drop the bare verbs 'quero', 'bloquear', 'pode' from YES_WORDS; when neither rule fires, ask again. Add parametrized tests for 'Não quero', 'No quiero bloquear', 'Não pode ser', 'Sim, pode', 'no, bloquéala', 'quero contestar outra compra'.
 
-**Reproduction.** From the repo root: PYTHONPATH=. uv run python /private/tmp/claude-501/-Users-kmiloaparicio-Documents-Projects-Github-Repos-CLIENTS-APPS-Factored-Hackaton/08c8674c-7d26-4b9c-88bd-eec9106e6adc/scratchpad/orchestrator-understand/exp2_orchestrator.py and read section E2; or in a test: send 'Me robaron la tarjeta y no reconozco un cargo de 80 dólares en Oxxo' then 'Não quero' with the conftest orchestrator and assert lock_status == 'refused' (it is 'locked').
+**Reproduction.** From the repo root: PYTHONPATH=. uv run python <local scratchpad of the audit session, not in the repo>/orchestrator-understand/exp2_orchestrator.py and read section E2; or in a test: send 'Me robaron la tarjeta y no reconozco un cargo de 80 dólares en Oxxo' then 'Não quero' with the conftest orchestrator and assert lock_status == 'refused' (it is 'locked').
 
 #### `orchestrator-2` (Alta) Any new dispute starting with 'No ...' while a lock offer is pending is read as a refusal and the dispute is dropped
 
@@ -887,7 +898,7 @@ Use this before re-running a lens: it lists what was already read and checked wi
 - Clean: no secret values were printed. .env holds no SUPABASE_URL, DATABASE_URL or LOCAL_ISSUER_ENABLED variable (names only checked with grep -o '^[A-Za-z_]*=' .env); JWT_SECRET is gone from the tree (git log src/auth/session.py: 28a3789).
 - Clean: cross-customer access on the dispute endpoints. GET and POST message on another customer's conversation return 404 (tests/test_dispute_api.py 52-53 for GET; probe E1 for POST message). Anonymous requests to /api/v1/disputes/* return 401 (probe D3).
 - Clean: browser token storage is sessionStorage plus memory, cleared on logout and on any 401 (frontend/src/api.ts 183-202, 258-261; App.tsx 21-24); no token is put in a URL or in localStorage. No @supabase/supabase-js dependency exists in frontend/package.json (only react and react-dom).
-- Ran: uv run pytest tests/test_session_verifier.py tests/test_dispute_api.py (green); adversarial probe file at /private/tmp/claude-501/-Users-kmiloaparicio-Documents-Projects-Github-Repos-CLIENTS-APPS-Factored-Hackaton/08c8674c-7d26-4b9c-88bd-eec9106e6adc/scratchpad/seguridad-identidad/test_probe.py with output in probe_out.txt; APP_ENV=production LOCAL_ISSUER_ENABLED=true app start; cross-process local token; APP_ENV=staging; anonymous /api/v1/triage, /hitl/queue, /hitl/resolve, /sanitize. OPS_DB_PATH pointed to the scratchpad; data/ops.duckdb untouched; no S3 or ingestion run.
+- Ran: uv run pytest tests/test_session_verifier.py tests/test_dispute_api.py (green); adversarial probe file at <local scratchpad of the audit session, not in the repo>/seguridad-identidad/test_probe.py with output in probe_out.txt; APP_ENV=production LOCAL_ISSUER_ENABLED=true app start; cross-process local token; APP_ENV=staging; anonymous /api/v1/triage, /hitl/queue, /hitl/resolve, /sanitize. OPS_DB_PATH pointed to the scratchpad; data/ops.duckdb untouched; no S3 or ingestion run.
 - Not covered: RLS and app_gateway grants (supabase/migrations), the Postgres gateway ownership checks beyond reading sample_customers and get_customer_identity, and the Jev or Claude call paths (other lenses).
 
 ### API surface, console and operational endpoints (`src/api/app.py`, `src/api/dispute_routes.py`)

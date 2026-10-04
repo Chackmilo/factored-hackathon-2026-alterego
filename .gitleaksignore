@@ -1,0 +1,3 @@
+# Reviewed gitleaks false positives (3-Oct, 319 commits scanned): one fingerprint per line.
+# The SHA-256 checksum of the public E5 tokenizer file, not a key.
+8290de1997f235feb77d1e61b1bddd2618625440:src/rag/onnx_retriever.py:generic-api-key:29

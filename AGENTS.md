@@ -278,7 +278,7 @@ Dataset rows stay out of any external model call: Understand sees only the maske
 | Escalate | Handoff packet: request, verified facts, actions taken, evidence, policy clauses, open questions | JSON plus the React HITL console (English), which also approves or rejects credit candidates |
 | Policy explanations | Dispute policy explained with clause citations | Policy-as-code with clause ids, plus RAG over a team-written Spanish policy text with local multilingual embeddings (ONNX); it never changes a decision |
 | Data platform | Bronze raw CSVs -> silver validated and deduplicated -> gold dispute and contact-reason marts; a minimized serving subset is published to Supabase `bank` (no `is_fraud`, `fraud_score`, card numbers, documents or contacts) | DuckDB, local only (ingestion, ML, notebook; the app never opens it), Pandera or SQL checks |
-| Observability | Traces, append-only audit log, experiment tracking, eval runs | Audit log in `ops.audit_log`, MLflow (local), OpenTelemetry |
+| Observability | Traces, append-only audit log, experiment tracking, eval runs | Audit log in `ops.audit_log`, MLflow (local), OpenTelemetry (dropped 4-Oct, TQ-036; not built) |
 | Deployment | One public domain serving the API and the React build | Vercel Hobby (decided 26-Sep, replaces Render): FastAPI as a Python function, React on the CDN, region `iad1` next to Supabase `us-east-1` (Free plan, no Pro; a double canary keeps the project from pausing; the canary was not built) |
 
 Learned components, each measured against a baseline:

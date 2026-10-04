@@ -276,7 +276,7 @@
       "recommendation": "Front A reviews the 18 now; the held-out suite follows the brief's mix",
       "source": "27-Sep loop, iteration 3",
       "status": "answered",
-      "answer": "Declared as an evaluation limitation (rules 4 and 11). The 250 held-out cases retain design labels derived deterministically from the dispute policy specification v2.3; double-labeling for Cohen's kappa was deprioritized before the submission deadline and is stated honestly in README and evaluation reports.",
+      "answer": "Declared as an evaluation limitation (rules 4 and 11). The 250 held-out cases retain design labels derived deterministically from the dispute policy specification v2.3; double-labeling for Cohen's kappa was deprioritized before the submission deadline and is stated in the README limitations.",
       "answered_by": "Daniel (chat, 4-Oct)",
       "answered_at": "2026-10-04T09:30:00"
     },

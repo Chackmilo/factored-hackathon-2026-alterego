@@ -19,6 +19,7 @@ PLACES = [
     # charge country, charge city, home country, home city, zone, in a risk zone
     ("Colombia", "Bogotá", "Colombia", "Bogotá", "HOME", False),
     ("Colombia", None, "Colombia", "Bogotá", "HOME", False),  # no city on the charge: the country decides
+    ("Colombia", float("nan"), "Colombia", "Bogotá", "HOME", False),  # a NULL as pandas reads it, in a measurement over the lakehouse
     ("Colombia", "Medellín", "Colombia", "Bogotá", "DOMESTIC_OTHER_CITY", False),
     ("Spain", "Madrid", "Colombia", "Bogotá", "ABROAD", True),
     ("Mexico", "Puebla", "México", "Puebla", "HOME", False),  # the dataset spells the country both ways

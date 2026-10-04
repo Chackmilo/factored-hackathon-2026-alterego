@@ -164,6 +164,13 @@ built it, so the aggregations are comparable to ours.
   reports any other charge as not scored. The rules baseline (amount above 1,000 USD, ratio above
   3, foreign country) is measured offline only; at serving nothing scores those channels, and the
   policy's other escalations (`POL-ESC-500`, `POL-ESC-MULTI`) still apply to them.
+- Beside the score (3-Oct, TQ-038): `RiskZoneValidator` (`src/tools/risk_zone.py`) reads the same
+  charge with no model and on every channel. From the charge's country and city against the
+  customer's it names `HOME`, `DOMESTIC_OTHER_CITY`, `ABROAD` (the risk zone) or `UNKNOWN`; a test
+  keeps those zones equal to `address_distance_bucket`, with code of its own. The verdict and its
+  cross-check with the model go to the audit log (`RISK_ZONE_VALIDATED`) and to the handoff's
+  verified facts, and change no outcome. On POS, ATM, Branch and Transfer charges, which nothing
+  scores, the human agent now reads where the charge was made (discussion doc section 9).
 - Leakage guards: `tests/test_fraud_risk.py` keeps asserting that `is_fraud` and `fraud_score`
   are absent from the contract, and a new test asserts that no feature reads a row dated after the
   charge.

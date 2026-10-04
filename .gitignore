@@ -41,6 +41,8 @@ docs/**/*.pdf
 
 # IDE and tool caches
 .claude/
+# Playwright MCP browser snapshots: they record what was typed, sign-in passwords included
+.playwright-mcp/
 
 # Frontend (Vite)
 node_modules/

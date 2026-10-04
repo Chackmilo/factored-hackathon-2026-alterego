@@ -2482,7 +2482,7 @@
    "proposed_change": "Parse the confirmation as a short-answer grammar, not a bag of substrings: accept yes only when the message is a bare affirmative or starts with one ('sí', 'si', 'sim', 'claro', 'ok', 'dale', 'confirmo', 'bloquéala', 'pode bloquear'); treat any negation particle ('no', 'não', 'nao', 'nunca', 'todavía') anywhere before a verb as no; drop the bare verbs 'quero', 'bloquear', 'pode' from YES_WORDS; when neither rule fires, ask again. Add parametrized tests for 'Não quero', 'No quiero bloquear', 'Não pode ser', 'Sim, pode', 'no, bloquéala', 'quero contestar outra compra'.",
    "reopens_decision": "ninguna",
    "owner_front": "B",
-   "reproduction": "From the repo root: PYTHONPATH=. uv run python /private/tmp/claude-501/-Users-kmiloaparicio-Documents-Projects-Github-Repos-CLIENTS-APPS-Factored-Hackaton/08c8674c-7d26-4b9c-88bd-eec9106e6adc/scratchpad/orchestrator-understand/exp2_orchestrator.py and read section E2; or in a test: send 'Me robaron la tarjeta y no reconozco un cargo de 80 dólares en Oxxo' then 'Não quero' with the conftest orchestrator and assert lock_status == 'refused' (it is 'locked').",
+   "reproduction": "From the repo root: PYTHONPATH=. uv run python <local scratchpad of the audit session, not in the repo>/orchestrator-understand/exp2_orchestrator.py and read section E2; or in a test: send 'Me robaron la tarjeta y no reconozco un cargo de 80 dólares en Oxxo' then 'Não quero' with the conftest orchestrator and assert lock_status == 'refused' (it is 'locked').",
    "reconciliation": {
     "status": "confirmed_true_positive_new",
     "matches": null,
@@ -2854,7 +2854,7 @@
    "proposed_change": "Use word-boundary regexes for the stolen list (\\brob(o|aron|ada)\\b, \\bfurt(o|aram|ado)\\b, \\bclon(aron|aram|ada)\\b); extend the legal regex with banco central, bacen, juiz, justiça, ação judicial, denuncia (unaccented), superfinanciera, juzgado, fiscalía, defensor del consumidor; run both lists through the same accent-stripped text; report the final list sizes per language in the limitations section.",
    "reopens_decision": "ninguna",
    "owner_front": "B",
-   "reproduction": "PYTHONPATH=. uv run python /private/tmp/claude-501/-Users-kmiloaparicio-Documents-Projects-Github-Repos-CLIENTS-APPS-Factored-Hackaton/08c8674c-7d26-4b9c-88bd-eec9106e6adc/scratchpad/orchestrator-understand/exp1_extractor.py (lines for 'aprobo', 'Furtaram', 'Banco Central', 'Superfinanciera', 'denuncia')."
+   "reproduction": "PYTHONPATH=. uv run python <local scratchpad of the audit session, not in the repo>/orchestrator-understand/exp1_extractor.py (lines for 'aprobo', 'Furtaram', 'Banco Central', 'Superfinanciera', 'denuncia')."
   },
   {
    "id": "orchestrator-13",
@@ -3962,7 +3962,7 @@
    "Clean: no secret values were printed. .env holds no SUPABASE_URL, DATABASE_URL or LOCAL_ISSUER_ENABLED variable (names only checked with grep -o '^[A-Za-z_]*=' .env); JWT_SECRET is gone from the tree (git log src/auth/session.py: 28a3789).",
    "Clean: cross-customer access on the dispute endpoints. GET and POST message on another customer's conversation return 404 (tests/test_dispute_api.py 52-53 for GET; probe E1 for POST message). Anonymous requests to /api/v1/disputes/* return 401 (probe D3).",
    "Clean: browser token storage is sessionStorage plus memory, cleared on logout and on any 401 (frontend/src/api.ts 183-202, 258-261; App.tsx 21-24); no token is put in a URL or in localStorage. No @supabase/supabase-js dependency exists in frontend/package.json (only react and react-dom).",
-   "Ran: uv run pytest tests/test_session_verifier.py tests/test_dispute_api.py (green); adversarial probe file at /private/tmp/claude-501/-Users-kmiloaparicio-Documents-Projects-Github-Repos-CLIENTS-APPS-Factored-Hackaton/08c8674c-7d26-4b9c-88bd-eec9106e6adc/scratchpad/seguridad-identidad/test_probe.py with output in probe_out.txt; APP_ENV=production LOCAL_ISSUER_ENABLED=true app start; cross-process local token; APP_ENV=staging; anonymous /api/v1/triage, /hitl/queue, /hitl/resolve, /sanitize. OPS_DB_PATH pointed to the scratchpad; data/ops.duckdb untouched; no S3 or ingestion run.",
+   "Ran: uv run pytest tests/test_session_verifier.py tests/test_dispute_api.py (green); adversarial probe file at <local scratchpad of the audit session, not in the repo>/seguridad-identidad/test_probe.py with output in probe_out.txt; APP_ENV=production LOCAL_ISSUER_ENABLED=true app start; cross-process local token; APP_ENV=staging; anonymous /api/v1/triage, /hitl/queue, /hitl/resolve, /sanitize. OPS_DB_PATH pointed to the scratchpad; data/ops.duckdb untouched; no S3 or ingestion run.",
    "Not covered: RLS and app_gateway grants (supabase/migrations), the Postgres gateway ownership checks beyond reading sample_customers and get_customer_identity, and the Jev or Claude call paths (other lenses)."
   ],
   "api": [

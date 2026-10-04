@@ -273,7 +273,7 @@ Sin recortes de alcance (decidido el 26 sep). Si hay atraso, lo primero que cede
 
 - [Problem Statement oficial (Google Doc)](https://docs.google.com/document/d/18AwONT8hQupRcfNPLFrPo6fHOJ_OUn1nBf-3jMnla2c/edit)
 - [LATAM Bank Dataset Summary (PDF)](https://drive.google.com/file/d/1V7n9v0zuv9SYzpW2AzPnssgAp5X_buXc/view)
-- [LATAM Bank Complete Data Dictionary (PDF)]([link to the organizer's data dictionary removed])
+- LATAM Bank Complete Data Dictionary (PDF): lo compartió el organizador; no se enlaza desde el repo porque trae las llaves de AWS
 - Slides del kickoff: `docs/Datathon_2026_Kickoff.pdf` (copia local, fuera de git)
 - `AGENTS.md`: reglas, hallazgos de datos verificados (sección 7) y brechas del código (sección 9)
 - `docs/TEAM_BRIEF_COMPLEMENTED.md` v2.4: especificación de la política (cláusulas v2.3), del handoff y de la evaluación

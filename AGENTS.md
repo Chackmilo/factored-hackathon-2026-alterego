@@ -32,7 +32,7 @@ Read these before inventing anything. Content in them was written by the team or
 | `docs/SUPABASE_VERCEL.md` | Supabase Auth identity model, the `bank` and `ops` Postgres schemas mapped from our lakehouse, database security, the Vercel deployment, the serving-subset data probe, new risks |
 | Official Problem Statement (Google Doc) | https://docs.google.com/document/d/18AwONT8hQupRcfNPLFrPo6fHOJ_OUn1nBf-3jMnla2c/edit |
 | LATAM Bank Dataset Summary (PDF) | https://drive.google.com/file/d/1V7n9v0zuv9SYzpW2AzPnssgAp5X_buXc/view |
-| LATAM Bank Complete Data Dictionary (PDF) | [link to the organizer's data dictionary removed] |
+| LATAM Bank Complete Data Dictionary (PDF) | Shared by the organizer; not linked from the repo because it holds the AWS keys |
 | `docs/*.pdf` | Local copies of the official statement, kickoff slides, dataset summary and dictionary (git-ignored: the dictionary holds AWS keys) |
 
 **Precedence when sources disagree:** official problem statement and kickoff slides, then the section 4

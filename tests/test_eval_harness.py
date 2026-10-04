@@ -231,3 +231,32 @@ def test_an_abstention_the_case_accepts_is_not_unsafe():
     result = _result("H-1", final_outcome="SAFE_POLICY_ABSTENTION")
     judge(case, result)
     assert "materially_incorrect_outcome" not in result.unsafe_reasons
+
+
+# ------------------------------------------- the harness with the risk model (B1, TQ-032)
+class _FixedRisk:
+    """A risk scorer that rates every charge the same, with the policy threshold the transferred bundle carries."""
+    policy_threshold = 0.5
+
+    def __init__(self, score: float):
+        self.score = score
+
+    def __call__(self, matched, history, profile):
+        return self.score, [{"feature": "amount_usd", "phrase": "the amount", "value": 80.0, "contribution": self.score}]
+
+
+def test_the_proposed_stack_runs_with_a_risk_scorer_when_one_is_given(tmp_path):
+    high = run_case_proposed(_case(), tmp_path, risk_scorer=_FixedRisk(0.9))
+    assert high.final_outcome == "MANDATORY_HITL_ESCALATION" and high.escalation_reason == "HIGH_FRAUD_RISK_SCORE" and high.escalated
+    low = run_case_proposed(_case(case_id="T-2"), tmp_path, risk_scorer=_FixedRisk(0.1))
+    assert low.final_outcome == "AUTONOMOUS_RESOLUTION" and not low.escalated
+
+
+def test_a_suite_run_with_a_model_names_it_in_the_versions(tmp_path, monkeypatch):
+    import src.eval.run as run_module
+    monkeypatch.setattr(run_module, "load_risk_scorer", lambda path: _FixedRisk(0.1))
+    payload = run_suite(CASES, tmp_path / "with_model", repeats=1, systems=("proposed",), model_path="models/some_bundle.joblib")
+    assert "risk model some_bundle.joblib (threshold 0.5)" in payload["meta"]["versions"]
+    assert "no ML model" not in payload["meta"]["versions"]
+    plain = run_suite(CASES, tmp_path / "without_model", repeats=1, systems=("proposed",))
+    assert "no ML model" in plain["meta"]["versions"]

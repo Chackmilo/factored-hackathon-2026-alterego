@@ -25,14 +25,23 @@ from src.eval.report import render_markdown
 from src.eval.runner import run_case_proposed
 
 
-def run_suite(cases_path: str | Path, out_prefix: str | Path, repeats: int = 1, systems: tuple[str, ...] = ("baseline_starter", "proposed")) -> dict:
+def load_risk_scorer(path: str | Path):
+    """The transferred risk model the API serves (src/ml/transfer_scorer.py), loaded only when a run asks for it."""
+    from src.ml.transfer_scorer import TransferRiskScorer
+
+    return TransferRiskScorer(path)
+
+
+def run_suite(cases_path: str | Path, out_prefix: str | Path, repeats: int = 1, systems: tuple[str, ...] = ("baseline_starter", "proposed"),
+              model_path: str | Path | None = None) -> dict:
     cases = load_cases(cases_path)
+    scorer = load_risk_scorer(model_path) if model_path else None
     per_system_runs: dict[str, list] = {s: [] for s in systems}
     with tempfile.TemporaryDirectory() as workdir:
         for _ in range(repeats):
             for system in systems:
                 if system == "proposed":
-                    results = [run_case_proposed(c, workdir) for c in cases]
+                    results = [run_case_proposed(c, workdir, risk_scorer=scorer) for c in cases]
                 else:
                     results = [run_case_baseline(c) for c in cases]
                 per_system_runs[system].append(results)
@@ -49,7 +58,9 @@ def run_suite(cases_path: str | Path, out_prefix: str | Path, repeats: int = 1, 
     mix = ", ".join(f"{k}: {v}" for k, v in sorted(Counter(c.category for c in cases).items()))
     meta = {"suite": Path(cases_path).name, "n_cases": len(cases), "mix": mix, "repeats": repeats, "repeat_spread": spread,
             "provenance": ", ".join(sorted({c.provenance for c in cases})),
-            "versions": f"commit {commit}; extractor keyword-v1; policy v2.3; no ML model, no LLM"}
+            "versions": f"commit {commit}; extractor keyword-v1; policy v2.3; "
+                        + (f"risk model {Path(model_path).name} (threshold {scorer.policy_threshold:.4g})" if scorer else "no ML model")
+                        + ", no LLM"}
     out_prefix = Path(out_prefix)
     out_prefix.parent.mkdir(parents=True, exist_ok=True)
     payload = {"meta": meta, "metrics": metrics_by_system,
@@ -65,8 +76,9 @@ def main() -> None:
     parser.add_argument("--out", default="reports/eval", help="output prefix (writes <out>.json and <out>.md)")
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument("--systems", default="baseline_starter,proposed")
+    parser.add_argument("--model", default=None, help="risk model bundle for the proposed stack (models/fraud_risk_ieee.joblib); rules-only without")
     args = parser.parse_args()
-    payload = run_suite(args.cases, args.out, repeats=args.repeats, systems=tuple(args.systems.split(",")))
+    payload = run_suite(args.cases, args.out, repeats=args.repeats, systems=tuple(args.systems.split(",")), model_path=args.model)
     for system, metrics in payload["metrics"].items():
         sar = metrics["safe_automated_resolution"]
         print(f"{system}: safe automated resolution {sar['numerator']}/{sar['denominator']}, unsafe {metrics['unsafe_outcomes']['numerator']}/{metrics['n_cases']}, "

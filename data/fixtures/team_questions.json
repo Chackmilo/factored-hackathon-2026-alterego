@@ -274,7 +274,11 @@
         "Other plan (say which)"
       ],
       "recommendation": "Front A reviews the 18 now; the held-out suite follows the brief's mix",
-      "source": "27-Sep loop, iteration 3"
+      "source": "27-Sep loop, iteration 3",
+      "status": "answered",
+      "answer": "Declared as an evaluation limitation (rules 4 and 11). The 250 held-out cases retain design labels derived deterministically from the dispute policy specification v2.3; double-labeling for Cohen's kappa was deprioritized before the submission deadline and is stated honestly in README and evaluation reports.",
+      "answered_by": "Daniel (chat, 4-Oct)",
+      "answered_at": "2026-10-04T09:30:00"
     },
     {
       "question_id": "TQ-019",
@@ -286,7 +290,11 @@
         "Generate in CI only"
       ],
       "recommendation": "Commit the dev report; the held-out report goes in the final submission",
-      "source": "27-Sep loop, iteration 3"
+      "source": "27-Sep loop, iteration 3",
+      "status": "answered",
+      "answer": "Commit the reports. reports/eval_heldout.md and reports/eval_dev.md (and their paired .json files) remain committed in the repository for full auditability, transparency and reproducibility.",
+      "answered_by": "Daniel (chat, 4-Oct)",
+      "answered_at": "2026-10-04T09:30:00"
     },
     {
       "question_id": "TQ-020",
@@ -554,7 +562,11 @@
         "Full OpenTelemetry with an exporter"
       ],
       "recommendation": "Drop it formally in the decision log and declare it future work",
-      "source": "30-Sep, audit v3 (AUD-08)"
+      "source": "30-Sep, audit v3 (AUD-08)",
+      "status": "answered",
+      "answer": "Drop it formally in the decision log and declare it future work. The append-only audit log (ops.audit_log) already records every turn, action and actor with full auditability; full OpenTelemetry would inflate the Vercel function bundle and risk cold-start timeouts without adding value for the hackathon submission.",
+      "answered_by": "Daniel (chat, 4-Oct)",
+      "answered_at": "2026-10-04T09:30:00"
     },
     {
       "question_id": "TQ-037",

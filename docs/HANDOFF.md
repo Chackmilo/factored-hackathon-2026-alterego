@@ -193,13 +193,11 @@ Sin PR, a propósito:
 - **gateway-8** (el gateway de Postgres inserta una segunda fila de bloqueo si no hay oferta, y su verificación lee la fila que acaba de escribir): el primer caso solo pasa si falta la fila de la oferta, y el segundo es un límite del diseño (`bank` es de solo lectura, así que ningún sistema del banco recibe el bloqueo). Se declara en las limitaciones del README en vez de tocar el código del bloqueo el día 9.
 - **Pasada final de docs**, después de los merges: las cifras del README, los "18 casos de desarrollo" (ahora 19) en `README.md`, `AGENTS.md`, `CLAUDE.md` y `docs/technical-discuss-points.md`, y la frase "is_fraud itself is random" de `CLAUDE.md`. Varios PRs abiertos editan esas mismas líneas.
 
-### 7.3 Decisiones de Kmilo
+### 7.3 Decisiones del equipo (4-Oct: resueltas y registradas)
 
-1. **Orden de merge sugerido:** #41 y #43 (independientes), después #42 (las definiciones de las métricas), #44 y #45 (el modelo), y al final #39 (cambia casos del held-out). Después de cada merge que toque las cifras se regeneran `reports/eval_heldout.*` y la tabla del README.
-2. **#39:** mergear y declarar los 6 casos como etiquetas de diseño que premian una elección arbitraria (las corrigen las etiquetas humanas, TQ-018), o esperar a congelar las cifras del reporte.
-3. **El modelo de registro:** el bundle local del 29 de septiembre (ROC AUC 0,817, umbral 0,0669) o el reentrenado el 3 de octubre en el contenedor, con MLflow (0,815 y 0,0694). En el held-out los dos dan lo mismo.
-4. **Cómo llega el modelo a Vercel:** el `.joblib` está en el `.gitignore` y sale de los datos de una competencia de Kaggle, cuya licencia sigue pendiente con los mentores. Sin el archivo, producción corre en modo solo reglas, y el handoff dice "riesgo no calificado".
-5. **TQ-019:** confirmar que los reportes de evaluación viven commiteados en `reports/`.
-6. **La auditoría del 29 sep:** si se corrige su sección 0 y se quitan las rutas locales de `docs/reviews/2026-09-29-adversarial-audit-code-and-docs.*`.
-7. **TQ-036 (OpenTelemetry):** el handoff recomienda darla de baja formalmente; es una decisión, así que no se registra sin Kmilo.
-8. **Orden de merge con los PRs nuevos:** #47 y #48 junto con #41 y #43 (independientes); #46 antes de regenerar el reporte del split de desarrollo.
+1. **Despliegues y PRs #49 y #50:** Mergeados en `main` por Daniel (`Chackmilo`) el 4-Oct. Producción en Vercel verificada con prueba de humo en vivo (`"app":"AlterEgo dispute intake"`).
+2. **Modelo en producción:** Producción se mantiene en modo solo reglas (`rules-only`) para certificar cero alucinaciones y cumplimiento determinista; el modelo entrenado con IEEE-CIS queda como resultado analítico y benchmark experimental.
+3. **TQ-018 (Etiquetas humanas y kappa):** Registrada y cerrada el 4-Oct. La suite de 250 casos se mantiene con sus etiquetas de diseño del spec v2.3; el doble etiquetado para kappa se declara como limitación de evaluación (reglas 4 y 11).
+4. **TQ-019 (Reportes de evaluación):** Registrada y cerrada el 4-Oct. `reports/eval_heldout.md` y `reports/eval_dev.md` (y sus `.json` asociados) quedan commiteados en el repositorio para máxima reproducibilidad.
+5. **TQ-036 (OpenTelemetry):** Registrada y cerrada el 4-Oct. Se da de baja formalmente y se declara como limitación/trabajo futuro; `ops.audit_log` cubre la trazabilidad completa sin inflar el bundle de Vercel.
+

@@ -300,7 +300,7 @@ against a Postgres service; the 6 tests in `tests/test_data_integrity.py` need a
 skip without it (CI deselects them), and the Postgres tests (`test_ops_store.py`, `test_gateway_postgres.py`,
 `test_publish_serving.py`) run only with `TEST_DATABASE_URL`. The Supabase decisions are in code (ES256
 verification against the project JWKS; the `bank` serving copy and the `ops` schema behind `DATABASE_URL`); the
-Vercel deployment is configured (2-Oct: `[tool.vercel]`, `vercel.json`, `scripts/deploy/vercel_build.py`) and live at https://alterego-silk.vercel.app (checked on 3-Oct; production serves `main`, over one Supabase project that is also production).
+Vercel deployment is configured (2-Oct: `[tool.vercel]`, `vercel.json`, `scripts/deploy/vercel_build.py`) and live at https://alterego-silk.vercel.app (checked on 3-Oct), over one Supabase project that is also production. While the repo is private, the Hobby plan deploys only the commits that GitHub attributes to the account owner, such as the merges Daniel makes on GitHub: a merge by another collaborator shows `Deployment was blocked` and production keeps the previous deployment (none of the ten merges of #39 to #48 on 3-Oct deployed).
 
 | Area | What exists | Gap vs plan |
 | --- | --- | --- |

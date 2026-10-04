@@ -6,6 +6,17 @@ This document and its companion machine-readable file, [`2026-09-29-adversarial-
 
 ## 0. Read this first: a more current, more rigorous audit already exists on `origin/main`
 
+> **Update on `main` at `9efb497` (4-Oct-2026).** Several statements in this section no longer hold; the rest of the document is unchanged.
+>
+> - `orchestrator-1` was already fixed on `main` before this document was compiled: PR #14 (merge `eded63d`, 30-Sep) brought the lock-answer reading of `src/understand/keyword_extractor.py` (`LOCK_REFUSAL_RE`, `_lock_answer`), so a refusal such as "Não quero" never locks the card.
+> - `auth-7`: the Supabase sign-in exists since PR #29 (merge `32a6d1f`, 2-Oct): `frontend/src/Login.tsx`, `frontend/src/supabase.ts`, and the demo personas of `src/auth/seed_personas.py`.
+> - `auth-3`: since PR #29 the app runs as production when `APP_ENV` is unset, blank or unknown (`src/auth/session.py`), refuses to start there without `SUPABASE_URL`, and the Dockerfile sets `APP_ENV=production`.
+> - `policy-2`: since PR #32 (merge `cfe5ab4`, 3-Oct) the handoff says the risk was not scored, and why, instead of reporting a 0.00 score.
+> - `gateway-1`: since PR #39 (merge `9efb497`, 3-Oct) the lock offer goes to the card that holds the disputed charge, or else to the customer's only active card; with several active cards and none holding the charge, no card is offered and a `LOCK_CARD_AMBIGUOUS` handoff asks a specialist.
+> - `manual-1` (section 6): since PR #41 (merge `16be1d6`, 3-Oct) the repo's Supabase MCP runs with `read_only=true`; its `features` list is still broad.
+> - Still open: the structural half of `gateway-8`; of the four lenses recommended at the end of this section, only part of `supply` ran (a gitleaks scan of the whole history, PR #41).
+> - The five reproduction paths that pointed at the auditor's home directory now read `<local scratchpad of the audit session, not in the repo>`: those scripts were never committed.
+
 Two things became clear only after this fan-out had already run and been compiled: the local branch it ran against was stale, and a separate, more thorough audit of the same system had already been done, merged and partly acted on. Read this section before touching anything below.
 
 **The branch audited here (`feat/dispute-policy-v2.3`, commit `5812c80`) is 41 commits behind `origin/main`.** Those 41 commits include an already-merged, already-partly-executed adversarial audit, [`docs/reviews/2026-09-30-auditoria-adversarial-docs-resultados-codigo.md`](2026-09-30-auditoria-adversarial-docs-resultados-codigo.md) ("audit v3", PR #15, 31 findings labeled AUD-01 to AUD-31, filed as team questions TQ-032 to TQ-036), plus a remediation batch, `fix/audit-v3-lote-a` (PR #17), that fixes several of its findings in code. Audit v3 is more rigorous than this one in every way that matters: it actually ran the held-out suite in a container and the real code, instead of reading only; it assigns each finding a verdict (Confirmado, Parcial, Exagerado, Refutado) against concrete evidence; and it ships a phased remediation plan with effort estimates. **Read it before this document, not after.**

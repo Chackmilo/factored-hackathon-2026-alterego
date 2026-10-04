@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "3b64194a-6233-456c-b3f6-e770113d36ac",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\candidate.json",
+  "output": "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\dispute-resolution.html",
+  "specification": {
+    "sha256": "33079f04b289ef525aeaabc33e51188d4a4fe0f133851ee6c22ee027acef3265",
+    "bytes": 6735
+  },
+  "artifact": {
+    "sha256": "2d1d97a9290908856f870727b69808e87c42ea6daa86d9ab183800a64dc3a8e1",
+    "bytes": 771521
+  }
+}

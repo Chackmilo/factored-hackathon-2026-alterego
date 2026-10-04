@@ -1,0 +1,257 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "AlterEgo: Transaction-Dispute Intake Workflow",
+    "subtitle": "Traditional Complaint Friction vs 5-Stage Verified Autonomous Resolution",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "standard",
+    "viewBox": [1080, 684],
+    "output": ".archify/workflow-dispute-resolution-20261004-090340/dispute-resolution.html"
+  },
+  "lanes": [
+    { "id": "customer", "label": "Customer Experience (ES / PT)" },
+    { "id": "orchestrator", "label": "Orchestrator & Understand (System 1 & 2)" },
+    { "id": "policy", "label": "Policy Engine & ML Risk" },
+    { "id": "gateway", "label": "Tool Gateway & Ops Ledger", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "intake", "label": "1. Understand & Intake", "fromCol": 0, "toCol": 1 },
+    { "id": "decision", "label": "2. Decide (Policy v2.3 & Risk)", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "action", "label": "3-5. Act, Verify & Escalate", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "g_understand", "label": "Session & Intent", "lane": "orchestrator", "fromCol": 0, "toCol": 1, "variant": "emphasis" },
+    { "id": "g_policy", "label": "Policy as Code", "lane": "policy", "fromCol": 2, "toCol": 3, "variant": "security" },
+    { "id": "g_gateway", "label": "Ledger & Verification", "lane": "gateway", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": [
+    "cust_req",
+    "auth_guard",
+    "intent_sig",
+    "policy_engine",
+    "risk_scorer",
+    "tool_gateway",
+    "verify_readback",
+    "cust_reply"
+  ],
+  "nodes": [
+    {
+      "id": "cust_req",
+      "lane": "customer",
+      "col": 0,
+      "type": "external",
+      "label": "Disputed Charge",
+      "sublabel": "Customer in ES / PT",
+      "width": 124
+    },
+    {
+      "id": "auth_guard",
+      "lane": "orchestrator",
+      "col": 0,
+      "type": "security",
+      "label": "Auth & PII Guard",
+      "sublabel": "ES256 JWKS + Mask",
+      "tag": "verified session",
+      "width": 124
+    },
+    {
+      "id": "intent_sig",
+      "lane": "orchestrator",
+      "col": 1,
+      "type": "backend",
+      "label": "Intent Signals",
+      "sublabel": "Jev Choice + Noul / Regex",
+      "tag": "masked payload",
+      "width": 124
+    },
+    {
+      "id": "clarify_prompt",
+      "lane": "orchestrator",
+      "col": 2,
+      "type": "frontend",
+      "label": "Clarification State",
+      "sublabel": "Disambiguate charge",
+      "tag": "POL-CLARIFY",
+      "width": 124
+    },
+    {
+      "id": "policy_engine",
+      "lane": "policy",
+      "col": 2,
+      "type": "security",
+      "label": "Policy Engine v2.3",
+      "sublabel": "Window, caps, legal",
+      "tag": "deterministic code",
+      "width": 124
+    },
+    {
+      "id": "lock_confirm",
+      "lane": "orchestrator",
+      "col": 3,
+      "type": "frontend",
+      "label": "Lock Confirmation",
+      "sublabel": "Explicit YES / NO",
+      "tag": "POL-AUT-LOCK",
+      "width": 124
+    },
+    {
+      "id": "risk_scorer",
+      "lane": "policy",
+      "col": 3,
+      "type": "backend",
+      "label": "IEEE-CIS Transfer",
+      "sublabel": "Top 2% risk threshold",
+      "tag": "POL-ESC-ML-RISK",
+      "width": 124
+    },
+    {
+      "id": "handoff_packet",
+      "lane": "gateway",
+      "col": 3,
+      "type": "security",
+      "label": "Handoff Packet",
+      "sublabel": "Escalate to HITL",
+      "tag": "verified evidence",
+      "width": 124
+    },
+    {
+      "id": "tool_gateway",
+      "lane": "gateway",
+      "col": 4,
+      "type": "backend",
+      "label": "Tool Gateway",
+      "sublabel": "Writes ops ledger",
+      "tag": "least privilege",
+      "width": 124
+    },
+    {
+      "id": "verify_readback",
+      "lane": "gateway",
+      "col": 5,
+      "type": "database",
+      "label": "Mandatory Read-Back",
+      "sublabel": "Postgres ops verified",
+      "tag": "audit logged",
+      "width": 124
+    },
+    {
+      "id": "cust_reply",
+      "lane": "customer",
+      "col": 5,
+      "type": "frontend",
+      "label": "Verified Result",
+      "sublabel": "Case ID confirmed",
+      "tag": "zero false promises",
+      "width": 124
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-req-auth",
+      "from": "cust_req",
+      "to": "auth_guard",
+      "label": "token + query",
+      "variant": "security"
+    },
+    {
+      "id": "e-auth-intent",
+      "from": "auth_guard",
+      "to": "intent_sig",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e-intent-policy",
+      "from": "intent_sig",
+      "to": "policy_engine",
+      "label": "signals",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e-policy-clarify",
+      "from": "policy_engine",
+      "to": "clarify_prompt",
+      "label": "ambiguous",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "e-clarify-intent",
+      "from": "clarify_prompt",
+      "to": "intent_sig",
+      "label": "answer",
+      "variant": "dashed",
+      "role": "return"
+    },
+    {
+      "id": "e-policy-risk",
+      "from": "policy_engine",
+      "to": "risk_scorer",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e-policy-lock",
+      "from": "policy_engine",
+      "to": "lock_confirm",
+      "label": "stolen card",
+      "variant": "security",
+      "role": "branch"
+    },
+    {
+      "id": "e-risk-gateway",
+      "from": "risk_scorer",
+      "to": "tool_gateway",
+      "label": "safe intake",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e-risk-handoff",
+      "from": "risk_scorer",
+      "to": "handoff_packet",
+      "label": "risk / >$500",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "e-lock-gateway",
+      "from": "lock_confirm",
+      "to": "tool_gateway",
+      "label": "YES confirmed",
+      "variant": "security",
+      "role": "branch"
+    },
+    {
+      "id": "e-gateway-verify",
+      "from": "tool_gateway",
+      "to": "verify_readback",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e-verify-reply",
+      "from": "verify_readback",
+      "to": "cust_reply",
+      "label": "confirmed",
+      "variant": "emphasis",
+      "role": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "The Traditional Problem",
+      "items": [
+        "Quejas represent 36.5% of friction with 43.6% FCR and 63% follow-up",
+        "Traditional chatbot baseline fails: 48.8% unsafe outcomes and false promises"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "AlterEgo Solution",
+      "items": [
+        "98.1% safe resolution on eligible disputes with 0 crashes",
+        "Strict read-back verification and deterministic v2.3 policy engine"
+      ]
+    }
+  ]
+}

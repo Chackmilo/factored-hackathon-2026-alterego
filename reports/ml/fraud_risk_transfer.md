@@ -23,4 +23,4 @@ Contract v1.1, 19 deployable features, fraud_score used: no. sklearn.HistGradien
 ## Caveats
 
 - The competition holds card-not-present rows only: the score is served on Web and App charges, the rules baseline covers the rest.
-- The bank label is random (discussion doc sections 5 and 6); its agreement is reported, never optimized.
+- The bank label carries no learnable signal (discussion doc sections 5 and 6); its agreement is reported, never optimized.

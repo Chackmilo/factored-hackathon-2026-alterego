@@ -2,7 +2,7 @@
 
 Team AlterEgo's submission to the **Factored AI & Data Hackathon 2026**: an AI-first customer-service system for one workflow, **transaction-dispute intake**, in Spanish and Portuguese. The agent finds the charge the customer does not recognize, checks it against a written dispute policy, opens a case and confirms it only after reading it back, protects the customer with a card lock they confirm, and hands off to a human with a structured packet when the case needs one. It never moves money.
 
-> **Status (2026-10-03, day 9 of 10).** The dispute stack runs end to end behind the API and the React chat and console, with Supabase sign-in. The Vercel deployment is configured but not deployed, so there is no public URL yet. This README separates what is delivered from what was planned and not delivered, and states the results and the limitations.
+> **Status (2026-10-03, day 9 of 10).** The dispute stack runs end to end behind the API and the React chat and console, with Supabase sign-in. It is deployed on Vercel at <https://alterego-silk.vercel.app>, over one Supabase project that is also production. This README separates what is delivered from what was planned and not delivered, and states the results and the limitations.
 
 ## How it works
 
@@ -70,30 +70,32 @@ Every suite runs through `src/eval/` as scripted conversations, offline and in p
 
 **What the runs compare.** The reference baseline is the starter pipeline the repository began with, measured as is through an adapter (only its crash fixed), so its card lock on an unrecognized charge and its refund promise count as unsafe. The other system is our architecture in rules-only mode: keyword extractor and policy as code, with no risk model, no Jev, no LLM and no policy explainer. The brief names this rules-only stack our main baseline. The runs therefore show what the architecture and the policy deliver; they attribute nothing to the learned components, which no end-to-end run has measured yet.
 
-**Metric definitions** (`src/eval/metrics.py`). Safe automated resolution: the cases whose label expects an autonomous resolution and that end correctly with no human, over those cases (107 of the 250 held-out cases). Unsafe outcomes: the cases with at least one unsafe result (unauthorized access or disclosure, a case opened or a card locked that the label forbids, an action not verified, a false confirmation, a promise of money, a crash, or a materially incorrect outcome), over all cases; the reasons are counted apart, so no case counts twice. Cost: rules-only mode spends no model tokens, and compute is not measured.
+**Metric definitions** (`src/eval/metrics.py`). Safe automated resolution: the cases whose label expects an autonomous resolution and that end correctly with no human, over those cases (107 of the 250 held-out cases), and the same successes over every in-scope case, meaning every dispute conversation that is neither an out-of-scope request nor an API attack (230 of the 250; TQ-034). On the held-out suite 123 of those 230 need a human, an abstention or a clarification by design, so 107 of 230 (46.5 %) is the ceiling of the in-scope rate. Unsafe outcomes: the cases with at least one unsafe result (unauthorized access or disclosure, a case opened or a card locked that the label forbids, an action not verified, a false confirmation, a promise of money, a crash, or a materially incorrect outcome, which includes an abstention or a clarification on a case that needed a human when no human was reached, TQ-035), over all cases; the reasons are counted apart, so no case counts twice. Cost: rules-only mode spends no model tokens, and compute is not measured.
 
 ### Held-out suite: 250 conversations, frozen on 30 Sep
 
 150 Spanish and 100 Portuguese conversations: 63 derived from unchanged rows of the dataset and 187 team-generated (every Portuguese case and every fabricated or altered fact). The labels are design labels written from the spec; the team's adjudicated labels have not replaced them yet (TQ-018).
 
-First run, before any fix (30 Sep, 3 identical repeats, recorded in PR #12):
+First run, before any fix (30 Sep, 3 identical repeats, recorded in PR #12), re-scored on 3 Oct with the definitions above ([`reports/eval_heldout_blind.md`](reports/eval_heldout_blind.md): the outcomes of that run's own code, commit `011e931`, judged by the current judge). Under the earlier judge its unsafe outcomes were 12.4 % (31 of 250); TQ-035 adds 8:
 
 | Metric | Reference baseline | Our architecture, rules-only |
 | --- | --- | --- |
 | Safe automated resolution | 3.7 % (4 of 107) | 63.6 % (68 of 107) |
+| Safe automated resolution over in-scope cases | 1.7 % (4 of 230) | 29.6 % (68 of 230) |
 | Containment | 44.0 % (110 of 250) | 76.4 % (191 of 250) |
 | Escalation precision | 48.6 % (68 of 140) | 96.6 % (57 of 59) |
 | Escalation recall | 69.4 % (68 of 98) | 58.2 % (57 of 98) |
-| Unsafe outcomes | 48.8 % (122 of 250) | 12.4 % (31 of 250) |
+| Unsafe outcomes | 48.8 % (122 of 250) | 15.6 % (39 of 250) |
 | Crashes | 0 | 9 |
 
 That run found seven problems. The six in the code were fixed the same day, each with a test of its own, and the suite was not edited. Every later run reuses the cases that drove those fixes, so it is a measurement after error analysis, not a second blind evaluation.
 
-Rerun on `main` on 3 Oct, at `e52a5ec` and again at `cfe5ab4` with the same outcomes (3 repeats each, the same safe automated resolution rate in every repeat), after those fixes and the later ones:
+Rerun on `main` on 3 Oct, at `e52a5ec` and again at `cfe5ab4` with the same outcomes (3 repeats each, the same safe automated resolution rate in every repeat), after those fixes and the later ones; rerun once more with the TQ-034 and TQ-035 scoring, which adds no unsafe outcome here ([`reports/eval_heldout.md`](reports/eval_heldout.md)):
 
 | Metric | Reference baseline | Our architecture, rules-only |
 | --- | --- | --- |
 | Safe automated resolution | 3.7 % (4 of 107) | 98.1 % (105 of 107) |
+| Safe automated resolution over in-scope cases | 1.7 % (4 of 230) | 45.7 % (105 of 230) |
 | Containment | 44.0 % (110 of 250) | 68.8 % (172 of 250) |
 | Escalation precision | 48.6 % (68 of 140) | 100.0 % (78 of 78) |
 | Escalation recall | 69.4 % (68 of 98) | 79.6 % (78 of 98) |
@@ -101,11 +103,11 @@ Rerun on `main` on 3 Oct, at `e52a5ec` and again at `cfe5ab4` with the same outc
 | Exact outcome accuracy | 52.4 % (131 of 250) | 90.8 % (227 of 250) |
 | Crashes | 0 | 0 |
 
-The 20 unsafe outcomes left are the 20 high-risk foreign online purchases of the suite: with no risk model in the run, the system opens a case where the label expects a human, and the same 20 cases are the missed transfers. By language: Spanish 59 of 61 safe resolutions and 12 of 150 unsafe outcomes, Portuguese 46 of 46 and 8 of 100. Latency p50 / p95 was 142 / 503 ms and 121 / 374 ms in the two runs, in process, with no network, on a developer machine. Reproduce it with `uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out /tmp/eval_heldout --repeats 3`; the report is not committed while TQ-019 (where reports live) is open.
+The 20 unsafe outcomes left are the 20 high-risk foreign online purchases of the suite: with no risk model in the run, the system opens a case where the label expects a human, and the same 20 cases are the missed transfers. By language: Spanish 59 of 61 safe resolutions and 12 of 150 unsafe outcomes, Portuguese 46 of 46 and 8 of 100. Latency p50 / p95 was 142 / 503 ms and 121 / 374 ms in the two runs, in process, with no network, on a developer machine. Reproduce it with `uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out reports/eval_heldout --repeats 3`. Both held-out reports are committed next to the development one; TQ-019 (where reports live) still waits for the team to confirm that.
 
 ### Development split: 18 cases
 
-Team-generated cases used while building the system, so they show that it handles the cases it was built for, not that it generalizes. Reference baseline: 0 of 9 safe automated resolutions and 11 of 18 unsafe outcomes. Our architecture in rules-only mode: 9 of 9 and 0 of 18 ([`reports/eval_dev.md`](reports/eval_dev.md), 3 repeats; CI reruns the split on every pull request).
+Team-generated cases used while building the system, so they show that it handles the cases it was built for, not that it generalizes. Reference baseline: 0 of 9 safe automated resolutions and 11 of 18 unsafe outcomes. Our architecture in rules-only mode: 9 of 9 and 0 of 18, and 9 of the 17 in-scope cases ([`reports/eval_dev.md`](reports/eval_dev.md), 3 repeats; CI reruns the split on every pull request).
 
 ### Policy explainer
 
@@ -123,7 +125,7 @@ A leak-free gradient boosting on the bank's own features scores a test ROC AUC o
 - **Held-out reuse.** Numbers after the first run come from the same cases that drove the fixes.
 - **Risk model.** The transfer from IEEE-CIS is not validated on bank data, and without the model file no charge escalates for risk. The IEEE-CIS data falls under the competition's rules (competition and non-commercial use); the team recorded the mentors' approval of this data use (TQ-032).
 - **Write path.** There are no idempotency keys, the audit row is written apart from the action, and there are no bounded retries. Concurrent requests are not tested.
-- **Deployment and capacity.** There is no public URL yet. The target runs on Vercel Hobby and Supabase Free; locally, DuckDB allows one writer process. No load test has been run.
+- **Deployment and capacity.** The public URL (<https://alterego-silk.vercel.app>) runs on Vercel Hobby and one Supabase Free project that is also production: there is no separate demo project, the Free plan pauses an idle project, and the canary planned to keep it awake was not built; locally, DuckDB allows one writer process. No load test has been run.
 - **Business date.** Window and account-age math use 2026-06-17, the end date of the dataset, not the wall clock.
 
 ## Documentation

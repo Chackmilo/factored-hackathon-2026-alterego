@@ -110,7 +110,7 @@ Rules run in this order; the first rule that decides the case wins. Clause ids i
 
 5. MANDATORY HUMAN ESCALATION (HITL transfer):
    - Claimed amount > $500 USD equivalent [POL-ESC-500].
-   - Learned ML risk score > 0.70 [POL-ESC-ML-RISK].
+   - Learned ML risk score above the threshold its bundle carries: percentile 98 of the bank's Web and App charges of the serving window (0.0669 for the current bundle). TQ-026 (29-Sep) replaced the earlier fixed 0.70 [POL-ESC-ML-RISK].
    - More than 2 distinct disputed charges within 48 hours [POL-ESC-MULTI].
    - Severe distress: Jev distress Score >= 2, or the ES/PT keyword list as fallback [POL-ESC-DISTRESS] (new).
 
@@ -182,7 +182,7 @@ The team has 4 people in three fronts (26-Sep): A for data, ML and evaluation, B
                                  │
                                  ├──► [Clarify] (0 or 2+ candidate charges; HITL after 2 attempts)
                                  ├──► [Safe Abstention] (Out-of-window / Not disputable / Unsupported)
-                                 ├──► [HITL Escalation] (Legal / Amount > $500 / ML Score > 0.70 / Multi-charge / Distress)
+                                 ├──► [HITL Escalation] (Legal / Amount > $500 / ML Score > p98 / Multi-charge / Distress)
                                  └──► [Autonomous Path] (Eligible charge <= $500; <= $150 may be flagged
                                        as a provisional-credit candidate for a human)
                                  │
@@ -263,7 +263,7 @@ When an escalation is triggered, the human specialist receives a structured JSON
     "Customer authenticated via valid active session",
     "Transaction occurred 5 days before 2026-06-17 (within the 60-day window)",
     "Customer has 0 complaints in the last 90 days",
-    "ML fraud risk score: 0.38 (below the 0.70 escalation threshold)"
+    "ML risk score: 0.03 (escalation threshold 0.07)"
   ],
   "supporting_evidence": [
     "bank.transactions row TRX-EXAMPLE0000000000001 read at 2026-09-26T15:04:11",

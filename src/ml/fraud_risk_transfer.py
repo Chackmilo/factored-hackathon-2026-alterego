@@ -1,8 +1,8 @@
 """
 Fraud risk score transferred from the IEEE-CIS competition (docs/specs/fraud-risk-model-v1-ieee-cis.md).
 
-Training data is the competition (590,540 labeled card-not-present transactions); the bank label is random (discussion
-doc sections 5 and 6) and is used once, to report its flat agreement. Features are DEPLOYABLE_V1 of the contract: only
+Training data is the competition (590,540 labeled card-not-present transactions); the bank label carries no learnable
+signal (discussion doc sections 5 and 6) and is used once, to report its flat agreement. Features are DEPLOYABLE_V1 of the contract: only
 what the deployed app can compute from the serving copy at scoring time (team decision of 29-Sep). Continuous features
 are per-source percentile ranks (the sources stay separable under any encoding, notebook 05), so the escalation
 threshold is a percentile of the bank's own serving window (Web and App charges), never the competition's probability.
@@ -180,7 +180,7 @@ def _train(competition, out_dir, model_path, lakehouse, holdout_fraction_of_days
         "ablations": ablations, "bank_calibration": bank_calibration, "threshold": threshold, "threshold_kind": threshold_kind,
         "mlflow": mlflow_info,
         "caveats": ["The competition holds card-not-present rows only: the score is served on Web and App charges, the rules baseline covers the rest.",
-                    "The bank label is random (discussion doc sections 5 and 6); its agreement is reported, never optimized."],
+                    "The bank label carries no learnable signal (discussion doc sections 5 and 6); its agreement is reported, never optimized."],
     }
     medians = {f: float(np.nanmedian((ranker_bank or ranker_comp).transform(tr[features])[f].to_numpy(float))) for f in features}
     joblib.dump({"model": model, "features": features, "ranker": ranker_bank or ranker_comp, "ranker_competition": ranker_comp, "medians": medians,

@@ -463,9 +463,9 @@ class DisputeOrchestrator:
 
     @staticmethod
     def _known_merchant(row: dict[str, Any]) -> str | None:
-        """The row's merchant in lower case, or None when the bank recorded none (most rows read "Unknown Merchant")."""
+        """The row's merchant in lower case, or None when the bank recorded none (gold writes Not Applicable or Unknown Merchant)."""
         raw = str(row.get("merchant_name_raw") or "").lower()
-        return None if len(raw) < 3 or raw in ("unknown", "unknown merchant") else raw
+        return None if len(raw) < 3 or raw in ("unknown", "unknown merchant", "not applicable") else raw
 
     def _merchant_in_message(self, row: dict[str, Any], u: UnderstandResult) -> bool:
         merchant = self._known_merchant(row)

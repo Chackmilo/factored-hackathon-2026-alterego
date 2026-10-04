@@ -333,3 +333,46 @@ Both suites were run before and after the change from the same base commit of `m
 ### 10.5 Open question (TQ-039)
 
 Should a burst of siblings also escalate the turn with the lock offer, as three disputed charges do? Recommendation: not now. Counting charges the customer did not dispute would send customers with several legitimate purchases at one merchant to a human, it is a spec change (a new input for `POL-ESC-MULTI` or a new clause), and no data can calibrate the size of a burst.
+
+## 11. Proposal: gold tells a merchant that does not apply from one that is missing (4 October)
+
+Kmilo asked (4-Oct, chat) why so many charges read "Unknown Merchant", whether the data holds anything else that names where a charge was made, and for gold to say "Not Applicable" on the internal transactions. What the data shows, what changed and what stays open:
+
+1. Finding (`data/lakehouse_full.duckdb`, derived from the organizer's data). `merchant_name` is NULL on 76.7% of the 4,425,008 transactions, and the gap follows the charge type, not chance:
+
+| Transaction type | Rows | Without a merchant |
+| --- | --- | --- |
+| Purchase | 1,083,406 | 54,172 (5.0%) |
+| Withdrawal | 964,673 | all |
+| Transfer | 896,438 | all |
+| Payment | 738,964 | all |
+| Deposit | 609,409 | all |
+| Adjustment | 132,118 | all |
+
+The five types carry no merchant and no merchant category on any channel, so on them the field does not apply. The 5.0% of purchases without one is a real gap (the dictionary's null trap). These rates come from the lakehouse: the held-out file holds fabricated charges and gives other ones.
+
+2. Definition. `gold_transactions.merchant_name` is never NULL and has three readings: the name; `Not Applicable` on a Withdrawal, Transfer, Payment, Deposit or Adjustment without one; `Unknown Merchant` on any other charge without one (a purchase that lost it, or a type the dataset does not have). A name is never replaced, and the list of types is explicit, so a new type is not declared merchant-free by default. `merchant_category` stays NULL as before: the risk model reads it, and its features must not move. `tests/test_ingestion.py` pins the rule.
+
+3. Who reads gold. Not every path, so the label alone does not reach the agent everywhere:
+
+| Path | What the gateway reads | When the new label arrives |
+| --- | --- | --- |
+| Local API without `DATABASE_URL` | `gold_transactions` and `gold_customers` on each turn that reads the bank (the card list and the lock use `silver_products`) | When gold is rebuilt (no S3 needed, the command is in `CLAUDE.md`) |
+| Deployed API (Vercel) | Postgres `bank.*`, a copy of gold made by `src.data.publish_serving`, plus the live `ops` views | When the serving copy is published again; until then it keeps "Unknown Merchant" |
+| Evaluation harness | A bank fixture built from each JSONL case | Never for the frozen held-out suite: its charges without a merchant keep "Unknown Merchant" |
+
+So the orchestrator reads both labels as "no merchant" when it looks for a merchant hint in the message, and the held-out builder reads `Not Applicable` back as the label suite v1 was frozen with: rebuilt from the relabeled lakehouse, the suite reproduces its recorded SHA-256. A turn the policy explainer answers does not read the bank at all.
+
+4. Effects. No policy outcome moves: the label was never an input of the policy, and the merchant hint already ignored placeholder labels. What the customer sees does move on the local path: the list of recent charges and the option buttons print the label as it is, so a withdrawal now reads "Not Applicable" where it read "Unknown Merchant", in English either way.
+
+5. What else names where a charge was made (the answer to the address question). The source has no merchant id, terminal or merchant address. It does have three columns that gold does not carry today:
+
+| Column | Coverage | What it gives |
+| --- | --- | --- |
+| `branch_id`, joined to `branches` (350 rows: name, type, address, city, state) | 95% of the ATM and Branch channel charges (1,387,932 rows, 31.4% of all), every one resolves; NULL on POS, Web, App and Transfer | Not the place of the charge: always a branch of the customer's country, but its city equals the charge's own `transaction_city` on 17.5% of the rows that have one (217,964 of 1,248,917). It cannot be shown to the customer as where the charge was made |
+| `transaction_category` | 95% of payments and of purchases (Food, Services, Entertainment, Transport, Health, Other); NULL on the other four types | What a payment was for |
+| `transaction_city`, `transaction_country` (already in gold) | 90% and 100% | Where it was made |
+
+Of the 136,032 disputable charges without a merchant in the 60-day window (Payment, Withdrawal, Transfer), 90% have a city; 31.3% have a branch, which the row above rules out as a place.
+
+6. Open, TQ-040: how a charge without a merchant reaches the agent and the customer. The label is text inside a name column, so every reader has to compare strings to know it is not a name (the orchestrator and the held-out builder do so today). The proposal is a typed field beside the name, computed once and returned by both gateways (`merchant_status`: `named`, `missing`, `not_applicable`), so the rule holds on every path of item 3, and a description of the charge built from what the data does have (the type in the customer's language, the payment category, the city) for the charge list and the handoff. That text reaches the customer, so the team decides it.

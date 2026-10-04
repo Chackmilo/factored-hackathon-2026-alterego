@@ -293,3 +293,43 @@ Kmilo asked (3-Oct, chat) for a layer that works as a parallel validator of whet
 | Abroad and at or under 500 USD | 2.46% of the window: what an escalation rule would move from intake to a human |
 
 5. Open, TQ-038: what a charge in a risk zone should trigger. Advisory as today, a new mandatory escalation clause, or the preventive lock offer with the customer's confirmation (a new reason code in the `ops.card_locks` CHECK and a migration). The last two change policy v2.3 (spec, traceability matrix, policy corpus) and the outcomes of the frozen held-out suite. A hold of the payment at authorization time is not on the list: the dispute flow acts after the charge, and a second workflow breaks rule 1.
+
+## 10. Sibling charges: the other charges of one card at one merchant on one process day (3 October)
+
+Kmilo asked on 3-Oct how the system could react when a point of sale repeats charges on a card in one night. Stopping a payment is outside the workflow (two real actions: open a case, and the card lock the customer confirms; rules 1 and 8), so the part that fits is what the dispute turn tells once the customer disputes one of those charges. In code on branch `feat/sibling-charges`; the open point is TQ-039.
+
+### 10.1 What the data allows
+
+Measured on `data/lakehouse.duckdb` (the June 2026 sample, 11,703 rows) on 3-Oct:
+
+| Question | Result |
+| --- | --- |
+| Is there a terminal or point-of-sale id? | No. `gold_transactions` holds `merchant_name`, `merchant_category`, `transaction_city` and `transaction_country`, nothing finer |
+| How many merchants are there? | 25 names; "Unknown Merchant" covers 9,113 rows (77.9 %) |
+| Does a card repeat a merchant on one process day? | Purchases per card, merchant name and process day: 2,722 groups hold one purchase, 1 holds two |
+| Does a card hold a burst on one process day? | Transactions per card and process day: 11,567 groups hold one, 68 hold two, none holds three |
+| Is there a label to check a burst against? | No: `is_fraud` carries no signal (section 5) |
+
+So the behavior cannot be measured on the supplied data. It is shown on team-generated fixtures only (rule 12), and the tests label their rows that way.
+
+### 10.2 Definition
+
+A sibling of the identified charge is another charge of the same customer that shares its `product_id`, its merchant name and its bank process day (`process_date`, so a night that crosses midnight stays in one day), is disputable (`POL-DISP-TYPE` and `POL-WIN-60` as the gateway row tells them), has no open case, and was not named in the customer's message. A charge with no merchant on record has no siblings: two "Unknown Merchant" rows are not one merchant. The siblings come from the 25 most recent charges the gateway already read for the session's customer, so no other customer's data is involved and no new bank read is made.
+
+### 10.3 What the turn does with them
+
+| Outcome of the turn | Customer | Human agent |
+| --- | --- | --- |
+| Case opened and verified | After the case number, the reply names the merchant, lists the siblings' amounts and invites the customer to write the amount of any other charge they do not recognize | Audit row `SIBLING_CHARGES_LISTED` with the transaction ids |
+| Escalation | Nothing added to the reply | One verified fact in the handoff packet: how many siblings and their ids |
+| Clarification or abstention | Nothing | Nothing |
+
+They are told, never counted. `POL-ESC-MULTI` counts distinct disputed charges in 48 hours (spec v2.3), and a charge the customer has not disowned is not disputed, so `recent_disputed_charges_count` is unchanged and no clause, threshold or order moves (spec assumption S20). When the customer then disputes a sibling, the existing flow opens its case, and the third disputed charge reaches `POL-ESC-MULTI` with the lock offer as before.
+
+### 10.4 Effect on the evaluation
+
+Both suites were run before and after the change from the same base commit of `main` (rules-only, one repeat, no risk model in the checkout): every metric of both systems is identical. On the development split no reply changes. On the held-out suite the replies of four cases of the category `high_value_or_multi_charge` (HO-153, HO-154, HO-157, HO-159) gain the note in the two turns that open a case before the third charge escalates; their outcomes are the same. The check was repeated with the branch stacked on the risk zone validator of section 9, with the same result. No threshold was tuned on either suite.
+
+### 10.5 Open question (TQ-039)
+
+Should a burst of siblings also escalate the turn with the lock offer, as three disputed charges do? Recommendation: not now. Counting charges the customer did not dispute would send customers with several legitimate purchases at one merchant to a human, it is a spec change (a new input for `POL-ESC-MULTI` or a new clause), and no data can calibrate the size of a burst.

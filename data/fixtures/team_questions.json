@@ -596,6 +596,19 @@
       ],
       "recommendation": "Advisory only: a verified fact for the human agent",
       "source": "3-Oct, Kmilo (chat); src/tools/risk_zone.py"
+    },
+    {
+      "question_id": "TQ-039",
+      "topic": "Dispute flow: sibling charges on the same card, merchant and process day",
+      "question": "When a customer disputes one charge and the same card shows more disputable charges at the same merchant on the same process day, should those sibling charges only be told (to the customer once the case is open, to the specialist in the handoff), or should a burst of them also escalate the turn with the lock offer, as POL-ESC-MULTI does for three disputed charges?",
+      "context": "Branch feat/sibling-charges, 3-Oct. Today they are told and never counted: spec v2.3 defines POL-ESC-MULTI over disputed charges, and a charge the customer has not disowned is not one (spec assumption S20). The scenario behind the question is a compromised point of sale that repeats charges on one card in one night. The supplied data cannot measure it: the bank rows carry no terminal id, 77.9 % of the sample rows have no merchant on record, and no card holds more than two transactions on one process day (docs/technical-discuss-points.md section 10), so the behavior is shown on team-generated fixtures only. Counting undisputed charges would send customers with several legitimate purchases at one merchant to a human, which lowers safe automated resolution.",
+      "options": [
+        "Tell only: the customer and the specialist see them, POL-ESC-MULTI keeps counting disputed charges (recommended, in code)",
+        "Also escalate a burst: the disputed charge plus two or more siblings goes to a human with the MULTI_CHARGE_FRAUD lock offer (a spec change: new clause input and tests)",
+        "Keep only the handoff fact and remove the note from the customer reply"
+      ],
+      "recommendation": "Tell only: the customer and the specialist see them, POL-ESC-MULTI keeps counting disputed charges",
+      "source": "3-Oct, session with Kmilo (sibling charges hook)"
     }
   ]
 }

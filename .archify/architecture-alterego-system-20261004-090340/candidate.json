@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "AlterEgo: AI-First Banking Dispute Architecture",
+    "subtitle": "Two-Tier Cognitive System with Deterministic Policy & Verifiable Ledger",
+    "quality_profile": "standard",
+    "output": ".archify/architecture-alterego-system-20261004-090340/alterego-system.html"
+  },
+  "components": [
+    {
+      "id": "customer",
+      "type": "external",
+      "label": "Customer Chat",
+      "sublabel": "ES / PT Mobile & Web",
+      "pos": [40, 260],
+      "size": [130, 60]
+    },
+    {
+      "id": "agent_user",
+      "type": "external",
+      "label": "HITL Agent",
+      "sublabel": "English Operator",
+      "pos": [40, 510],
+      "size": [130, 60]
+    },
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "Supabase Auth",
+      "sublabel": "ES256 JWKS Validator",
+      "tag": "app_metadata",
+      "pos": [250, 260],
+      "size": [140, 64]
+    },
+    {
+      "id": "pii_guard",
+      "type": "security",
+      "label": "PII & Prompt Guard",
+      "sublabel": "LATAM Regex Masker",
+      "tag": "zero data leak",
+      "pos": [460, 260],
+      "size": [140, 64]
+    },
+    {
+      "id": "hitl_console",
+      "type": "frontend",
+      "label": "HITL Console",
+      "sublabel": "Review Dashboard",
+      "tag": "app_role = agent",
+      "pos": [460, 510],
+      "size": [140, 64]
+    },
+    {
+      "id": "jev_engine",
+      "type": "backend",
+      "label": "Jev (TypeSafe AI)",
+      "sublabel": "Choice + Noul + Score",
+      "tag": "System 1",
+      "pos": [680, 130],
+      "size": [140, 64]
+    },
+    {
+      "id": "keyword_engine",
+      "type": "backend",
+      "label": "Regex & Slots",
+      "sublabel": "Local slot extractor",
+      "tag": "Baseline",
+      "pos": [680, 260],
+      "size": [140, 64]
+    },
+    {
+      "id": "claude_replies",
+      "type": "backend",
+      "label": "Claude Haiku 4.5",
+      "sublabel": "Placeholders with facts",
+      "tag": "System 2",
+      "pos": [680, 390],
+      "size": [140, 64]
+    },
+    {
+      "id": "ml_risk",
+      "type": "backend",
+      "label": "IEEE-CIS Transfer",
+      "sublabel": "Percentile 98 Web/App",
+      "tag": "HistGradientBoosting",
+      "pos": [910, 130],
+      "size": [150, 64]
+    },
+    {
+      "id": "policy_engine",
+      "type": "security",
+      "label": "Policy Engine v2.3",
+      "sublabel": "Window, caps, legal",
+      "tag": "Deterministic code",
+      "pos": [910, 260],
+      "size": [150, 64]
+    },
+    {
+      "id": "rag_explainer",
+      "type": "backend",
+      "label": "Policy Explainer",
+      "sublabel": "BM25 confidence gate",
+      "tag": "Clause cited",
+      "pos": [910, 390],
+      "size": [150, 64]
+    },
+    {
+      "id": "tool_gateway",
+      "type": "backend",
+      "label": "Tool Gateway",
+      "sublabel": "FastAPI least privilege",
+      "tag": "role: app_gateway",
+      "pos": [1150, 260],
+      "size": [140, 64]
+    },
+    {
+      "id": "db_bank",
+      "type": "database",
+      "label": "Supabase bank",
+      "sublabel": "Gold serving copy",
+      "tag": "Read-only",
+      "pos": [1370, 130],
+      "size": [130, 64]
+    },
+    {
+      "id": "db_ops",
+      "type": "database",
+      "label": "Supabase ops",
+      "sublabel": "Cases, locks, audit",
+      "tag": "Append-only ledger",
+      "pos": [1370, 260],
+      "size": [130, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Ingress & Edge Security",
+      "wraps": ["auth", "pii_guard"]
+    },
+    {
+      "kind": "region",
+      "label": "AlterEgo Core Runtime (FastAPI on Vercel)",
+      "wraps": [
+        "jev_engine",
+        "keyword_engine",
+        "claude_replies",
+        "ml_risk",
+        "policy_engine",
+        "rag_explainer",
+        "tool_gateway"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Supabase Managed Postgres",
+      "wraps": ["db_bank", "db_ops"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c-cust-auth",
+      "from": "customer",
+      "to": "auth",
+      "label": "Bearer",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-auth-pii",
+      "from": "auth",
+      "to": "pii_guard",
+      "label": "token OK",
+      "variant": "security"
+    },
+    {
+      "id": "c-pii-keyword",
+      "from": "pii_guard",
+      "to": "keyword_engine",
+      "label": "raw text"
+    },
+    {
+      "id": "c-pii-jev",
+      "from": "pii_guard",
+      "to": "jev_engine",
+      "label": "masked payload",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "c-jev-policy",
+      "from": "jev_engine",
+      "to": "policy_engine",
+      "label": "signals",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
+      "id": "c-keyword-policy",
+      "from": "keyword_engine",
+      "to": "policy_engine",
+      "label": "slots",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-policy-ml",
+      "from": "policy_engine",
+      "to": "ml_risk",
+      "label": "score charge",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "c-policy-gateway",
+      "from": "policy_engine",
+      "to": "tool_gateway",
+      "label": "authorized",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-gateway-bank",
+      "from": "tool_gateway",
+      "to": "db_bank",
+      "label": "SELECT facts",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "c-gateway-ops",
+      "from": "tool_gateway",
+      "to": "db_ops",
+      "label": "read-back",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-policy-rag",
+      "from": "policy_engine",
+      "to": "rag_explainer",
+      "label": "rules query",
+      "labelDy": 24,
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "c-rag-claude",
+      "from": "rag_explainer",
+      "to": "claude_replies",
+      "label": "clause citation",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "c-policy-hitl",
+      "from": "policy_engine",
+      "to": "hitl_console",
+      "label": "escalation",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "right"
+    },
+    {
+      "id": "c-agent-console",
+      "from": "agent_user",
+      "to": "hitl_console",
+      "label": "manage case",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Deterministic Governance",
+      "items": [
+        "Model proposes, deterministic code disposes: zero business policies in prompts",
+        "Identity bound to verified Supabase ES256 session token (app_metadata.customer_id)",
+        "Strict read-back verification: actions confirmed only after verifying database ledger"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Two-Tier Cognitive & ML Transfer",
+      "items": [
+        "System 1 (Jev): Probabilistic Choice, Noul, Score over masked text only",
+        "System 2 (Claude): Formatted customer explanations populated with verified facts",
+        "IEEE-CIS Risk Transfer: 19 deployable contract features with 98th percentile threshold"
+      ]
+    }
+  ]
+}

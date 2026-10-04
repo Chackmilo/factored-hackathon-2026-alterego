@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "workflow",
+  "quality": "standard",
+  "specification": {
+    "path": "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\candidate.json",
+    "sha256": "33079f04b289ef525aeaabc33e51188d4a4fe0f133851ee6c22ee027acef3265",
+    "bytes": 6735
+  },
+  "artifact": {
+    "path": "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\dispute-resolution.html",
+    "sha256": "2d1d97a9290908856f870727b69808e87c42ea6daa86d9ab183800a64dc3a8e1",
+    "bytes": 771521
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\dispute-resolution.finalize.json",
+    "summaryReceipt": "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\dispute-resolution.finalize-summary.json",
+    "browserCheckReceipt": "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\dispute-resolution.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.0.1",
+    "availableVersion": "3.0.1",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-04T14:04:48.292Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 5917,
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "routesOverSuggestedBends": 7,
+      "routesOverSuggestedStretch": 2
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [],
+      "detours": [
+        {
+          "relationship": {
+            "id": "e-lock-gateway",
+            "from": "lock_confirm",
+            "to": "tool_gateway",
+            "label": "YES confirmed",
+            "collectionIndex": 4,
+            "artifactIndex": 5
+          },
+          "bends": 3,
+          "stretch": 1.154
+        },
+        {
+          "relationship": {
+            "id": "e-policy-clarify",
+            "from": "policy_engine",
+            "to": "clarify_prompt",
+            "label": "ambiguous",
+            "collectionIndex": 5,
+            "artifactIndex": 6
+          },
+          "bends": 3,
+          "stretch": 1.339
+        },
+        {
+          "relationship": {
+            "id": "e-policy-lock",
+            "from": "policy_engine",
+            "to": "lock_confirm",
+            "label": "stolen card",
+            "collectionIndex": 6,
+            "artifactIndex": 7
+          },
+          "bends": 3,
+          "stretch": 1.2
+        },
+        {
+          "relationship": {
+            "id": "e-policy-risk",
+            "from": "policy_engine",
+            "to": "risk_scorer",
+            "label": "",
+            "collectionIndex": 7,
+            "artifactIndex": 8
+          },
+          "bends": 3,
+          "stretch": 1.42
+        },
+        {
+          "relationship": {
+            "id": "e-req-auth",
+            "from": "cust_req",
+            "to": "auth_guard",
+            "label": "token + query",
+            "collectionIndex": 8,
+            "artifactIndex": 9
+          },
+          "bends": 3,
+          "stretch": 1.189
+        },
+        {
+          "relationship": {
+            "id": "e-risk-gateway",
+            "from": "risk_scorer",
+            "to": "tool_gateway",
+            "label": "safe intake",
+            "collectionIndex": 9,
+            "artifactIndex": 10
+          },
+          "bends": 4,
+          "stretch": 1.12
+        },
+        {
+          "relationship": {
+            "id": "e-risk-handoff",
+            "from": "risk_scorer",
+            "to": "handoff_packet",
+            "label": "risk / &gt;$500",
+            "collectionIndex": 10,
+            "artifactIndex": 11
+          },
+          "bends": 4,
+          "stretch": 6.764
+        }
+      ],
+      "truncated": false
+    },
+    "hints": [
+      "lock_confirm → tool_gateway needs 3 bends: move node lock_confirm or tool_gateway so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "policy_engine → clarify_prompt needs 3 bends: move node policy_engine or clarify_prompt so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "policy_engine → lock_confirm needs 3 bends: move node policy_engine or lock_confirm so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "policy_engine → risk_scorer needs 3 bends: move node policy_engine or risk_scorer so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "cust_req → auth_guard needs 3 bends: move node cust_req or auth_guard so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "risk_scorer → tool_gateway needs 4 bends: move node risk_scorer or tool_gateway so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "risk_scorer → handoff_packet needs 4 bends: move node risk_scorer or handoff_packet so they share a row or column with matching centers, or sit diagonally with a clear corner."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}

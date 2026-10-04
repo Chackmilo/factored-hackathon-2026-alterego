@@ -1,0 +1,2369 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "workflow",
+  "quality": "standard",
+  "startedAt": "2026-10-04T14:08:54.033Z",
+  "specification": {
+    "path": "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\candidate.json",
+    "sha256": "33079f04b289ef525aeaabc33e51188d4a4fe0f133851ee6c22ee027acef3265",
+    "bytes": 6735
+  },
+  "artifact": {
+    "path": "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\dispute-resolution.html",
+    "sha256": "2d1d97a9290908856f870727b69808e87c42ea6daa86d9ab183800a64dc3a8e1",
+    "bytes": 771521
+  },
+  "stages": {
+    "validate": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": null,
+      "execution": "embedded-in-deliver",
+      "command": [
+        "C:\\nvm4w\\nodejs\\node.exe",
+        "d:\\Hackaton\\.agents\\skills\\archify\\bin\\archify.mjs",
+        "deliver",
+        "workflow",
+        "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\candidate.json",
+        "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\dispute-resolution.html",
+        "--quality",
+        "standard",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": true,
+        "command": "validate",
+        "specification": {
+          "sha256": "33079f04b289ef525aeaabc33e51188d4a4fe0f133851ee6c22ee027acef3265",
+          "bytes": 6735
+        },
+        "validation": {
+          "checksPassed": 9,
+          "checkCount": 9,
+          "compositionProfile": "standard",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 8,
+          "compositionIssues": [
+            {
+              "severity": "warning",
+              "code": "composition/proper-crossing",
+              "relationship": {
+                "id": "e-intent-policy",
+                "from": "intent_sig",
+                "to": "policy_engine",
+                "label": "signals",
+                "collectionIndex": 3,
+                "artifactIndex": 4
+              },
+              "otherRelationship": {
+                "id": "e-policy-clarify",
+                "from": "policy_engine",
+                "to": "clarify_prompt",
+                "label": "ambiguous",
+                "collectionIndex": 5,
+                "artifactIndex": 6
+              },
+              "point": [
+                354.8,
+                387
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/proper-crossing",
+              "relationship": {
+                "id": "e-lock-gateway",
+                "from": "lock_confirm",
+                "to": "tool_gateway",
+                "label": "YES confirmed",
+                "collectionIndex": 4,
+                "artifactIndex": 5
+              },
+              "otherRelationship": {
+                "id": "e-policy-lock",
+                "from": "policy_engine",
+                "to": "lock_confirm",
+                "label": "stolen card",
+                "collectionIndex": 6,
+                "artifactIndex": 7
+              },
+              "point": [
+                506.8,
+                442
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/proper-crossing",
+              "relationship": {
+                "id": "e-policy-lock",
+                "from": "policy_engine",
+                "to": "lock_confirm",
+                "label": "stolen card",
+                "collectionIndex": 6,
+                "artifactIndex": 7
+              },
+              "otherRelationship": {
+                "id": "e-risk-handoff",
+                "from": "risk_scorer",
+                "to": "handoff_packet",
+                "label": "risk / &gt;$500",
+                "collectionIndex": 10,
+                "artifactIndex": 11
+              },
+              "point": [
+                662.8,
+                337
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/proper-crossing",
+              "relationship": {
+                "id": "e-risk-gateway",
+                "from": "risk_scorer",
+                "to": "tool_gateway",
+                "label": "safe intake",
+                "collectionIndex": 9,
+                "artifactIndex": 10
+              },
+              "otherRelationship": {
+                "id": "e-risk-handoff",
+                "from": "risk_scorer",
+                "to": "handoff_packet",
+                "label": "risk / &gt;$500",
+                "collectionIndex": 10,
+                "artifactIndex": 11
+              },
+              "point": [
+                794.8,
+                471
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/ambiguous-corridor",
+              "relationship": {
+                "id": "e-gateway-verify",
+                "from": "tool_gateway",
+                "to": "verify_readback",
+                "label": "",
+                "collectionIndex": 2,
+                "artifactIndex": 3
+              },
+              "otherRelationship": {
+                "id": "e-risk-gateway",
+                "from": "risk_scorer",
+                "to": "tool_gateway",
+                "label": "safe intake",
+                "collectionIndex": 9,
+                "artifactIndex": 10
+              },
+              "segmentIndex": 0,
+              "otherSegmentIndex": 4,
+              "overlapLength": 16,
+              "from": [
+                778.8,
+                521
+              ],
+              "to": [
+                794.8,
+                521
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/ambiguous-corridor",
+              "relationship": {
+                "id": "e-lock-gateway",
+                "from": "lock_confirm",
+                "to": "tool_gateway",
+                "label": "YES confirmed",
+                "collectionIndex": 4,
+                "artifactIndex": 5
+              },
+              "otherRelationship": {
+                "id": "e-policy-risk",
+                "from": "policy_engine",
+                "to": "risk_scorer",
+                "label": "",
+                "collectionIndex": 7,
+                "artifactIndex": 8
+              },
+              "segmentIndex": 1,
+              "otherSegmentIndex": 2,
+              "overlapLength": 55,
+              "from": [
+                506.8,
+                387
+              ],
+              "to": [
+                506.8,
+                442
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/ambiguous-corridor",
+              "relationship": {
+                "id": "e-policy-lock",
+                "from": "policy_engine",
+                "to": "lock_confirm",
+                "label": "stolen card",
+                "collectionIndex": 6,
+                "artifactIndex": 7
+              },
+              "otherRelationship": {
+                "id": "e-policy-risk",
+                "from": "policy_engine",
+                "to": "risk_scorer",
+                "label": "",
+                "collectionIndex": 7,
+                "artifactIndex": 8
+              },
+              "segmentIndex": 1,
+              "otherSegmentIndex": 1,
+              "overlapLength": 50,
+              "from": [
+                456.8,
+                442
+              ],
+              "to": [
+                506.8,
+                442
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/ambiguous-corridor",
+              "relationship": {
+                "id": "e-policy-lock",
+                "from": "policy_engine",
+                "to": "lock_confirm",
+                "label": "stolen card",
+                "collectionIndex": 6,
+                "artifactIndex": 7
+              },
+              "otherRelationship": {
+                "id": "e-risk-gateway",
+                "from": "risk_scorer",
+                "to": "tool_gateway",
+                "label": "safe intake",
+                "collectionIndex": 9,
+                "artifactIndex": 10
+              },
+              "segmentIndex": 2,
+              "otherSegmentIndex": 1,
+              "overlapLength": 17,
+              "from": [
+                662.8,
+                387
+              ],
+              "to": [
+                662.8,
+                404
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "deliver": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 1210,
+      "command": [
+        "C:\\nvm4w\\nodejs\\node.exe",
+        "d:\\Hackaton\\.agents\\skills\\archify\\bin\\archify.mjs",
+        "deliver",
+        "workflow",
+        "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\candidate.json",
+        "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\dispute-resolution.html",
+        "--quality",
+        "standard",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "receiptId": "3b64194a-6233-456c-b3f6-e770113d36ac",
+        "ok": true,
+        "command": "deliver",
+        "type": "workflow",
+        "input": "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\candidate.json",
+        "output": "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\dispute-resolution.html",
+        "specification": {
+          "sha256": "33079f04b289ef525aeaabc33e51188d4a4fe0f133851ee6c22ee027acef3265",
+          "bytes": 6735
+        },
+        "artifact": {
+          "sha256": "2d1d97a9290908856f870727b69808e87c42ea6daa86d9ab183800a64dc3a8e1",
+          "bytes": 771521
+        },
+        "validation": {
+          "checksPassed": 9,
+          "checkCount": 9,
+          "compositionProfile": "standard",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 8,
+          "compositionIssues": [
+            {
+              "severity": "warning",
+              "code": "composition/proper-crossing",
+              "relationship": {
+                "id": "e-intent-policy",
+                "from": "intent_sig",
+                "to": "policy_engine",
+                "label": "signals",
+                "collectionIndex": 3,
+                "artifactIndex": 4
+              },
+              "otherRelationship": {
+                "id": "e-policy-clarify",
+                "from": "policy_engine",
+                "to": "clarify_prompt",
+                "label": "ambiguous",
+                "collectionIndex": 5,
+                "artifactIndex": 6
+              },
+              "point": [
+                354.8,
+                387
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/proper-crossing",
+              "relationship": {
+                "id": "e-lock-gateway",
+                "from": "lock_confirm",
+                "to": "tool_gateway",
+                "label": "YES confirmed",
+                "collectionIndex": 4,
+                "artifactIndex": 5
+              },
+              "otherRelationship": {
+                "id": "e-policy-lock",
+                "from": "policy_engine",
+                "to": "lock_confirm",
+                "label": "stolen card",
+                "collectionIndex": 6,
+                "artifactIndex": 7
+              },
+              "point": [
+                506.8,
+                442
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/proper-crossing",
+              "relationship": {
+                "id": "e-policy-lock",
+                "from": "policy_engine",
+                "to": "lock_confirm",
+                "label": "stolen card",
+                "collectionIndex": 6,
+                "artifactIndex": 7
+              },
+              "otherRelationship": {
+                "id": "e-risk-handoff",
+                "from": "risk_scorer",
+                "to": "handoff_packet",
+                "label": "risk / &gt;$500",
+                "collectionIndex": 10,
+                "artifactIndex": 11
+              },
+              "point": [
+                662.8,
+                337
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/proper-crossing",
+              "relationship": {
+                "id": "e-risk-gateway",
+                "from": "risk_scorer",
+                "to": "tool_gateway",
+                "label": "safe intake",
+                "collectionIndex": 9,
+                "artifactIndex": 10
+              },
+              "otherRelationship": {
+                "id": "e-risk-handoff",
+                "from": "risk_scorer",
+                "to": "handoff_packet",
+                "label": "risk / &gt;$500",
+                "collectionIndex": 10,
+                "artifactIndex": 11
+              },
+              "point": [
+                794.8,
+                471
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/ambiguous-corridor",
+              "relationship": {
+                "id": "e-gateway-verify",
+                "from": "tool_gateway",
+                "to": "verify_readback",
+                "label": "",
+                "collectionIndex": 2,
+                "artifactIndex": 3
+              },
+              "otherRelationship": {
+                "id": "e-risk-gateway",
+                "from": "risk_scorer",
+                "to": "tool_gateway",
+                "label": "safe intake",
+                "collectionIndex": 9,
+                "artifactIndex": 10
+              },
+              "segmentIndex": 0,
+              "otherSegmentIndex": 4,
+              "overlapLength": 16,
+              "from": [
+                778.8,
+                521
+              ],
+              "to": [
+                794.8,
+                521
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/ambiguous-corridor",
+              "relationship": {
+                "id": "e-lock-gateway",
+                "from": "lock_confirm",
+                "to": "tool_gateway",
+                "label": "YES confirmed",
+                "collectionIndex": 4,
+                "artifactIndex": 5
+              },
+              "otherRelationship": {
+                "id": "e-policy-risk",
+                "from": "policy_engine",
+                "to": "risk_scorer",
+                "label": "",
+                "collectionIndex": 7,
+                "artifactIndex": 8
+              },
+              "segmentIndex": 1,
+              "otherSegmentIndex": 2,
+              "overlapLength": 55,
+              "from": [
+                506.8,
+                387
+              ],
+              "to": [
+                506.8,
+                442
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/ambiguous-corridor",
+              "relationship": {
+                "id": "e-policy-lock",
+                "from": "policy_engine",
+                "to": "lock_confirm",
+                "label": "stolen card",
+                "collectionIndex": 6,
+                "artifactIndex": 7
+              },
+              "otherRelationship": {
+                "id": "e-policy-risk",
+                "from": "policy_engine",
+                "to": "risk_scorer",
+                "label": "",
+                "collectionIndex": 7,
+                "artifactIndex": 8
+              },
+              "segmentIndex": 1,
+              "otherSegmentIndex": 1,
+              "overlapLength": 50,
+              "from": [
+                456.8,
+                442
+              ],
+              "to": [
+                506.8,
+                442
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/ambiguous-corridor",
+              "relationship": {
+                "id": "e-policy-lock",
+                "from": "policy_engine",
+                "to": "lock_confirm",
+                "label": "stolen card",
+                "collectionIndex": 6,
+                "artifactIndex": 7
+              },
+              "otherRelationship": {
+                "id": "e-risk-gateway",
+                "from": "risk_scorer",
+                "to": "tool_gateway",
+                "label": "safe intake",
+                "collectionIndex": 9,
+                "artifactIndex": 10
+              },
+              "segmentIndex": 2,
+              "otherSegmentIndex": 1,
+              "overlapLength": 17,
+              "from": [
+                662.8,
+                387
+              ],
+              "to": [
+                662.8,
+                404
+              ]
+            }
+          ]
+        },
+        "update": {
+          "status": "unavailable",
+          "installedVersion": null,
+          "availableVersion": null,
+          "releaseNotes": null,
+          "checkedAt": null,
+          "source": null,
+          "noticeRequired": false,
+          "noticeText": null,
+          "reason": "disabled"
+        }
+      }
+    },
+    "check": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 263,
+      "command": [
+        "C:\\nvm4w\\nodejs\\node.exe",
+        "d:\\Hackaton\\.agents\\skills\\archify\\bin\\archify.mjs",
+        "check",
+        "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\dispute-resolution.html",
+        "--require-provenance"
+      ],
+      "receipt": {
+        "ok": true,
+        "file": "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\dispute-resolution.html",
+        "artifact": {
+          "sha256": "2d1d97a9290908856f870727b69808e87c42ea6daa86d9ab183800a64dc3a8e1",
+          "bytes": 771521
+        },
+        "checks": [
+          {
+            "name": "single_svg",
+            "ok": true,
+            "details": [
+              "found 1 <svg> block(s)"
+            ]
+          },
+          {
+            "name": "finite_svg",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "orthogonal_arrows",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "label_route_clearance",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "relationship_crossings",
+            "ok": true,
+            "details": [
+              "[composition/proper-crossing] standard relationship id \"e-intent-policy\" (\"intent_sig\" -> \"policy_engine\") crosses relationship id \"e-policy-clarify\" (\"policy_engine\" -> \"clarify_prompt\") at [354.8, 387]",
+              "[composition/proper-crossing] standard relationship id \"e-lock-gateway\" (\"lock_confirm\" -> \"tool_gateway\") crosses relationship id \"e-policy-lock\" (\"policy_engine\" -> \"lock_confirm\") at [506.8, 442]",
+              "[composition/proper-crossing] standard relationship id \"e-policy-lock\" (\"policy_engine\" -> \"lock_confirm\") crosses relationship id \"e-risk-handoff\" (\"risk_scorer\" -> \"handoff_packet\") at [662.8, 337]",
+              "[composition/proper-crossing] standard relationship id \"e-risk-gateway\" (\"risk_scorer\" -> \"tool_gateway\") crosses relationship id \"e-risk-handoff\" (\"risk_scorer\" -> \"handoff_packet\") at [794.8, 471]"
+            ]
+          },
+          {
+            "name": "relationship_corridors",
+            "ok": true,
+            "details": [
+              "[composition/ambiguous-corridor] standard relationship id \"e-gateway-verify\" (\"tool_gateway\" -> \"verify_readback\") shares a 16px corridor with relationship id \"e-risk-gateway\" (\"risk_scorer\" -> \"tool_gateway\") at [778.8, 521] -> [794.8, 521]",
+              "[composition/ambiguous-corridor] standard relationship id \"e-lock-gateway\" (\"lock_confirm\" -> \"tool_gateway\") shares a 55px corridor with relationship id \"e-policy-risk\" (\"policy_engine\" -> \"risk_scorer\") at [506.8, 387] -> [506.8, 442]",
+              "[composition/ambiguous-corridor] standard relationship id \"e-policy-lock\" (\"policy_engine\" -> \"lock_confirm\") shares a 50px corridor with relationship id \"e-policy-risk\" (\"policy_engine\" -> \"risk_scorer\") at [456.8, 442] -> [506.8, 442]",
+              "[composition/ambiguous-corridor] standard relationship id \"e-policy-lock\" (\"policy_engine\" -> \"lock_confirm\") shares a 17px corridor with relationship id \"e-risk-gateway\" (\"risk_scorer\" -> \"tool_gateway\") at [662.8, 387] -> [662.8, 404]"
+            ]
+          },
+          {
+            "name": "container_border_runs",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "route_rhythm",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "legend_clearance",
+            "ok": true,
+            "details": []
+          }
+        ],
+        "composition": {
+          "schemaVersion": 1,
+          "profile": "standard",
+          "status": "pass",
+          "summary": {
+            "errors": 0,
+            "warnings": 8
+          },
+          "metrics": {
+            "properCrossings": 4,
+            "resolvedCrossovers": 0,
+            "ambiguousCorridors": 4,
+            "arrowheadCollisions": 0,
+            "containerBorderRuns": 0,
+            "labelRouteClearanceIssues": 0,
+            "labelCanvasOverflowIssues": 0,
+            "minLabelRouteClearance": 15.6,
+            "desktopReadabilityIssues": 0,
+            "viewportHeightIssues": 0,
+            "minProjectedNodeTextPx": 6.630555555555556,
+            "maxBends": 4,
+            "routesOverSuggestedBends": 7,
+            "maxStretch": 6.764,
+            "routesOverSuggestedStretch": 2,
+            "minSegmentPx": 16,
+            "minInteriorSegmentPx": 17,
+            "shortSegmentCount": 0,
+            "shortEndpointSegmentCount": 0,
+            "shortInteriorSegmentCount": 0,
+            "microSegmentCount": 0
+          },
+          "suggestedLimits": {
+            "bendsPerRelationship": 2,
+            "stretch": 1.35,
+            "segmentPx": 16,
+            "microSegmentPx": 8
+          },
+          "routeReview": {
+            "crossings": [],
+            "detours": [
+              {
+                "relationship": {
+                  "id": "e-lock-gateway",
+                  "from": "lock_confirm",
+                  "to": "tool_gateway",
+                  "label": "YES confirmed",
+                  "collectionIndex": 4,
+                  "artifactIndex": 5
+                },
+                "bends": 3,
+                "stretch": 1.154
+              },
+              {
+                "relationship": {
+                  "id": "e-policy-clarify",
+                  "from": "policy_engine",
+                  "to": "clarify_prompt",
+                  "label": "ambiguous",
+                  "collectionIndex": 5,
+                  "artifactIndex": 6
+                },
+                "bends": 3,
+                "stretch": 1.339
+              },
+              {
+                "relationship": {
+                  "id": "e-policy-lock",
+                  "from": "policy_engine",
+                  "to": "lock_confirm",
+                  "label": "stolen card",
+                  "collectionIndex": 6,
+                  "artifactIndex": 7
+                },
+                "bends": 3,
+                "stretch": 1.2
+              },
+              {
+                "relationship": {
+                  "id": "e-policy-risk",
+                  "from": "policy_engine",
+                  "to": "risk_scorer",
+                  "label": "",
+                  "collectionIndex": 7,
+                  "artifactIndex": 8
+                },
+                "bends": 3,
+                "stretch": 1.42
+              },
+              {
+                "relationship": {
+                  "id": "e-req-auth",
+                  "from": "cust_req",
+                  "to": "auth_guard",
+                  "label": "token + query",
+                  "collectionIndex": 8,
+                  "artifactIndex": 9
+                },
+                "bends": 3,
+                "stretch": 1.189
+              },
+              {
+                "relationship": {
+                  "id": "e-risk-gateway",
+                  "from": "risk_scorer",
+                  "to": "tool_gateway",
+                  "label": "safe intake",
+                  "collectionIndex": 9,
+                  "artifactIndex": 10
+                },
+                "bends": 4,
+                "stretch": 1.12
+              },
+              {
+                "relationship": {
+                  "id": "e-risk-handoff",
+                  "from": "risk_scorer",
+                  "to": "handoff_packet",
+                  "label": "risk / &gt;$500",
+                  "collectionIndex": 10,
+                  "artifactIndex": 11
+                },
+                "bends": 4,
+                "stretch": 6.764
+              }
+            ]
+          },
+          "leadingSpace": {
+            "measured": false,
+            "reviewSuggested": false
+          },
+          "desktopReadability": {
+            "budgetBasis": "legacy-930",
+            "readerContract": "declared-wide-v1",
+            "availableDiagramWidth": 930,
+            "actualBudgetPx": 930,
+            "limit": "legacy",
+            "requestedTargetPx": null,
+            "requestedTargetMet": null,
+            "hardFloorPx": 6,
+            "hardFloorMet": true,
+            "minimumOwner": {
+              "kind": "node",
+              "id": "intent_sig"
+            },
+            "minimumSourceTextPx": 7.7,
+            "minimumProjectedTextPx": 6.630555555555556,
+            "semanticTextCount": 31
+          },
+          "issues": [
+            {
+              "severity": "warning",
+              "code": "composition/proper-crossing",
+              "relationship": {
+                "id": "e-intent-policy",
+                "from": "intent_sig",
+                "to": "policy_engine",
+                "label": "signals",
+                "collectionIndex": 3,
+                "artifactIndex": 4
+              },
+              "otherRelationship": {
+                "id": "e-policy-clarify",
+                "from": "policy_engine",
+                "to": "clarify_prompt",
+                "label": "ambiguous",
+                "collectionIndex": 5,
+                "artifactIndex": 6
+              },
+              "point": [
+                354.8,
+                387
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/proper-crossing",
+              "relationship": {
+                "id": "e-lock-gateway",
+                "from": "lock_confirm",
+                "to": "tool_gateway",
+                "label": "YES confirmed",
+                "collectionIndex": 4,
+                "artifactIndex": 5
+              },
+              "otherRelationship": {
+                "id": "e-policy-lock",
+                "from": "policy_engine",
+                "to": "lock_confirm",
+                "label": "stolen card",
+                "collectionIndex": 6,
+                "artifactIndex": 7
+              },
+              "point": [
+                506.8,
+                442
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/proper-crossing",
+              "relationship": {
+                "id": "e-policy-lock",
+                "from": "policy_engine",
+                "to": "lock_confirm",
+                "label": "stolen card",
+                "collectionIndex": 6,
+                "artifactIndex": 7
+              },
+              "otherRelationship": {
+                "id": "e-risk-handoff",
+                "from": "risk_scorer",
+                "to": "handoff_packet",
+                "label": "risk / &gt;$500",
+                "collectionIndex": 10,
+                "artifactIndex": 11
+              },
+              "point": [
+                662.8,
+                337
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/proper-crossing",
+              "relationship": {
+                "id": "e-risk-gateway",
+                "from": "risk_scorer",
+                "to": "tool_gateway",
+                "label": "safe intake",
+                "collectionIndex": 9,
+                "artifactIndex": 10
+              },
+              "otherRelationship": {
+                "id": "e-risk-handoff",
+                "from": "risk_scorer",
+                "to": "handoff_packet",
+                "label": "risk / &gt;$500",
+                "collectionIndex": 10,
+                "artifactIndex": 11
+              },
+              "point": [
+                794.8,
+                471
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/ambiguous-corridor",
+              "relationship": {
+                "id": "e-gateway-verify",
+                "from": "tool_gateway",
+                "to": "verify_readback",
+                "label": "",
+                "collectionIndex": 2,
+                "artifactIndex": 3
+              },
+              "otherRelationship": {
+                "id": "e-risk-gateway",
+                "from": "risk_scorer",
+                "to": "tool_gateway",
+                "label": "safe intake",
+                "collectionIndex": 9,
+                "artifactIndex": 10
+              },
+              "segmentIndex": 0,
+              "otherSegmentIndex": 4,
+              "overlapLength": 16,
+              "from": [
+                778.8,
+                521
+              ],
+              "to": [
+                794.8,
+                521
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/ambiguous-corridor",
+              "relationship": {
+                "id": "e-lock-gateway",
+                "from": "lock_confirm",
+                "to": "tool_gateway",
+                "label": "YES confirmed",
+                "collectionIndex": 4,
+                "artifactIndex": 5
+              },
+              "otherRelationship": {
+                "id": "e-policy-risk",
+                "from": "policy_engine",
+                "to": "risk_scorer",
+                "label": "",
+                "collectionIndex": 7,
+                "artifactIndex": 8
+              },
+              "segmentIndex": 1,
+              "otherSegmentIndex": 2,
+              "overlapLength": 55,
+              "from": [
+                506.8,
+                387
+              ],
+              "to": [
+                506.8,
+                442
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/ambiguous-corridor",
+              "relationship": {
+                "id": "e-policy-lock",
+                "from": "policy_engine",
+                "to": "lock_confirm",
+                "label": "stolen card",
+                "collectionIndex": 6,
+                "artifactIndex": 7
+              },
+              "otherRelationship": {
+                "id": "e-policy-risk",
+                "from": "policy_engine",
+                "to": "risk_scorer",
+                "label": "",
+                "collectionIndex": 7,
+                "artifactIndex": 8
+              },
+              "segmentIndex": 1,
+              "otherSegmentIndex": 1,
+              "overlapLength": 50,
+              "from": [
+                456.8,
+                442
+              ],
+              "to": [
+                506.8,
+                442
+              ]
+            },
+            {
+              "severity": "warning",
+              "code": "composition/ambiguous-corridor",
+              "relationship": {
+                "id": "e-policy-lock",
+                "from": "policy_engine",
+                "to": "lock_confirm",
+                "label": "stolen card",
+                "collectionIndex": 6,
+                "artifactIndex": 7
+              },
+              "otherRelationship": {
+                "id": "e-risk-gateway",
+                "from": "risk_scorer",
+                "to": "tool_gateway",
+                "label": "safe intake",
+                "collectionIndex": 9,
+                "artifactIndex": 10
+              },
+              "segmentIndex": 2,
+              "otherSegmentIndex": 1,
+              "overlapLength": 17,
+              "from": [
+                662.8,
+                387
+              ],
+              "to": [
+                662.8,
+                404
+              ]
+            }
+          ]
+        },
+        "provenance": "current",
+        "deliveryReceiptId": "3b64194a-6233-456c-b3f6-e770113d36ac"
+      }
+    },
+    "browser-check": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 3579,
+      "command": [
+        "C:\\nvm4w\\nodejs\\node.exe",
+        "d:\\Hackaton\\.agents\\skills\\archify\\bin\\archify.mjs",
+        "browser-check",
+        "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\dispute-resolution.html",
+        "--json",
+        "--require-provenance"
+      ],
+      "execution": "in-process",
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": true,
+        "command": "browser-check",
+        "evidenceKind": "automated-browser",
+        "status": "pass",
+        "visualReview": "not-requested",
+        "provenance": "current",
+        "deliveryReceiptId": "3b64194a-6233-456c-b3f6-e770113d36ac",
+        "artifact": {
+          "path": "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\dispute-resolution.html",
+          "sha256": "2d1d97a9290908856f870727b69808e87c42ea6daa86d9ab183800a64dc3a8e1",
+          "bytes": 771521
+        },
+        "state": {
+          "detail": "read",
+          "motion": "still"
+        },
+        "chrome": {
+          "status": "available",
+          "executable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+        },
+        "diagnostics": [],
+        "containment": {
+          "status": "pass",
+          "policy": "fit-or-reader-declared-readable-vertical-scroll",
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "theme": "light",
+              "innerWidth": 1440,
+              "innerHeight": 900,
+              "scrollWidth": 1440,
+              "scrollHeight": 900,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": null,
+              "ok": true,
+              "readerWidth": 1167,
+              "diagramWidth": 1137,
+              "pageComposition": {
+                "bodyPaddingPx": 12,
+                "headerPx": 78,
+                "diagramChromePx": 78,
+                "svgPx": 720,
+                "cardsPx": 0,
+                "viewBoxHeight": 684
+              },
+              "viewBoxWidth": 1080,
+              "workflowLanes": [
+                {
+                  "frameId": "lane-1",
+                  "heightPx": 120,
+                  "nodeCount": 4,
+                  "nodeIds": [
+                    "auth_guard",
+                    "intent_sig",
+                    "clarify_prompt",
+                    "lock_confirm"
+                  ],
+                  "nodeSpanPx": 72,
+                  "spaceAboveNodesPx": 43,
+                  "spaceBelowNodesPx": 5
+                },
+                {
+                  "frameId": "lane-2",
+                  "heightPx": 120,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "policy_engine",
+                    "risk_scorer"
+                  ],
+                  "nodeSpanPx": 72,
+                  "spaceAboveNodesPx": 43,
+                  "spaceBelowNodesPx": 5
+                },
+                {
+                  "frameId": "lane-3",
+                  "heightPx": 120,
+                  "nodeCount": 3,
+                  "nodeIds": [
+                    "handoff_packet",
+                    "tool_gateway",
+                    "verify_readback"
+                  ],
+                  "nodeSpanPx": 72,
+                  "spaceAboveNodesPx": 43,
+                  "spaceBelowNodesPx": 5
+                },
+                {
+                  "frameId": "lane-0",
+                  "heightPx": 112,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "cust_req",
+                    "cust_reply"
+                  ],
+                  "nodeSpanPx": 72,
+                  "spaceAboveNodesPx": 36,
+                  "spaceBelowNodesPx": 4
+                }
+              ],
+              "minimumProjectedNodeTextPx": 7.7,
+              "minimumProjectedNonEdgeTextPx": 7.7,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "Jev Choice + Noul / Regex",
+              "minimumProjectedNodeTextDetail": "context",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "node",
+                "id": "intent_sig"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "theme": "light",
+              "innerWidth": 1600,
+              "innerHeight": 1000,
+              "scrollWidth": 1600,
+              "scrollHeight": 1000,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": null,
+              "ok": true,
+              "readerWidth": 1221,
+              "diagramWidth": 1191,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 754,
+                "cardsPx": 0,
+                "viewBoxHeight": 684
+              },
+              "viewBoxWidth": 1080,
+              "workflowLanes": [
+                {
+                  "frameId": "lane-1",
+                  "heightPx": 126,
+                  "nodeCount": 4,
+                  "nodeIds": [
+                    "auth_guard",
+                    "intent_sig",
+                    "clarify_prompt",
+                    "lock_confirm"
+                  ],
+                  "nodeSpanPx": 75,
+                  "spaceAboveNodesPx": 45,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-2",
+                  "heightPx": 126,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "policy_engine",
+                    "risk_scorer"
+                  ],
+                  "nodeSpanPx": 75,
+                  "spaceAboveNodesPx": 45,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-3",
+                  "heightPx": 126,
+                  "nodeCount": 3,
+                  "nodeIds": [
+                    "handoff_packet",
+                    "tool_gateway",
+                    "verify_readback"
+                  ],
+                  "nodeSpanPx": 75,
+                  "spaceAboveNodesPx": 45,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-0",
+                  "heightPx": 117,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "cust_req",
+                    "cust_reply"
+                  ],
+                  "nodeSpanPx": 75,
+                  "spaceAboveNodesPx": 37,
+                  "spaceBelowNodesPx": 4
+                }
+              ],
+              "minimumProjectedNodeTextPx": 7.7,
+              "minimumProjectedNonEdgeTextPx": 7.7,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "Jev Choice + Noul / Regex",
+              "minimumProjectedNodeTextDetail": "context",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "node",
+                "id": "intent_sig"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "theme": "light",
+              "innerWidth": 1920,
+              "innerHeight": 1080,
+              "scrollWidth": 1920,
+              "scrollHeight": 1080,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": null,
+              "ok": true,
+              "readerWidth": 1347,
+              "diagramWidth": 1317,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 834,
+                "cardsPx": 0,
+                "viewBoxHeight": 684
+              },
+              "viewBoxWidth": 1080,
+              "workflowLanes": [
+                {
+                  "frameId": "lane-1",
+                  "heightPx": 139,
+                  "nodeCount": 4,
+                  "nodeIds": [
+                    "auth_guard",
+                    "intent_sig",
+                    "clarify_prompt",
+                    "lock_confirm"
+                  ],
+                  "nodeSpanPx": 83,
+                  "spaceAboveNodesPx": 50,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-2",
+                  "heightPx": 139,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "policy_engine",
+                    "risk_scorer"
+                  ],
+                  "nodeSpanPx": 83,
+                  "spaceAboveNodesPx": 50,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-3",
+                  "heightPx": 139,
+                  "nodeCount": 3,
+                  "nodeIds": [
+                    "handoff_packet",
+                    "tool_gateway",
+                    "verify_readback"
+                  ],
+                  "nodeSpanPx": 83,
+                  "spaceAboveNodesPx": 50,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-0",
+                  "heightPx": 129,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "cust_req",
+                    "cust_reply"
+                  ],
+                  "nodeSpanPx": 83,
+                  "spaceAboveNodesPx": 41,
+                  "spaceBelowNodesPx": 5
+                }
+              ],
+              "minimumProjectedNodeTextPx": 7.7,
+              "minimumProjectedNonEdgeTextPx": 7.7,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "Jev Choice + Noul / Regex",
+              "minimumProjectedNodeTextDetail": "context",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "node",
+                "id": "intent_sig"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "theme": "light",
+              "innerWidth": 2048,
+              "innerHeight": 1320,
+              "scrollWidth": 2048,
+              "scrollHeight": 1320,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": null,
+              "ok": true,
+              "readerWidth": 1718,
+              "diagramWidth": 1668,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 94,
+                "diagramChromePx": 94,
+                "svgPx": 1056,
+                "cardsPx": 0,
+                "viewBoxHeight": 684
+              },
+              "viewBoxWidth": 1080,
+              "workflowLanes": [
+                {
+                  "frameId": "lane-1",
+                  "heightPx": 176,
+                  "nodeCount": 4,
+                  "nodeIds": [
+                    "auth_guard",
+                    "intent_sig",
+                    "clarify_prompt",
+                    "lock_confirm"
+                  ],
+                  "nodeSpanPx": 105,
+                  "spaceAboveNodesPx": 63,
+                  "spaceBelowNodesPx": 8
+                },
+                {
+                  "frameId": "lane-2",
+                  "heightPx": 176,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "policy_engine",
+                    "risk_scorer"
+                  ],
+                  "nodeSpanPx": 105,
+                  "spaceAboveNodesPx": 63,
+                  "spaceBelowNodesPx": 8
+                },
+                {
+                  "frameId": "lane-3",
+                  "heightPx": 176,
+                  "nodeCount": 3,
+                  "nodeIds": [
+                    "handoff_packet",
+                    "tool_gateway",
+                    "verify_readback"
+                  ],
+                  "nodeSpanPx": 105,
+                  "spaceAboveNodesPx": 63,
+                  "spaceBelowNodesPx": 8
+                },
+                {
+                  "frameId": "lane-0",
+                  "heightPx": 164,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "cust_req",
+                    "cust_reply"
+                  ],
+                  "nodeSpanPx": 105,
+                  "spaceAboveNodesPx": 53,
+                  "spaceBelowNodesPx": 6
+                }
+              ],
+              "minimumProjectedNodeTextPx": 7.7,
+              "minimumProjectedNonEdgeTextPx": 7.7,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "Jev Choice + Noul / Regex",
+              "minimumProjectedNodeTextDetail": "context",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "node",
+                "id": "intent_sig"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            }
+          ]
+        },
+        "themeStates": {
+          "status": "pass",
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 1440,
+              "height": 900,
+              "requestedTheme": "dark",
+              "resolvedTheme": "dark",
+              "ok": true
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "requestedTheme": "dark",
+              "resolvedTheme": "dark",
+              "ok": true
+            }
+          ]
+        },
+        "readability": {
+          "status": "pass",
+          "minimumProjectedNodeTextPx": 6,
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "theme": "light",
+              "innerWidth": 1440,
+              "innerHeight": 900,
+              "scrollWidth": 1440,
+              "scrollHeight": 900,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": null,
+              "ok": true,
+              "readerWidth": 1167,
+              "diagramWidth": 1137,
+              "pageComposition": {
+                "bodyPaddingPx": 12,
+                "headerPx": 78,
+                "diagramChromePx": 78,
+                "svgPx": 720,
+                "cardsPx": 0,
+                "viewBoxHeight": 684
+              },
+              "viewBoxWidth": 1080,
+              "workflowLanes": [
+                {
+                  "frameId": "lane-1",
+                  "heightPx": 120,
+                  "nodeCount": 4,
+                  "nodeIds": [
+                    "auth_guard",
+                    "intent_sig",
+                    "clarify_prompt",
+                    "lock_confirm"
+                  ],
+                  "nodeSpanPx": 72,
+                  "spaceAboveNodesPx": 43,
+                  "spaceBelowNodesPx": 5
+                },
+                {
+                  "frameId": "lane-2",
+                  "heightPx": 120,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "policy_engine",
+                    "risk_scorer"
+                  ],
+                  "nodeSpanPx": 72,
+                  "spaceAboveNodesPx": 43,
+                  "spaceBelowNodesPx": 5
+                },
+                {
+                  "frameId": "lane-3",
+                  "heightPx": 120,
+                  "nodeCount": 3,
+                  "nodeIds": [
+                    "handoff_packet",
+                    "tool_gateway",
+                    "verify_readback"
+                  ],
+                  "nodeSpanPx": 72,
+                  "spaceAboveNodesPx": 43,
+                  "spaceBelowNodesPx": 5
+                },
+                {
+                  "frameId": "lane-0",
+                  "heightPx": 112,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "cust_req",
+                    "cust_reply"
+                  ],
+                  "nodeSpanPx": 72,
+                  "spaceAboveNodesPx": 36,
+                  "spaceBelowNodesPx": 4
+                }
+              ],
+              "minimumProjectedNodeTextPx": 7.7,
+              "minimumProjectedNonEdgeTextPx": 7.7,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "Jev Choice + Noul / Regex",
+              "minimumProjectedNodeTextDetail": "context",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "node",
+                "id": "intent_sig"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "theme": "light",
+              "innerWidth": 1600,
+              "innerHeight": 1000,
+              "scrollWidth": 1600,
+              "scrollHeight": 1000,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": null,
+              "ok": true,
+              "readerWidth": 1221,
+              "diagramWidth": 1191,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 754,
+                "cardsPx": 0,
+                "viewBoxHeight": 684
+              },
+              "viewBoxWidth": 1080,
+              "workflowLanes": [
+                {
+                  "frameId": "lane-1",
+                  "heightPx": 126,
+                  "nodeCount": 4,
+                  "nodeIds": [
+                    "auth_guard",
+                    "intent_sig",
+                    "clarify_prompt",
+                    "lock_confirm"
+                  ],
+                  "nodeSpanPx": 75,
+                  "spaceAboveNodesPx": 45,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-2",
+                  "heightPx": 126,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "policy_engine",
+                    "risk_scorer"
+                  ],
+                  "nodeSpanPx": 75,
+                  "spaceAboveNodesPx": 45,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-3",
+                  "heightPx": 126,
+                  "nodeCount": 3,
+                  "nodeIds": [
+                    "handoff_packet",
+                    "tool_gateway",
+                    "verify_readback"
+                  ],
+                  "nodeSpanPx": 75,
+                  "spaceAboveNodesPx": 45,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-0",
+                  "heightPx": 117,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "cust_req",
+                    "cust_reply"
+                  ],
+                  "nodeSpanPx": 75,
+                  "spaceAboveNodesPx": 37,
+                  "spaceBelowNodesPx": 4
+                }
+              ],
+              "minimumProjectedNodeTextPx": 7.7,
+              "minimumProjectedNonEdgeTextPx": 7.7,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "Jev Choice + Noul / Regex",
+              "minimumProjectedNodeTextDetail": "context",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "node",
+                "id": "intent_sig"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "theme": "light",
+              "innerWidth": 1920,
+              "innerHeight": 1080,
+              "scrollWidth": 1920,
+              "scrollHeight": 1080,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": null,
+              "ok": true,
+              "readerWidth": 1347,
+              "diagramWidth": 1317,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 834,
+                "cardsPx": 0,
+                "viewBoxHeight": 684
+              },
+              "viewBoxWidth": 1080,
+              "workflowLanes": [
+                {
+                  "frameId": "lane-1",
+                  "heightPx": 139,
+                  "nodeCount": 4,
+                  "nodeIds": [
+                    "auth_guard",
+                    "intent_sig",
+                    "clarify_prompt",
+                    "lock_confirm"
+                  ],
+                  "nodeSpanPx": 83,
+                  "spaceAboveNodesPx": 50,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-2",
+                  "heightPx": 139,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "policy_engine",
+                    "risk_scorer"
+                  ],
+                  "nodeSpanPx": 83,
+                  "spaceAboveNodesPx": 50,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-3",
+                  "heightPx": 139,
+                  "nodeCount": 3,
+                  "nodeIds": [
+                    "handoff_packet",
+                    "tool_gateway",
+                    "verify_readback"
+                  ],
+                  "nodeSpanPx": 83,
+                  "spaceAboveNodesPx": 50,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-0",
+                  "heightPx": 129,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "cust_req",
+                    "cust_reply"
+                  ],
+                  "nodeSpanPx": 83,
+                  "spaceAboveNodesPx": 41,
+                  "spaceBelowNodesPx": 5
+                }
+              ],
+              "minimumProjectedNodeTextPx": 7.7,
+              "minimumProjectedNonEdgeTextPx": 7.7,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "Jev Choice + Noul / Regex",
+              "minimumProjectedNodeTextDetail": "context",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "node",
+                "id": "intent_sig"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "theme": "light",
+              "innerWidth": 2048,
+              "innerHeight": 1320,
+              "scrollWidth": 2048,
+              "scrollHeight": 1320,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": null,
+              "ok": true,
+              "readerWidth": 1718,
+              "diagramWidth": 1668,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 94,
+                "diagramChromePx": 94,
+                "svgPx": 1056,
+                "cardsPx": 0,
+                "viewBoxHeight": 684
+              },
+              "viewBoxWidth": 1080,
+              "workflowLanes": [
+                {
+                  "frameId": "lane-1",
+                  "heightPx": 176,
+                  "nodeCount": 4,
+                  "nodeIds": [
+                    "auth_guard",
+                    "intent_sig",
+                    "clarify_prompt",
+                    "lock_confirm"
+                  ],
+                  "nodeSpanPx": 105,
+                  "spaceAboveNodesPx": 63,
+                  "spaceBelowNodesPx": 8
+                },
+                {
+                  "frameId": "lane-2",
+                  "heightPx": 176,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "policy_engine",
+                    "risk_scorer"
+                  ],
+                  "nodeSpanPx": 105,
+                  "spaceAboveNodesPx": 63,
+                  "spaceBelowNodesPx": 8
+                },
+                {
+                  "frameId": "lane-3",
+                  "heightPx": 176,
+                  "nodeCount": 3,
+                  "nodeIds": [
+                    "handoff_packet",
+                    "tool_gateway",
+                    "verify_readback"
+                  ],
+                  "nodeSpanPx": 105,
+                  "spaceAboveNodesPx": 63,
+                  "spaceBelowNodesPx": 8
+                },
+                {
+                  "frameId": "lane-0",
+                  "heightPx": 164,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "cust_req",
+                    "cust_reply"
+                  ],
+                  "nodeSpanPx": 105,
+                  "spaceAboveNodesPx": 53,
+                  "spaceBelowNodesPx": 6
+                }
+              ],
+              "minimumProjectedNodeTextPx": 7.7,
+              "minimumProjectedNonEdgeTextPx": 7.7,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "Jev Choice + Noul / Regex",
+              "minimumProjectedNodeTextDetail": "context",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "node",
+                "id": "intent_sig"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            }
+          ]
+        },
+        "viewerChrome": {
+          "status": "pass",
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "theme": "light",
+              "innerWidth": 1440,
+              "innerHeight": 900,
+              "scrollWidth": 1440,
+              "scrollHeight": 900,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": null,
+              "ok": true,
+              "readerWidth": 1167,
+              "diagramWidth": 1137,
+              "pageComposition": {
+                "bodyPaddingPx": 12,
+                "headerPx": 78,
+                "diagramChromePx": 78,
+                "svgPx": 720,
+                "cardsPx": 0,
+                "viewBoxHeight": 684
+              },
+              "viewBoxWidth": 1080,
+              "workflowLanes": [
+                {
+                  "frameId": "lane-1",
+                  "heightPx": 120,
+                  "nodeCount": 4,
+                  "nodeIds": [
+                    "auth_guard",
+                    "intent_sig",
+                    "clarify_prompt",
+                    "lock_confirm"
+                  ],
+                  "nodeSpanPx": 72,
+                  "spaceAboveNodesPx": 43,
+                  "spaceBelowNodesPx": 5
+                },
+                {
+                  "frameId": "lane-2",
+                  "heightPx": 120,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "policy_engine",
+                    "risk_scorer"
+                  ],
+                  "nodeSpanPx": 72,
+                  "spaceAboveNodesPx": 43,
+                  "spaceBelowNodesPx": 5
+                },
+                {
+                  "frameId": "lane-3",
+                  "heightPx": 120,
+                  "nodeCount": 3,
+                  "nodeIds": [
+                    "handoff_packet",
+                    "tool_gateway",
+                    "verify_readback"
+                  ],
+                  "nodeSpanPx": 72,
+                  "spaceAboveNodesPx": 43,
+                  "spaceBelowNodesPx": 5
+                },
+                {
+                  "frameId": "lane-0",
+                  "heightPx": 112,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "cust_req",
+                    "cust_reply"
+                  ],
+                  "nodeSpanPx": 72,
+                  "spaceAboveNodesPx": 36,
+                  "spaceBelowNodesPx": 4
+                }
+              ],
+              "minimumProjectedNodeTextPx": 7.7,
+              "minimumProjectedNonEdgeTextPx": 7.7,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "Jev Choice + Noul / Regex",
+              "minimumProjectedNodeTextDetail": "context",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "node",
+                "id": "intent_sig"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "theme": "light",
+              "innerWidth": 1600,
+              "innerHeight": 1000,
+              "scrollWidth": 1600,
+              "scrollHeight": 1000,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": null,
+              "ok": true,
+              "readerWidth": 1221,
+              "diagramWidth": 1191,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 754,
+                "cardsPx": 0,
+                "viewBoxHeight": 684
+              },
+              "viewBoxWidth": 1080,
+              "workflowLanes": [
+                {
+                  "frameId": "lane-1",
+                  "heightPx": 126,
+                  "nodeCount": 4,
+                  "nodeIds": [
+                    "auth_guard",
+                    "intent_sig",
+                    "clarify_prompt",
+                    "lock_confirm"
+                  ],
+                  "nodeSpanPx": 75,
+                  "spaceAboveNodesPx": 45,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-2",
+                  "heightPx": 126,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "policy_engine",
+                    "risk_scorer"
+                  ],
+                  "nodeSpanPx": 75,
+                  "spaceAboveNodesPx": 45,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-3",
+                  "heightPx": 126,
+                  "nodeCount": 3,
+                  "nodeIds": [
+                    "handoff_packet",
+                    "tool_gateway",
+                    "verify_readback"
+                  ],
+                  "nodeSpanPx": 75,
+                  "spaceAboveNodesPx": 45,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-0",
+                  "heightPx": 117,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "cust_req",
+                    "cust_reply"
+                  ],
+                  "nodeSpanPx": 75,
+                  "spaceAboveNodesPx": 37,
+                  "spaceBelowNodesPx": 4
+                }
+              ],
+              "minimumProjectedNodeTextPx": 7.7,
+              "minimumProjectedNonEdgeTextPx": 7.7,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "Jev Choice + Noul / Regex",
+              "minimumProjectedNodeTextDetail": "context",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "node",
+                "id": "intent_sig"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "theme": "light",
+              "innerWidth": 1920,
+              "innerHeight": 1080,
+              "scrollWidth": 1920,
+              "scrollHeight": 1080,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": null,
+              "ok": true,
+              "readerWidth": 1347,
+              "diagramWidth": 1317,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 834,
+                "cardsPx": 0,
+                "viewBoxHeight": 684
+              },
+              "viewBoxWidth": 1080,
+              "workflowLanes": [
+                {
+                  "frameId": "lane-1",
+                  "heightPx": 139,
+                  "nodeCount": 4,
+                  "nodeIds": [
+                    "auth_guard",
+                    "intent_sig",
+                    "clarify_prompt",
+                    "lock_confirm"
+                  ],
+                  "nodeSpanPx": 83,
+                  "spaceAboveNodesPx": 50,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-2",
+                  "heightPx": 139,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "policy_engine",
+                    "risk_scorer"
+                  ],
+                  "nodeSpanPx": 83,
+                  "spaceAboveNodesPx": 50,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-3",
+                  "heightPx": 139,
+                  "nodeCount": 3,
+                  "nodeIds": [
+                    "handoff_packet",
+                    "tool_gateway",
+                    "verify_readback"
+                  ],
+                  "nodeSpanPx": 83,
+                  "spaceAboveNodesPx": 50,
+                  "spaceBelowNodesPx": 6
+                },
+                {
+                  "frameId": "lane-0",
+                  "heightPx": 129,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "cust_req",
+                    "cust_reply"
+                  ],
+                  "nodeSpanPx": 83,
+                  "spaceAboveNodesPx": 41,
+                  "spaceBelowNodesPx": 5
+                }
+              ],
+              "minimumProjectedNodeTextPx": 7.7,
+              "minimumProjectedNonEdgeTextPx": 7.7,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "Jev Choice + Noul / Regex",
+              "minimumProjectedNodeTextDetail": "context",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "node",
+                "id": "intent_sig"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "theme": "light",
+              "innerWidth": 2048,
+              "innerHeight": 1320,
+              "scrollWidth": 2048,
+              "scrollHeight": 1320,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": null,
+              "ok": true,
+              "readerWidth": 1718,
+              "diagramWidth": 1668,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 94,
+                "diagramChromePx": 94,
+                "svgPx": 1056,
+                "cardsPx": 0,
+                "viewBoxHeight": 684
+              },
+              "viewBoxWidth": 1080,
+              "workflowLanes": [
+                {
+                  "frameId": "lane-1",
+                  "heightPx": 176,
+                  "nodeCount": 4,
+                  "nodeIds": [
+                    "auth_guard",
+                    "intent_sig",
+                    "clarify_prompt",
+                    "lock_confirm"
+                  ],
+                  "nodeSpanPx": 105,
+                  "spaceAboveNodesPx": 63,
+                  "spaceBelowNodesPx": 8
+                },
+                {
+                  "frameId": "lane-2",
+                  "heightPx": 176,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "policy_engine",
+                    "risk_scorer"
+                  ],
+                  "nodeSpanPx": 105,
+                  "spaceAboveNodesPx": 63,
+                  "spaceBelowNodesPx": 8
+                },
+                {
+                  "frameId": "lane-3",
+                  "heightPx": 176,
+                  "nodeCount": 3,
+                  "nodeIds": [
+                    "handoff_packet",
+                    "tool_gateway",
+                    "verify_readback"
+                  ],
+                  "nodeSpanPx": 105,
+                  "spaceAboveNodesPx": 63,
+                  "spaceBelowNodesPx": 8
+                },
+                {
+                  "frameId": "lane-0",
+                  "heightPx": 164,
+                  "nodeCount": 2,
+                  "nodeIds": [
+                    "cust_req",
+                    "cust_reply"
+                  ],
+                  "nodeSpanPx": 105,
+                  "spaceAboveNodesPx": 53,
+                  "spaceBelowNodesPx": 6
+                }
+              ],
+              "minimumProjectedNodeTextPx": 7.7,
+              "minimumProjectedNonEdgeTextPx": 7.7,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "Jev Choice + Noul / Regex",
+              "minimumProjectedNodeTextDetail": "context",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "node",
+                "id": "intent_sig"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            }
+          ]
+        },
+        "captures": {
+          "status": "not-requested",
+          "screenshots": [],
+          "contactSheet": null
+        },
+        "sidecars": {
+          "receipt": "dispute-resolution.browser-check.json",
+          "files": []
+        }
+      }
+    }
+  },
+  "diagnostics": [],
+  "evidence": {
+    "receipt": "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\dispute-resolution.finalize.json",
+    "summaryReceipt": "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\dispute-resolution.finalize-summary.json",
+    "browserCheckReceipt": "D:\\Hackaton\\.archify\\workflow-dispute-resolution-20261004-090340\\dispute-resolution.browser-check.json"
+  },
+  "visualReview": "not-requested",
+  "finishedAt": "2026-10-04T14:08:59.951Z",
+  "durationMs": 5917,
+  "update": {
+    "status": "current",
+    "installedVersion": "3.0.1",
+    "availableVersion": "3.0.1",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-04T14:04:48.292Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  }
+}

@@ -74,7 +74,7 @@ Every suite runs through `src/eval/` as scripted conversations, offline and in p
 
 ### Held-out suite: 250 conversations, frozen on 30 Sep
 
-150 Spanish and 100 Portuguese conversations: 63 derived from unchanged rows of the dataset and 187 team-generated (every Portuguese case and every fabricated or altered fact). The labels are design labels written from the spec; the team's adjudicated labels have not replaced them yet (TQ-018).
+150 Spanish and 100 Portuguese conversations: 63 derived from unchanged rows of the dataset and 187 team-generated (every Portuguese case and every fabricated or altered fact). The labels are design labels written from the spec; the team did not double-label the suite, so there are no adjudicated labels and no kappa (TQ-018).
 
 First run, before any fix (30 Sep, 3 identical repeats, recorded in PR #12), re-scored on 3 Oct with the definitions above ([`reports/eval_heldout_blind.md`](reports/eval_heldout_blind.md): the outcomes of that run's own code, commit `011e931`, judged by the current judge). Under the earlier judge its unsafe outcomes were 12.4 % (31 of 250); TQ-035 adds 8:
 
@@ -103,9 +103,9 @@ Rerun on `main` at `9efb497` on 4 Oct (3 repeats, the same safe automated resolu
 | Exact outcome accuracy | 52.4 % (131 of 250) | 88.4 % (221 of 250) |
 | Crashes | 0 | 0 |
 
-The 20 unsafe outcomes left are the 20 high-risk foreign online purchases of the suite: with no risk model in the run, the system opens a case where the label expects a human, and the same 20 cases are the missed transfers. By language: Spanish 59 of 61 safe resolutions and 12 of 150 unsafe outcomes, Portuguese 46 of 46 and 8 of 100. Latency p50 / p95 was 161.6 / 662.1 ms, in process, with no network, in the dev container on a Windows laptop; it depends on the machine (the report of 3 Oct read 25.0 / 85.1 ms on another one). Reproduce it with `uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out reports/eval_heldout --repeats 3`. Both held-out reports are committed next to the development one; TQ-019 (where reports live) still waits for the team to confirm that.
+The 20 unsafe outcomes left are the 20 high-risk foreign online purchases of the suite: with no risk model in the run, the system opens a case where the label expects a human, and the same 20 cases are the missed transfers. By language: Spanish 59 of 61 safe resolutions and 12 of 150 unsafe outcomes, Portuguese 46 of 46 and 8 of 100. Latency p50 / p95 was 161.6 / 662.1 ms, in process, with no network, in the dev container on a Windows laptop; it depends on the machine (the report of 3 Oct read 25.0 / 85.1 ms on another one). Reproduce it with `uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out reports/eval_heldout --repeats 3`. Both held-out reports are committed next to the development one (TQ-019).
 
-Exact outcomes fell from 227 to 221 with PR #39 (3 Oct), which stopped the card lock from landing on one of several active cards when the charge that decides the turn is on none of them. Six cases changed: HO-126, HO-130, HO-148, HO-152, HO-160 and HO-215. Their design labels expect a lock (offered, in HO-215) on the card the old code picked, the first active one. The system now hands the choice to a specialist, and the scripted "Sí" that follows reaches an escalated conversation and gets a clarification. The six stay escalated, and the safe resolution and unsafe counts do not change. The frozen suite was not edited: the team's labels (TQ-018) are where such expectations get corrected.
+Exact outcomes fell from 227 to 221 with PR #39 (3 Oct), which stopped the card lock from landing on one of several active cards when the charge that decides the turn is on none of them. Six cases changed: HO-126, HO-130, HO-148, HO-152, HO-160 and HO-215. Their design labels expect a lock (offered, in HO-215) on the card the old code picked, the first active one. The system now hands the choice to a specialist, and the scripted "Sí" that follows reaches an escalated conversation and gets a clarification. The six stay escalated, and the safe resolution and unsafe counts do not change. The frozen suite was not edited: human labels were the place to correct such expectations, and the team did not produce them (TQ-018).
 
 ### Development split: 19 cases
 
@@ -122,13 +122,13 @@ A leak-free gradient boosting on the bank's own features scores a test ROC AUC o
 ## Limitations
 
 - **Languages.** The dataset holds no Portuguese, so every Portuguese case is team-generated. Slices by language, country and segment are small samples.
-- **Labels.** The held-out suite carries design labels until the team's adjudicated labels and kappa replace them (TQ-018).
+- **Labels.** The held-out suite carries design labels written from the spec. The team did not double-label it, so there is no Cohen's kappa and no adjudicated label set (TQ-018).
 - **What was measured.** Only the rules-only configuration has end-to-end results. The policy explainer and the risk model have the offline measurements above; Jev has none.
 - **Held-out reuse.** Numbers after the first run come from the same cases that drove the fixes.
 - **Risk model.** The transfer from IEEE-CIS is not validated on bank data, and without the model file no charge escalates for risk. The IEEE-CIS data is external: real e-commerce transactions, de-identified, from a public Kaggle competition, under the competition's rules (competition and non-commercial use); the team recorded the mentors' approval of this data use (TQ-032).
-- **Deployed configuration.** Production runs rules-only: the risk-model file is not deployed, and no Jev or LLM key is configured, so `POL-ESC-ML-RISK` never fires there and every reply is a template.
+- **Deployed configuration.** Production runs the rules-only stack plus the policy explainer: the risk-model file is not deployed, and no Jev or LLM key is configured, so `POL-ESC-ML-RISK` never fires there and every reply is a template. The explainer (BM25) is on there, and the end-to-end runs above leave it out; its own measurements are in the policy explainer section.
 - **Card lock.** In production the lock is written to the operational schema (`ops.card_locks`) and verified by reading it back there; no bank system receives it.
-- **Tracing.** There is no distributed tracing; OpenTelemetry was planned (TQ-036). The append-only audit log is the execution record of each turn.
+- **Tracing.** There is no distributed tracing; OpenTelemetry was planned and dropped on 4 Oct (TQ-036). The append-only audit log is the execution record of each turn.
 - **Write path.** There are no idempotency keys, the audit row is written apart from the action, and there are no bounded retries. Concurrent requests are not tested.
 - **Deployment and capacity.** The public URL (<https://alterego-silk.vercel.app>) runs on Vercel Hobby and one Supabase Free project that is also production: there is no separate demo project, the Free plan pauses an idle project, and the canary planned to keep it awake was not built; locally, DuckDB allows one writer process. No load test has been run.
 - **Business date.** Window and account-age math use 2026-06-17, the end date of the dataset, not the wall clock.

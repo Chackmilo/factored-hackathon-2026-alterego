@@ -1,6 +1,6 @@
 # Handoff del equipo (3 oct 2026)
 
-> Nota del 4 de octubre: este documento describe el estado del 3 de octubre por la tarde. Esa noche Kmilo mergeó #39 a #48 (`main` en `9efb497`), pero Vercel no desplegó ninguno: mientras el repo sea privado, el plan Hobby solo despliega los commits que GitHub atribuye a la cuenta dueña (Daniel). El estado vigente está en `README.md` y `AGENTS.md`.
+> Nota del 4 de octubre: este documento describe el estado del 3 de octubre por la tarde. Esa noche Kmilo mergeó #39 a #48 (`main` en `9efb497`), pero Vercel no desplegó ninguno: mientras el repo sea privado, el plan Hobby solo despliega los commits que GitHub atribuye a la cuenta dueña (Daniel). Los merges de #49, #50 y #51 del 4 de octubre sí tienen esa atribución y se desplegaron: producción quedó en `33bf462`, que ya incluye #39 a #48. Las decisiones del 4 de octubre están en la sección 7.3; el estado vigente, en `README.md` y `AGENTS.md`.
 
 Lo escribió Daniel con Claude el 3 de octubre, día 9 de 10. La entrega es el **5 de octubre** (`AGENTS.md` sección 3). El equipo quedó en dos personas, Daniel y Kmilo. **Desde la tarde del 3 de octubre, Kmilo sigue solo con todo lo restante.** Lo que exige cuentas de Daniel está en la sección 5.
 
@@ -196,8 +196,8 @@ Sin PR, a propósito:
 ### 7.3 Decisiones del equipo (4-Oct: resueltas y registradas)
 
 1. **Despliegues y PRs #49 y #50:** Mergeados en `main` por Daniel (`Chackmilo`) el 4-Oct. Producción en Vercel verificada con prueba de humo en vivo (`"app":"AlterEgo dispute intake"`).
-2. **Modelo en producción:** Producción se mantiene en modo solo reglas (`rules-only`) para certificar cero alucinaciones y cumplimiento determinista; el modelo entrenado con IEEE-CIS queda como resultado analítico y benchmark experimental.
+2. **Modelo en producción:** Producción corre sin el modelo de riesgo: el `.joblib` está en el `.gitignore` y Vercel construye desde GitHub, así que `POL-ESC-ML-RISK` nunca se dispara y el handoff dice "riesgo no calificado". Tampoco hay key de Jev ni de un LLM, así que toda respuesta es una plantilla. El explicador de política (BM25) sí corre, con los límites de `reports/rag_benchmark.md`: en el split de test acierta el 36,7 % de las acciones, y el 27,3 % de sus respuestas cita una cláusula equivocada. El modelo entrenado con IEEE-CIS queda como resultado analítico y benchmark experimental.
 3. **TQ-018 (Etiquetas humanas y kappa):** Registrada y cerrada el 4-Oct. La suite de 250 casos se mantiene con sus etiquetas de diseño del spec v2.3; el doble etiquetado para kappa se declara como limitación de evaluación (reglas 4 y 11).
 4. **TQ-019 (Reportes de evaluación):** Registrada y cerrada el 4-Oct. `reports/eval_heldout.md` y `reports/eval_dev.md` (y sus `.json` asociados) quedan commiteados en el repositorio para máxima reproducibilidad.
-5. **TQ-036 (OpenTelemetry):** Registrada y cerrada el 4-Oct. Se da de baja formalmente y se declara como limitación/trabajo futuro; `ops.audit_log` cubre la trazabilidad completa sin inflar el bundle de Vercel.
+5. **TQ-036 (OpenTelemetry):** Registrada y cerrada el 4-Oct. Se da de baja formalmente y se declara como limitación/trabajo futuro; `ops.audit_log` registra cada acción con su conversación y su actor sin inflar el bundle de Vercel; no hay trazas distribuidas ni un trace id por request.
 

@@ -3,11 +3,12 @@ Round trip of the operational store on both backends. The Postgres case runs onl
 to an empty local database (for example postgresql://localhost/alterego_ops_test); it applies the Supabase
 migration first, so the DDL, the CHECK constraints and the append-only trigger are exercised for real.
 """
+import json
 import os
 
 import pytest
 
-from src.ops.store import OpsStore
+from src.ops.store import DEFAULT_QUESTIONS_PATH, OpsStore
 
 
 @pytest.fixture(params=["duckdb", "postgres"])
@@ -89,7 +90,9 @@ def test_team_questions_seed_and_answer(store):
     assert "TQ-002" not in {q["question_id"] for q in store.list_questions(status="open")}
     # answers recorded in the fixture (given in chat on 27-Sep) are applied on seed and never overwritten
     assert store.get_question("TQ-001")["status"] == "answered" and store.get_question("TQ-001")["answered_by"].startswith("team")
-    assert store.get_question("TQ-019")["status"] == "open"
+    # every question the fixture leaves unanswered stays open (TQ-002 was answered above)
+    unanswered = {q["question_id"] for q in json.loads(DEFAULT_QUESTIONS_PATH.read_text(encoding="utf-8"))["questions"] if not q.get("answer")}
+    assert unanswered - {"TQ-002"} <= {q["question_id"] for q in store.list_questions(status="open")}
     new_id = store.insert_question(topic="Loop", question="A new question?", options=["a", "b"])
     assert store.get_question(new_id)["status"] == "open"
 

@@ -1,4 +1,6 @@
 """HTTP contract of the dispute endpoints and the console role check, over the fixture bank and an in-memory ops store."""
+import json
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -6,7 +8,7 @@ from src.api.app import app
 from src.api.dispute_routes import get_orchestrator
 from src.auth.session import create_test_session
 from src.core.config import settings
-from src.ops.store import OpsStore
+from src.ops.store import DEFAULT_QUESTIONS_PATH, OpsStore
 from src.orchestrator.dispute_orchestrator import DisputeOrchestrator
 from src.tools.gateway import BankingToolGateway
 
@@ -108,7 +110,8 @@ def test_team_questions_live_in_the_console(api):
     # the API seeds the fixture on startup; the test orchestrator is built directly, so seed here
     api.app.dependency_overrides[get_orchestrator]().ops.seed_questions()
     open_questions = api.get("/api/v1/console/questions", params={"status_filter": "open"}, headers=agent).json()
-    assert {q["question_id"] for q in open_questions} >= {"TQ-002", "TQ-016", "TQ-019"}
+    unanswered = {q["question_id"] for q in json.loads(DEFAULT_QUESTIONS_PATH.read_text(encoding="utf-8"))["questions"] if not q.get("answer")}
+    assert {q["question_id"] for q in open_questions} >= unanswered
     assert "TQ-001" not in {q["question_id"] for q in open_questions}  # answered in chat, recorded in the fixture
     answered = api.post("/api/v1/console/questions/TQ-016/answer", json={"answer": "Skip with reason"}, headers=agent).json()
     assert answered["status"] == "answered" and answered["answered_by"] == "AGENT-1"

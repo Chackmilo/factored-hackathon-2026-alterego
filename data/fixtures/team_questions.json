@@ -583,6 +583,19 @@
       "answer": "Exposure levels as proposed, internal clauses indexed and answered with a fixed redirect. Applied in data/policy_corpus.json (roadmap Task 1.1); the formal reply in 3 to 5 business days, which the intake text already states, joins the public parameters under the same rule.",
       "answered_by": "Daniel (chat, 30-Sep)",
       "answered_at": "2026-09-30T20:14:00"
+    },
+    {
+      "question_id": "TQ-038",
+      "topic": "ML and policy: what a disputed charge in a risk zone should trigger",
+      "question": "Since 3-Oct a deterministic risk zone validator (src/tools/risk_zone.py) runs beside the learned risk score on every identified charge: it names where the charge was made against the customer's country and city on file (HOME, DOMESTIC_OTHER_CITY, ABROAD, UNKNOWN), and ABROAD is the risk zone. Today its verdict is a fact for the human agent only (the handoff packet and the audit row RISK_ZONE_VALIDATED); it changes no outcome and never reaches the customer. Should a charge in a risk zone trigger something more: (a) nothing, the verdict stays advisory; (b) a mandatory escalation to a human under a new clause, also on the channels the model does not score; (c) the preventive card lock offer with the customer's confirmation, which needs a new reason code in the ops.card_locks CHECK and a migration?",
+      "context": "Kmilo asked on 3-Oct for a parallel validator of whether the transaction is in a risk zone, after proposing a hold with a message to the customer for charges made in a high-risk zone. Measured on the 251,398 charges of the 60 days to 2026-06-17 (data/lakehouse_full.duckdb, derived from the organizer's data): 95.1 percent HOME, 0.3 percent DOMESTIC_OTHER_CITY, 4.6 percent ABROAD, the same on every channel. On the 75,366 Web and App charges the model scores, 1,508 are above its threshold (2.0 percent) and 3,441 are abroad: both checks flag 180, only the model 1,328, only the zone 3,261; an abroad charge is above the threshold 5.23 percent of the time against 1.85 percent for the rest. On the 176,032 charges of the channels the model does not score (70.0 percent), 8,120 are abroad and no risk check read them before. Abroad charges at or under 500 USD, which option (b) would move from intake to a human, are 2.46 percent of the window. Limits: the data has a country and a city per charge and nothing finer (28 cities, coordinates 81 percent null), so no map of zones inside a city can be joined; is_fraud carries no learnable signal (TQ-023), so no place can be ranked by fraud rate from this data, and an external zone map needs a cited source with its provenance label (rule 4). A hold at authorization time is a second workflow (rule 1): the dispute flow acts after the charge. Options (b) and (c) change policy v2.3 (spec, traceability matrix, policy corpus) and the outcomes of the frozen held-out suite, whose design labels follow v2.3. docs/technical-discuss-points.md section 9.",
+      "options": [
+        "Advisory only: a verified fact for the human agent (recommended until the team decides)",
+        "A new mandatory escalation clause for a charge in a risk zone",
+        "The preventive card lock offer for a charge in a risk zone, with the customer's confirmation"
+      ],
+      "recommendation": "Advisory only: a verified fact for the human agent",
+      "source": "3-Oct, Kmilo (chat); src/tools/risk_zone.py"
     }
   ]
 }

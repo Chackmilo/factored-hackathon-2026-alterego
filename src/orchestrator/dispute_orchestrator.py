@@ -37,6 +37,7 @@ from src.tools.gateway import (
     SystemOfRecordUnavailableError,
     UnauthorizedAccessError,
 )
+from src.tools.risk_zone import RiskZoneValidator, RiskZoneVerdict, cross_check
 from src.understand.keyword_extractor import KeywordIntentExtractor, UnderstandResult
 from src.understand.router import UnderstandRouter
 
@@ -138,7 +139,7 @@ class DisputeOrchestrator:
     def __init__(self, gateway: BankingToolGateway, ops: OpsStore, extractor: KeywordIntentExtractor | None = None,
                  risk_scorer: Callable[[dict[str, Any], list[dict[str, Any]], dict[str, Any]], tuple[float, list[dict[str, Any]]]] | None = None,
                  today: date = date(2026, 6, 17), router: UnderstandRouter | None = None,
-                 explainer: PolicyExplainer | None = None):
+                 explainer: PolicyExplainer | None = None, zone_validator: RiskZoneValidator | None = None):
         self.gateway = gateway
         self.ops = ops
         self.today = today
@@ -146,6 +147,7 @@ class DisputeOrchestrator:
         self.router = router  # the smart agent of TQ-008: picks Jev, Claude or the offline path per turn
         self.risk_scorer = risk_scorer  # (matched, history, profile) -> (ml_risk_score, risk_top_features); src.ml.fraud_risk.RiskScorer
         self.explainer = explainer  # the policy explainer (roadmap Task 5.1); None until its gate is calibrated (Task 4.1)
+        self.zone_validator = zone_validator  # the check beside the risk score (src/tools/risk_zone.py); None records no zone verdict
 
     # ------------------------------------------------------------------ public
     def start_conversation(self, session: VerifiedSession, language: str = "es") -> dict[str, Any]:
@@ -254,6 +256,7 @@ class DisputeOrchestrator:
         recent = recent | {r["transaction_id"] for r in named}  # charges named at once count like charges disputed one by one
         ml_score, top_features = (self.risk_scorer(matched, rows, profile) if (self.risk_scorer and matched) else (0.0, []))
         scored = ml_score is not None  # None: the charge is outside the channels the model's threshold was calibrated on
+        zone = self.zone_validator(matched, rows, profile) if (self.zone_validator and matched) else None
 
         policy_input = DisputePolicyInput(
             customer_id=session.customer_id,
@@ -291,6 +294,12 @@ class DisputeOrchestrator:
                             clarification_reason=decision.clarification_reason, cited_clauses=list(decision.cited_clauses),
                             secondary_clauses=list(decision.secondary_clauses), signals=signals,
                             candidates=[self._public_candidate(c) for c in candidates[:5]])
+        if zone is not None:  # beside the score and outside the decision and the reply: a record for the human agent (TQ-038)
+            model_flags = self.risk_scorer is not None and scored and policy_input.ml_risk_score > policy_input.ml_risk_threshold
+            self.ops.audit(conversation_id=cid, customer_id=session.customer_id, actor="system", action="RISK_ZONE_VALIDATED",
+                           details={"transaction_id": matched["transaction_id"], **zone.as_dict(),
+                                    "ml_scored": self.risk_scorer is not None and scored, "ml_above_threshold": model_flags,
+                                    "cross_check": cross_check(zone.in_risk_zone, model_flags)})
 
         if decision.policy_outcome == OUTCOME_CLARIFICATION:
             self.ops.update_conversation(cid, state=STATE_AWAITING_CLARIFICATION, candidate_ids=[c["transaction_id"] for c in candidates[:5]],
@@ -322,7 +331,7 @@ class DisputeOrchestrator:
                            details={"reason": decision.escalation_reason, "clauses": decision.cited_clauses,
                                     "data_quality_flag": decision.data_quality_flag})
         elif decision.policy_outcome == OUTCOME_ESCALATION:
-            handoff_id = self._create_handoff(session, conv, decision, policy_input, profile, matched, masked, named=named)
+            handoff_id = self._create_handoff(session, conv, decision, policy_input, profile, matched, masked, named=named, zone=zone)
             result.handoff_id = handoff_id
             result.reply += TEXT["handoff_ref"][language].format(handoff_id=handoff_id)
             result.actions.append({"action": "CREATE_HANDOFF", "handoff_id": handoff_id, "verified": True})
@@ -343,7 +352,7 @@ class DisputeOrchestrator:
                 self.ops.audit(conversation_id=cid, customer_id=session.customer_id, actor="system", action="OPEN_DISPUTE_FAILED",
                                details={"error": str(exc)}, verified=False)
                 handoff_id = self._create_handoff(session, conv, decision, policy_input, profile, matched, masked,
-                                                  reason_override="ACTION_VERIFICATION_FAILED")
+                                                  reason_override="ACTION_VERIFICATION_FAILED", zone=zone)
                 result.handoff_id = handoff_id
                 result.reply = TEXT["case_pending"][language] + TEXT["handoff_ref"][language].format(handoff_id=handoff_id)
                 result.policy_outcome = OUTCOME_ESCALATION
@@ -630,7 +639,7 @@ class DisputeOrchestrator:
     # ---------------------------------------------------------------- escalate
     def _create_handoff(self, session: VerifiedSession, conv: dict[str, Any], decision: DisputePolicyDecision, policy_input: DisputePolicyInput,
                         profile: dict[str, Any], matched: dict[str, Any] | None, masked: str, reason_override: str | None = None,
-                        named: list[dict[str, Any]] | None = None) -> str:
+                        named: list[dict[str, Any]] | None = None, zone: RiskZoneVerdict | None = None) -> str:
         now = datetime.utcnow().replace(microsecond=0).isoformat()
         reason = reason_override or decision.escalation_reason or "UNSPECIFIED"
         facts = ["Customer authenticated via a valid session token"]
@@ -657,6 +666,8 @@ class DisputeOrchestrator:
             facts.append(f"ML risk score: not scored, the model scores {' and '.join(self.risk_scorer.channels)} charges only")
         else:
             facts.append(f"ML risk score: {policy_input.ml_risk_score:.2f} (escalation threshold {policy_input.ml_risk_threshold:.2f})")
+        if zone is not None:
+            facts.append(zone.fact())
         facts.append(f"{policy_input.recent_disputed_charges_count} distinct charge(s) disputed within 48 hours")
         if named:
             facts.append(f"Charges named in the customer's message: {', '.join(r['transaction_id'] for r in named)}")

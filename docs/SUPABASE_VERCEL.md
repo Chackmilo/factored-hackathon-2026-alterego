@@ -191,7 +191,7 @@ Cada transacción del gateway empieza con `set_config('app.customer_id', <del to
 
 ### 5.5 Funciones y advisors
 
-Ninguna función `SECURITY DEFINER` en esquemas expuestos. Los advisors de seguridad de Supabase (`get_advisors` del MCP o `supabase db advisors`) corren antes de G3 y quedan sin hallazgos.
+Ninguna función `SECURITY DEFINER` en esquemas expuestos. Los advisors de seguridad de Supabase (`get_advisors` del MCP o `supabase db advisors`) corren antes de G3 y quedan sin hallazgos. El 3 oct marcaron `search_path` mutable en `ops.reject_audit_change` y `ops.business_today`: la migración `0005_function_search_path.sql` lo fija vacío (ninguna de las dos lee tablas) y un test lo comprueba contra Postgres. Falta aplicarla en producción, con acceso al proyecto.
 
 ### 5.6 Uso del MCP de Supabase
 

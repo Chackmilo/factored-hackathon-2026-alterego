@@ -410,3 +410,17 @@ def test_a_gate_file_for_an_unknown_retriever_is_refused(tmp_path):
     gate.write_text(json.dumps({"retriever": "e5", "tau_upper": 0.9, "tau_lower": 0.8}), encoding="utf-8")
     with pytest.raises(ValueError):
         load_policy_explainer(gate)
+
+
+def test_a_policy_question_after_a_greeting_is_answered_and_keeps_the_listed_charges(rag_orchestrator, owner_session, ops_store):
+    """A greeting lists recent charges; a rules question asked then still reaches the explainer, and the list stays pickable."""
+    cid = start(rag_orchestrator, owner_session)
+    greeting = rag_orchestrator.handle_message(owner_session, cid, "Hola")
+    assert greeting.state == "awaiting_clarification" and greeting.candidates
+    turn = rag_orchestrator.handle_message(owner_session, cid, "¿Cuántos días tengo para disputar un cargo?")
+    assert (turn.policy_outcome, turn.cited_clauses, turn.state) == ("POLICY_EXPLANATION", ["POL-WIN-60"], "awaiting_clarification")
+    assert ops_store.list_cases(owner_session.customer_id) == []
+    option = next(i for i, c in enumerate(greeting.candidates, start=1) if c["transaction_status"] == "Approved" and c["amount_usd"] <= 150)
+    picked = rag_orchestrator.handle_message(owner_session, cid, str(option))
+    assert picked.case_id
+    assert [c["transaction_id"] for c in ops_store.list_cases(owner_session.customer_id)] == [greeting.candidates[option - 1]["transaction_id"]]

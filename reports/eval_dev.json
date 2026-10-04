@@ -1,29 +1,29 @@
 {
   "meta": {
     "suite": "dev_cases.jsonl",
-    "n_cases": 18,
-    "mix": "adversarial_or_security: 1, ambiguous: 2, high_value_or_multi_charge: 4, incorrect_or_missing_data: 2, normal_150_500: 2, normal_le_150: 4, out_of_window_or_unsupported: 3",
+    "n_cases": 19,
+    "mix": "adversarial_or_security: 1, ambiguous: 3, high_value_or_multi_charge: 4, incorrect_or_missing_data: 2, normal_150_500: 2, normal_le_150: 4, out_of_window_or_unsupported: 3",
     "repeats": 3,
     "repeat_spread": {
       "baseline_starter": {
         "min": 0.0,
         "max": 0.0,
-        "p50_min": 0.02429191954433918,
-        "p50_max": 0.08970790077000856
+        "p50_min": 0.0805769996077288,
+        "p50_max": 0.10409000060462859
       },
       "proposed": {
         "min": 1.0,
         "max": 1.0,
-        "p50_min": 25.436917087063193,
-        "p50_max": 26.12933306954801
+        "p50_min": 154.08623500115937,
+        "p50_max": 166.48763800003508
       }
     },
     "provenance": "team-generated",
-    "versions": "commit 3dc2fdf; extractor keyword-v1; policy v2.3; no ML model, no LLM"
+    "versions": "commit 9efb497; extractor keyword-v1; policy v2.3; no ML model, no LLM"
   },
   "metrics": {
     "baseline_starter": {
-      "n_cases": 18,
+      "n_cases": 19,
       "safe_automated_resolution": {
         "numerator": 0,
         "denominator": 9,
@@ -31,18 +31,18 @@
       },
       "safe_automated_resolution_in_scope": {
         "numerator": 0,
-        "denominator": 17,
+        "denominator": 18,
         "rate": 0.0
       },
       "attempted_automation_share": {
-        "numerator": 15,
-        "denominator": 18,
-        "rate": 0.8333333333333334
+        "numerator": 16,
+        "denominator": 19,
+        "rate": 0.8421052631578947
       },
       "containment": {
-        "numerator": 15,
-        "denominator": 18,
-        "rate": 0.8333333333333334
+        "numerator": 16,
+        "denominator": 19,
+        "rate": 0.8421052631578947
       },
       "escalation_precision": {
         "numerator": 1,
@@ -58,8 +58,8 @@
       "unnecessary_transfers": 2,
       "unsafe_outcomes": {
         "numerator": 11,
-        "denominator": 18,
-        "rate": 0.6111111111111112
+        "denominator": 19,
+        "rate": 0.5789473684210527
       },
       "unsafe_reasons": {
         "unverified_action": 3,
@@ -67,24 +67,24 @@
       },
       "outcome_accuracy": {
         "numerator": 8,
-        "denominator": 18,
-        "rate": 0.4444444444444444
+        "denominator": 19,
+        "rate": 0.42105263157894735
       },
       "reply_language_accuracy": {
-        "numerator": 5,
-        "denominator": 10,
-        "rate": 0.5
+        "numerator": 6,
+        "denominator": 11,
+        "rate": 0.5454545454545454
       },
       "latency_ms": {
-        "p50": 0.029165996238589287,
-        "p95": 0.05637493450194597,
-        "mean": 0.033405221377809845
+        "p50": 0.08593600068707019,
+        "p95": 0.1477839996368857,
+        "mean": 0.09456768432420704
       },
       "crashes": 0,
       "slices": {
         "language": {
           "es": {
-            "n": 13,
+            "n": 14,
             "safe_automated_resolution": {
               "numerator": 0,
               "denominator": 6,
@@ -92,13 +92,13 @@
             },
             "unsafe_outcomes": {
               "numerator": 8,
-              "denominator": 13,
-              "rate": 0.6153846153846154
+              "denominator": 14,
+              "rate": 0.5714285714285714
             },
             "outcome_accuracy": {
               "numerator": 6,
-              "denominator": 13,
-              "rate": 0.46153846153846156
+              "denominator": 14,
+              "rate": 0.42857142857142855
             }
           },
           "pt": {
@@ -122,7 +122,7 @@
         },
         "segment": {
           "Basic": {
-            "n": 6,
+            "n": 7,
             "safe_automated_resolution": {
               "numerator": 0,
               "denominator": 2,
@@ -130,13 +130,13 @@
             },
             "unsafe_outcomes": {
               "numerator": 5,
-              "denominator": 6,
-              "rate": 0.8333333333333334
+              "denominator": 7,
+              "rate": 0.7142857142857143
             },
             "outcome_accuracy": {
               "numerator": 1,
-              "denominator": 6,
-              "rate": 0.16666666666666666
+              "denominator": 7,
+              "rate": 0.14285714285714285
             }
           },
           "Plus": {
@@ -178,7 +178,7 @@
         },
         "country": {
           "Argentina": {
-            "n": 5,
+            "n": 6,
             "safe_automated_resolution": {
               "numerator": 0,
               "denominator": 3,
@@ -186,13 +186,13 @@
             },
             "unsafe_outcomes": {
               "numerator": 3,
-              "denominator": 5,
-              "rate": 0.6
+              "denominator": 6,
+              "rate": 0.5
             },
             "outcome_accuracy": {
               "numerator": 2,
-              "denominator": 5,
-              "rate": 0.4
+              "denominator": 6,
+              "rate": 0.3333333333333333
             }
           },
           "Colombia": {
@@ -235,7 +235,7 @@
       }
     },
     "proposed": {
-      "n_cases": 18,
+      "n_cases": 19,
       "safe_automated_resolution": {
         "numerator": 9,
         "denominator": 9,
@@ -243,18 +243,18 @@
       },
       "safe_automated_resolution_in_scope": {
         "numerator": 9,
-        "denominator": 17,
-        "rate": 0.5294117647058824
-      },
-      "attempted_automation_share": {
-        "numerator": 9,
         "denominator": 18,
         "rate": 0.5
       },
+      "attempted_automation_share": {
+        "numerator": 9,
+        "denominator": 19,
+        "rate": 0.47368421052631576
+      },
       "containment": {
-        "numerator": 13,
-        "denominator": 18,
-        "rate": 0.7222222222222222
+        "numerator": 14,
+        "denominator": 19,
+        "rate": 0.7368421052631579
       },
       "escalation_precision": {
         "numerator": 5,
@@ -270,30 +270,30 @@
       "unnecessary_transfers": 0,
       "unsafe_outcomes": {
         "numerator": 0,
-        "denominator": 18,
+        "denominator": 19,
         "rate": 0.0
       },
       "unsafe_reasons": {},
       "outcome_accuracy": {
-        "numerator": 18,
-        "denominator": 18,
+        "numerator": 19,
+        "denominator": 19,
         "rate": 1.0
       },
       "reply_language_accuracy": {
-        "numerator": 10,
-        "denominator": 10,
+        "numerator": 11,
+        "denominator": 11,
         "rate": 1.0
       },
       "latency_ms": {
-        "p50": 25.436917087063193,
-        "p95": 51.68208398390561,
-        "mean": 33.93667363949741
+        "p50": 166.33375900164538,
+        "p95": 385.9631650011579,
+        "mean": 233.13079052652603
       },
       "crashes": 0,
       "slices": {
         "language": {
           "es": {
-            "n": 13,
+            "n": 14,
             "safe_automated_resolution": {
               "numerator": 6,
               "denominator": 6,
@@ -301,12 +301,12 @@
             },
             "unsafe_outcomes": {
               "numerator": 0,
-              "denominator": 13,
+              "denominator": 14,
               "rate": 0.0
             },
             "outcome_accuracy": {
-              "numerator": 13,
-              "denominator": 13,
+              "numerator": 14,
+              "denominator": 14,
               "rate": 1.0
             }
           },
@@ -331,7 +331,7 @@
         },
         "segment": {
           "Basic": {
-            "n": 6,
+            "n": 7,
             "safe_automated_resolution": {
               "numerator": 2,
               "denominator": 2,
@@ -339,12 +339,12 @@
             },
             "unsafe_outcomes": {
               "numerator": 0,
-              "denominator": 6,
+              "denominator": 7,
               "rate": 0.0
             },
             "outcome_accuracy": {
-              "numerator": 6,
-              "denominator": 6,
+              "numerator": 7,
+              "denominator": 7,
               "rate": 1.0
             }
           },
@@ -387,7 +387,7 @@
         },
         "country": {
           "Argentina": {
-            "n": 5,
+            "n": 6,
             "safe_automated_resolution": {
               "numerator": 3,
               "denominator": 3,
@@ -395,12 +395,12 @@
             },
             "unsafe_outcomes": {
               "numerator": 0,
-              "denominator": 5,
+              "denominator": 6,
               "rate": 0.0
             },
             "outcome_accuracy": {
-              "numerator": 5,
-              "denominator": 5,
+              "numerator": 6,
+              "denominator": 6,
               "rate": 1.0
             }
           },
@@ -457,7 +457,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.07216702215373516,
+        "latency_ms": 0.1675849998719059,
         "replies": [
           "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
         ],
@@ -485,7 +485,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.05637493450194597,
+        "latency_ms": 0.1477839996368857,
         "replies": [
           "Hemos detectado una actividad inusual en esta transacci\u00f3n y la hemos pausado temporalmente. Un agente humano especializado te contactar\u00e1 en breve."
         ],
@@ -515,7 +515,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.042334082536399364,
+        "latency_ms": 0.08593600068707019,
         "replies": [
           "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
         ],
@@ -541,7 +541,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.03687501884996891,
+        "latency_ms": 0.09705999946163502,
         "replies": [
           "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
         ],
@@ -570,7 +570,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.024667009711265564,
+        "latency_ms": 0.0813430015114136,
         "replies": [
           "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
         ],
@@ -598,7 +598,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.03158394247293472,
+        "latency_ms": 0.07062599979690276,
         "replies": [
           "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
         ],
@@ -627,7 +627,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.04087504930794239,
+        "latency_ms": 0.11032899965357501,
         "replies": [
           "Hemos detectado una actividad inusual en esta transacci\u00f3n y la hemos pausado temporalmente. Un agente humano especializado te contactar\u00e1 en breve."
         ],
@@ -656,7 +656,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.029165996238589287,
+        "latency_ms": 0.07950599865580443,
         "replies": [
           "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
         ],
@@ -684,7 +684,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.030708033591508865,
+        "latency_ms": 0.08532299943908583,
         "replies": [
           "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
         ],
@@ -711,7 +711,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.027542002499103546,
+        "latency_ms": 0.08736400013731327,
         "replies": [
           "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
         ],
@@ -738,7 +738,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.023333006538450718,
+        "latency_ms": 0.07848500172258355,
         "replies": [
           "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
         ],
@@ -766,7 +766,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.03516697324812412,
+        "latency_ms": 0.09624400081520434,
         "replies": [
           "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
         ],
@@ -795,7 +795,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.02774992026388645,
+        "latency_ms": 0.07919900053821038,
         "replies": [
           "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
         ],
@@ -821,7 +821,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.02091703936457634,
+        "latency_ms": 0.07327999992412515,
         "replies": [
           "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
         ],
@@ -849,7 +849,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.03316695801913738,
+        "latency_ms": 0.10583699986455031,
         "replies": [
           "Hemos detectado una actividad inusual en esta transacci\u00f3n y la hemos pausado temporalmente. Un agente humano especializado te contactar\u00e1 en breve."
         ],
@@ -877,7 +877,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.023667002096772194,
+        "latency_ms": 0.07246300083352253,
         "replies": [
           "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
         ],
@@ -903,7 +903,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.022500054910779,
+        "latency_ms": 0.1129809988924535,
         "replies": [
           "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
         ],
@@ -931,7 +931,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 0.022499938495457172,
+        "latency_ms": 0.09971300096367486,
         "replies": [
           "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
         ],
@@ -942,6 +942,32 @@
           "escalation": true,
           "case_opened": false,
           "credit_candidate": false
+        },
+        "safe_resolution": false,
+        "error": null
+      },
+      {
+        "case_id": "DEV-019",
+        "system": "baseline_starter",
+        "final_outcome": "AUTONOMOUS_RESOLUTION",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 1,
+        "latency_ms": 0.06572799975401722,
+        "replies": [
+          "He verificado tu cuenta y no encontramos irregularidades adicionales. \u00bfEn qu\u00e9 m\u00e1s puedo asistirte hoy?"
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": false,
+          "escalation": true,
+          "case_opened": true,
+          "reply_language": true
         },
         "safe_resolution": false,
         "error": null
@@ -959,9 +985,9 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 25.225458084605634,
+        "latency_ms": 166.33375900164538,
         "replies": [
-          "Su solicitud de disputa por el cargo de 80.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-A027DED4B176."
+          "Su solicitud de disputa por el cargo de 80.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-E6D64ECA639C."
         ],
         "unverified_actions": 0,
         "unsafe_reasons": [],
@@ -987,9 +1013,9 @@
         "lock_status": null,
         "reply_language": "pt",
         "turns": 1,
-        "latency_ms": 26.012292015366256,
+        "latency_ms": 200.23597799990966,
         "replies": [
-          "Sua solicita\u00e7\u00e3o de contesta\u00e7\u00e3o da cobran\u00e7a de 300.00 USD foi registrada e est\u00e1 em an\u00e1lise. Voc\u00ea receber\u00e1 resposta formal em 3 a 5 dias \u00fateis. N\u00famero do caso: CASE-F5C4D9D481D6."
+          "Sua solicita\u00e7\u00e3o de contesta\u00e7\u00e3o da cobran\u00e7a de 300.00 USD foi registrada e est\u00e1 em an\u00e1lise. Voc\u00ea receber\u00e1 resposta formal em 3 a 5 dias \u00fateis. N\u00famero do caso: CASE-515E1814F647."
         ],
         "unverified_actions": 0,
         "unsafe_reasons": [],
@@ -1015,10 +1041,10 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 2,
-        "latency_ms": 50.066541065461934,
+        "latency_ms": 385.9631650011579,
         "replies": [
           "Encontramos varios cargos que podr\u00edan coincidir. \u00bfCu\u00e1l de ellos desea disputar? Estos son los movimientos recientes: 1) 2026-06-13, 35.00 USD, Tienda Norte 2) 2026-06-11, 35.00 USD, Tienda Sur Responda con el n\u00famero del movimiento.",
-          "Su solicitud de disputa por el cargo de 35.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-530810DD8C41."
+          "Su solicitud de disputa por el cargo de 35.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-3F191AE1DF5E."
         ],
         "unverified_actions": 0,
         "unsafe_reasons": [],
@@ -1042,7 +1068,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 24.33716703671962,
+        "latency_ms": 193.82120900081645,
         "replies": [
           "La transacci\u00f3n ocurri\u00f3 hace 90 d\u00edas, superando el plazo de 60 d\u00edas para disputas autom\u00e1ticas. Por favor ac\u00e9rquese a una sucursal."
         ],
@@ -1069,7 +1095,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 24.660208029672503,
+        "latency_ms": 201.76325800093764,
         "replies": [
           "El movimiento es de tipo Purchase en estado Declined, por lo que no puede disputarse por este canal. Solo se disputan compras, pagos, retiros y transferencias aprobadas."
         ],
@@ -1095,7 +1121,7 @@
         "lock_status": null,
         "reply_language": "pt",
         "turns": 1,
-        "latency_ms": 24.34929204173386,
+        "latency_ms": 161.94632499900763,
         "replies": [
           "Este canal atende contesta\u00e7\u00f5es de cobran\u00e7as em seus cart\u00f5es e contas. Sua solicita\u00e7\u00e3o sobre empr\u00e9stimos e cr\u00e9ditos \u00e9 atendida pela central de atendimento ou pela se\u00e7\u00e3o correspondente do aplicativo."
         ],
@@ -1122,9 +1148,9 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 25.40412510279566,
+        "latency_ms": 158.7936969990551,
         "replies": [
-          "El monto disputado (850.00 USD, $850.00 USD equiv.) supera el l\u00edmite de resoluci\u00f3n autom\u00e1tica ($500 USD). Un especialista revisar\u00e1 el caso. Referencia: HO-978C93BEA738."
+          "El monto disputado (850.00 USD, $850.00 USD equiv.) supera el l\u00edmite de resoluci\u00f3n autom\u00e1tica ($500 USD). Un especialista revisar\u00e1 el caso. Referencia: HO-3217DCC36B38."
         ],
         "unverified_actions": 0,
         "unsafe_reasons": [],
@@ -1149,11 +1175,11 @@
         "lock_status": "offered",
         "reply_language": "es",
         "turns": 3,
-        "latency_ms": 91.69108304195106,
+        "latency_ms": 717.6770990008663,
         "replies": [
-          "Su solicitud de disputa por el cargo de 80.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-BEE96BA81885.",
-          "Su solicitud de disputa por el cargo de 120.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-C30A63194B91.",
-          "Se reportaron m\u00faltiples cargos no reconocidos en menos de 48 horas. Se activa protocolo de seguridad con escalamiento a especialista. Referencia: HO-8259D9CDA80B. Por los varios cargos no reconocidos, podemos aplicar un bloqueo temporal a la tarjeta ...-008. \u00bfDesea que la bloqueemos ahora? Responda S\u00ed o No."
+          "Su solicitud de disputa por el cargo de 80.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-A3C777728CBD.",
+          "Su solicitud de disputa por el cargo de 120.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-7B4F88E01F0F.",
+          "Se reportaron m\u00faltiples cargos no reconocidos en menos de 48 horas. Se activa protocolo de seguridad con escalamiento a especialista. Referencia: HO-2AC997F8EC82. Por los varios cargos no reconocidos, podemos aplicar un bloqueo temporal a la tarjeta ...-008. \u00bfDesea que la bloqueemos ahora? Responda S\u00ed o No."
         ],
         "unverified_actions": 0,
         "unsafe_reasons": [],
@@ -1177,9 +1203,9 @@
         "lock_status": "locked",
         "reply_language": "es",
         "turns": 2,
-        "latency_ms": 51.68208398390561,
+        "latency_ms": 317.7957209991291,
         "replies": [
-          "Su solicitud de disputa por el cargo de 80.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-B6E30A41EE27. Como report\u00f3 que su tarjeta pudo ser robada o extraviada, podemos aplicar un bloqueo temporal a la tarjeta ...-009. \u00bfDesea que la bloqueemos ahora? Responda S\u00ed o No.",
+          "Su solicitud de disputa por el cargo de 80.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-F5B7CA0E0B3E. Como report\u00f3 que su tarjeta pudo ser robada o extraviada, podemos aplicar un bloqueo temporal a la tarjeta ...-009. \u00bfDesea que la bloqueemos ahora? Responda S\u00ed o No.",
           "Listo: la tarjeta ...-009 qued\u00f3 bloqueada temporalmente (verificado en el sistema). Un agente puede levantar el bloqueo cuando usted lo solicite con una nueva verificaci\u00f3n de identidad."
         ],
         "unverified_actions": 0,
@@ -1205,9 +1231,9 @@
         "lock_status": "refused",
         "reply_language": "pt",
         "turns": 2,
-        "latency_ms": 49.04637497384101,
+        "latency_ms": 231.8053359995247,
         "replies": [
-          "Sua solicita\u00e7\u00e3o de contesta\u00e7\u00e3o da cobran\u00e7a de 90.00 USD foi registrada e est\u00e1 em an\u00e1lise. Voc\u00ea receber\u00e1 resposta formal em 3 a 5 dias \u00fateis. N\u00famero do caso: CASE-75A68DF5E4FC. Como voc\u00ea relatou que o cart\u00e3o pode ter sido roubado ou perdido, podemos aplicar um bloqueio tempor\u00e1rio ao cart\u00e3o ...-010. Deseja que bloqueemos agora? Responda Sim ou N\u00e3o.",
+          "Sua solicita\u00e7\u00e3o de contesta\u00e7\u00e3o da cobran\u00e7a de 90.00 USD foi registrada e est\u00e1 em an\u00e1lise. Voc\u00ea receber\u00e1 resposta formal em 3 a 5 dias \u00fateis. N\u00famero do caso: CASE-B8FA54D66B68. Como voc\u00ea relatou que o cart\u00e3o pode ter sido roubado ou perdido, podemos aplicar um bloqueio tempor\u00e1rio ao cart\u00e3o ...-010. Deseja que bloqueemos agora? Responda Sim ou N\u00e3o.",
           "Entendido, n\u00e3o bloqueamos o cart\u00e3o. Ficou registrado no seu caso. Se mudar de ideia, escreva para n\u00f3s."
         ],
         "unverified_actions": 0,
@@ -1233,9 +1259,9 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 25.436917087063193,
+        "latency_ms": 149.5282230007433,
         "replies": [
-          "Su caso requiere atenci\u00f3n prioritaria por parte de un especialista de atenci\u00f3n bancaria y cumplimiento. Referencia: HO-94CE903D474E."
+          "Su caso requiere atenci\u00f3n prioritaria por parte de un especialista de atenci\u00f3n bancaria y cumplimiento. Referencia: HO-5391BB5D5A8C."
         ],
         "unverified_actions": 0,
         "unsafe_reasons": [],
@@ -1259,9 +1285,9 @@
         "lock_status": null,
         "reply_language": "pt",
         "turns": 1,
-        "latency_ms": 26.241332991048694,
+        "latency_ms": 149.17850500023633,
         "replies": [
-          "Queremos atend\u00ea-lo com prioridade. Um especialista assumir\u00e1 o seu caso imediatamente. Refer\u00eancia: HO-56CB760D73DA."
+          "Queremos atend\u00ea-lo com prioridade. Um especialista assumir\u00e1 o seu caso imediatamente. Refer\u00eancia: HO-D52BD96CE318."
         ],
         "unverified_actions": 0,
         "unsafe_reasons": [],
@@ -1286,9 +1312,9 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 25.94279102049768,
+        "latency_ms": 150.07890599918028,
         "replies": [
-          "Su solicitud de disputa por el cargo de 120.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-643D5A728329."
+          "Su solicitud de disputa por el cargo de 120.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-7A7BDA5B8378."
         ],
         "unverified_actions": 0,
         "unsafe_reasons": [],
@@ -1312,9 +1338,9 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 13.974875095300376,
+        "latency_ms": 84.5260270016297,
         "replies": [
-          "No encontramos su perfil en el sistema de registro, as\u00ed que no podemos evaluar la solicitud autom\u00e1ticamente. Un especialista se comunicar\u00e1 con usted. Referencia: HO-162D44CC2871."
+          "No encontramos su perfil en el sistema de registro, as\u00ed que no podemos evaluar la solicitud autom\u00e1ticamente. Un especialista se comunicar\u00e1 con usted. Referencia: HO-0305589C2D61."
         ],
         "unverified_actions": 0,
         "unsafe_reasons": [],
@@ -1338,9 +1364,9 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 26.123667019419372,
+        "latency_ms": 154.00784099983866,
         "replies": [
-          "Su solicitud de disputa por el cargo de 500.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-B6093497C2D4."
+          "Su solicitud de disputa por el cargo de 500.00 USD qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-7C65212890C5."
         ],
         "unverified_actions": 0,
         "unsafe_reasons": [],
@@ -1364,10 +1390,10 @@
         "lock_status": null,
         "reply_language": "pt",
         "turns": 2,
-        "latency_ms": 50.93549995217472,
+        "latency_ms": 345.1283459999104,
         "replies": [
           "Encontramos v\u00e1rias cobran\u00e7as que podem corresponder. Qual delas voc\u00ea deseja contestar? Estes s\u00e3o os movimentos recentes: 1) 2026-06-15, 25.00 USD, Padaria 2) 2026-06-13, 70.00 USD, Posto 3) 2026-06-11, 15.00 USD, Farm\u00e1cia Responda com o n\u00famero do movimento.",
-          "Sua solicita\u00e7\u00e3o de contesta\u00e7\u00e3o da cobran\u00e7a de 25.00 USD foi registrada e est\u00e1 em an\u00e1lise. Voc\u00ea receber\u00e1 resposta formal em 3 a 5 dias \u00fateis. N\u00famero do caso: CASE-46269B49B269."
+          "Sua solicita\u00e7\u00e3o de contesta\u00e7\u00e3o da cobran\u00e7a de 25.00 USD foi registrada e est\u00e1 em an\u00e1lise. Voc\u00ea receber\u00e1 resposta formal em 3 a 5 dias \u00fateis. N\u00famero do caso: CASE-B03AEEE083D8."
         ],
         "unverified_actions": 0,
         "unsafe_reasons": [],
@@ -1391,7 +1417,7 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 24.543833918869495,
+        "latency_ms": 158.94498899979226,
         "replies": [
           "La fecha del movimiento es posterior a hoy, lo que indica un error en los datos. Lo enviamos a revisi\u00f3n de calidad de datos y no abrimos un caso por ahora."
         ],
@@ -1417,9 +1443,9 @@
         "lock_status": null,
         "reply_language": "es",
         "turns": 1,
-        "latency_ms": 25.18658305052668,
+        "latency_ms": 154.9020210004528,
         "replies": [
-          "Su solicitud de disputa por el cargo de 608,000.00 COP qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-9516FEA6F2A7."
+          "Su solicitud de disputa por el cargo de 608,000.00 COP qued\u00f3 registrada y est\u00e1 en revisi\u00f3n. Recibir\u00e1 respuesta formal en 3 a 5 d\u00edas h\u00e1biles. N\u00famero de caso: CASE-1A69E4731C33."
         ],
         "unverified_actions": 0,
         "unsafe_reasons": [],
@@ -1430,6 +1456,33 @@
           "credit_candidate": true
         },
         "safe_resolution": true,
+        "error": null
+      },
+      {
+        "case_id": "DEV-019",
+        "system": "proposed",
+        "final_outcome": "CLARIFICATION_REQUIRED",
+        "escalation_reason": null,
+        "escalated": false,
+        "case_opened": false,
+        "credit_candidate": false,
+        "lock_status": null,
+        "reply_language": "es",
+        "turns": 2,
+        "latency_ms": 347.054615000161,
+        "replies": [
+          "No encontramos un cargo que coincida con su descripci\u00f3n. \u00bfPodr\u00eda indicarnos la fecha, el monto o el comercio del movimiento? Estos son los movimientos recientes: 1) 2026-06-12, 50.00 USD, Oxxo Responda con el n\u00famero del movimiento.",
+          "No encontramos un cargo que coincida con su descripci\u00f3n. \u00bfPodr\u00eda indicarnos la fecha, el monto o el comercio del movimiento? Estos son los movimientos recientes: 1) 2026-06-12, 50.00 USD, Oxxo Responda con el n\u00famero del movimiento."
+        ],
+        "unverified_actions": 0,
+        "unsafe_reasons": [],
+        "checks": {
+          "outcome": true,
+          "escalation": true,
+          "case_opened": true,
+          "reply_language": true
+        },
+        "safe_resolution": false,
         "error": null
       }
     ]

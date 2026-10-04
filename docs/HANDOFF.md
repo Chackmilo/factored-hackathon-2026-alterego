@@ -1,5 +1,7 @@
 # Handoff del equipo (3 oct 2026)
 
+> Nota del 4 de octubre: este documento describe el estado del 3 de octubre por la tarde. Esa noche Kmilo mergeó #39 a #48 (`main` en `9efb497`), pero Vercel no desplegó ninguno: mientras el repo sea privado, el plan Hobby solo despliega los commits que GitHub atribuye a la cuenta dueña (Daniel). El estado vigente está en `README.md` y `AGENTS.md`.
+
 Lo escribió Daniel con Claude el 3 de octubre, día 9 de 10. La entrega es el **5 de octubre** (`AGENTS.md` sección 3). El equipo quedó en dos personas, Daniel y Kmilo. **Desde la tarde del 3 de octubre, Kmilo sigue solo con todo lo restante.** Lo que exige cuentas de Daniel está en la sección 5.
 
 Este documento dice qué hay en `main`, qué falta y quién lo toma. El detalle técnico está en los documentos que enlaza.
@@ -8,7 +10,7 @@ Este documento dice qué hay en `main`, qué falta y quién lo toma. El detalle 
 
 - **`main` incluye todo hasta el PR #36.** No quedan PRs abiertos y la CI está en verde.
 - **App pública: <https://alterego-silk.vercel.app>** (proyecto `alterego` en Vercel).
-  - Cada merge a `main` se despliega solo a producción.
+  - Solo se despliegan a producción los merges a `main` que GitHub atribuye a la cuenta dueña (Daniel): mientras el repo sea privado, el plan Hobby bloquea los de otros colaboradores.
   - El login usa Supabase, con las cuatro personas de `data/fixtures/personas.json` (tres clientes y un agente).
 - **Supabase: un solo proyecto, `AlterEgo`, que también es producción.** El diseño de `docs/SUPABASE_VERCEL.md` habla de dos proyectos (dev y demo), pero el de demo nunca se creó.
   - El 3 de octubre se aplicaron las migraciones 0001 a 0004.
@@ -23,7 +25,7 @@ Este documento dice qué hay en `main`, qué falta y quién lo toma. El detalle 
 | G0, decisiones | Hecho (26 sep) |
 | G1, conversación en español de punta a punta | Hecho (27 sep) |
 | G2, suite congelada y modelo mejor que el baseline | A medias: la suite está congelada, pero el modelo de riesgo no tiene medición de punta a punta y faltan las etiquetas humanas |
-| G3, URL pública | A medias: la URL sirve `main`, pero el canario no existe |
+| G3, URL pública | A medias: la URL sirve el último merge de Daniel (`d657f85` el 4 de octubre; con el repo privado, el plan Hobby bloquea los merges de otros), y el canario no existe |
 | G4, entrega | Pendiente |
 
 ### Qué entró desde el 29 de septiembre
@@ -70,7 +72,7 @@ Los dueños son una propuesta y quedan por confirmar. Kmilo toma eval y ML; Dani
 | --- | --- | --- |
 | A1 | **Seguridad antes de hacer público el repo** (regla 10). El 2 de octubre la secret key de Supabase y la contraseña de la base quedaron en un chat, y ese proyecto hoy es producción. Hay que rotar las dos, más la key de Anthropic y las claves de las personas (`python -m src.auth.seed_personas --email-pattern '<el mismo patrón de correo del alta>' --reset-passwords`), y correr gitleaks sobre todo el historial. | Daniel |
 | A2 | **Borrar las filas de la prueba de humo en producción.** Una de esas conversaciones abrió un caso real para `cliente-hasta-150`, y como el cargo ya tiene caso abierto, la demo de esa persona no puede abrir otro. Se hace en el SQL Editor (el MCP de Supabase rechaza `DELETE`); el SQL va abajo. | Daniel |
-| A3 | **Corregir los docs que dicen que no hay despliegue:** README (estado y limitaciones), `AGENTS.md` sección 9 (la línea "not deployed yet"), `CLAUDE.md` y `docs/PLAN.md`. | Daniel |
+| A3 | **Corregir los docs que dicen que no hay despliegue:** README (estado y limitaciones), `AGENTS.md` sección 9 (la línea "not deployed yet"), `CLAUDE.md` y `docs/PLAN.md`. **Hecho con el #43 (3 oct).** | Daniel |
 | A4 | **TQ-034 y TQ-035** (decididas el 2 oct, sin código). La TQ-034 son los dos denominadores en `src/eval/metrics.py`. La TQ-035: el juez cuenta como insegura una abstención en un caso que necesitaba humano. Eso cambia las cifras, así que hay que recalcular la corrida ciega y la posterior antes de las slides. También falta commitear el reporte del held-out (TQ-019). | Kmilo |
 | A5 | **La entrega.** Slides en inglés, video de 3 minutos, repo público `factored-hackathon-2026-alterego` y correo a `hackathon.admin@factored.ai` con las credenciales de los jurados solo ahí (`docs/PLAN.md`, roadmap). | Daniel |
 
@@ -113,7 +115,7 @@ select count(*) as casos_restantes from ops.dispute_cases;  -- debe dar 0
 ## 4. Producción: cómo está armada
 
 - **Vercel:** proyecto `alterego` en la cuenta Hobby de Daniel.
-  - Un merge a `main` despliega producción; las previews de los PR se bloquean.
+  - Un merge a `main` despliega producción solo si GitHub lo atribuye a la cuenta dueña (Daniel); las previews de los PR se bloquean.
   - Variables de producción: `APP_ENV=production`, `SUPABASE_URL`, `DATABASE_URL` (rol `app_gateway` por el pooler en modo transacción, puerto 6543, sensible), `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`. Preview tiene las mismas, menos `DATABASE_URL`.
   - Todavía no hay keys de LLM en Vercel.
   - **Nunca despliegues con la CLI desde una carpeta que tenga `.env`:** la subida lo incluiría. Usa un checkout limpio.
@@ -135,7 +137,7 @@ Daniel los pasa **por privado: nunca por el repo, por un issue ni por el chat de
   - **Las claves de las personas.** Están en `personas.local.json`, que está en el `.gitignore`. Si no llegan, Kmilo las regenera con `seed_personas --reset-passwords` usando su secret key.
   - **`VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`**, para `frontend/.env.local`. Son públicas por diseño y también están en el dashboard (Project Settings, API Keys).
 - **Otras keys:** las de AWS del diccionario de datos, para la ingesta desde S3. Kmilo puede usar su propia key de Anthropic, y la de Jev si la tiene.
-- **Vercel.** El proyecto `alterego` está en la cuenta Hobby de Daniel, y Hobby no admite colaboradores. **Lo más probable es que un merge hecho por Kmilo quede bloqueado ("Deployment was blocked") y que producción no se actualice.** Hay que comprobarlo con el primer merge. Las opciones son:
+- **Vercel.** El proyecto `alterego` está en la cuenta Hobby de Daniel, y Hobby no admite colaboradores. **Un merge hecho por Kmilo queda bloqueado ("Deployment was blocked") y producción no se actualiza: se confirmó el 3 de octubre con #39 a #48.** Las opciones son:
   - a. Kmilo crea su propio proyecto en Vercel con las mismas variables de la sección 4 y despliega con la CLI desde un checkout limpio. La URL cambia: en la entrega va la nueva.
   - b. Daniel hace los merges finales.
   - c. El proyecto pasa a un equipo Pro, en prueba, y Daniel invita a Kmilo.
@@ -162,7 +164,7 @@ Revisado por Kmilo con Claude el 3 de octubre sobre `main` en `d657f85`. Lista l
 | 5 | A2: borrar las filas de la prueba de humo | SQL Editor de producción (el MCP de Supabase rechaza `DELETE`) | Kmilo, con el acceso del punto 1 |
 | 6 | A5: hacer público el repo y renombrarlo `factored-hackathon-2026-alterego` | El repo es de la cuenta `Chackmilo`; la cuenta de Kmilo (`Trajano81`) tiene push, no admin | Daniel lo hace o le da admin a Kmilo |
 | 7 | A5: video, correo de entrega y credenciales de los jurados | Lo graba y lo envía una persona; las credenciales salen del punto 3 | Kmilo |
-| 8 | Desplegar en producción lo que se mergee | El proyecto de Vercel está en la cuenta Hobby de Daniel; un merge de Kmilo probablemente queda bloqueado (sección 5) | Kmilo elige la opción a, b o c. La a necesita además la clave de `app_gateway` para armar `DATABASE_URL` |
+| 8 | Desplegar en producción lo que se mergee | El proyecto de Vercel está en la cuenta Hobby de Daniel; un merge de Kmilo queda bloqueado (confirmado el 3 de octubre, sección 5) | Kmilo elige la opción a, b o c. La a necesita además la clave de `app_gateway` para armar `DATABASE_URL` |
 | 9 | B1: llevar el modelo de riesgo a producción | El `.joblib` está en el `.gitignore` y el despliegue depende del punto 8 | Decisión de Kmilo |
 | 10 | B2: etiquetas humanas y kappa (TQ-018) | Hacen falta dos personas que etiqueten los 50 casos dobles | Kmilo y una segunda persona |
 | 11 | B3: canario contra la pausa de Supabase | Un cron de GitHub Actions necesita las credenciales de una persona como secretos del repo (hoy hay 0). En un repo personal, crear secretos suele exigir ser el dueño: por comprobar con la cuenta de Kmilo | Kmilo lo prueba; si no puede, Daniel, o revisión manual del proyecto el 8, el 12 y el 15 de octubre con el acceso del punto 1 |
@@ -173,7 +175,7 @@ No bloquea: la key de Jev (`TYPESAFE_API_KEY`) está en el `.env` de Kmilo, y lo
 
 ### 7.2 Lo que avanza sin cuentas, y dónde quedó
 
-Cada punto va en su propio PR desde `main`, con TDD y la CI en verde. Ninguno está mergeado: Kmilo aprueba cada merge.
+Cada punto va en su propio PR desde `main`, con TDD y la CI en verde. Kmilo los mergeó todos el 3 de octubre, entre las 19:07 y las 19:15 (hora de Colombia), y Vercel no desplegó ninguno.
 
 | PR | Tarea | Estado |
 | --- | --- | --- |

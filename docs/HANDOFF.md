@@ -146,3 +146,58 @@ Daniel los pasa **por privado: nunca por el repo, por un issue ni por el chat de
 1. ¿Tienes la key de Jev?
 2. ¿Tienes los datos de IEEE-CIS para regenerar el modelo de riesgo?
 3. ¿Cuál de las opciones de Vercel de la sección 5 vas a usar para desplegar?
+
+## 7. Bloqueos al 3 de octubre (tarde)
+
+Revisado por Kmilo con Claude el 3 de octubre sobre `main` en `d657f85`. Lista lo que no se puede hacer sin una cuenta, una clave o una persona, y lo que sí avanza sin ellas. Ninguna clave va en este archivo: solo los nombres.
+
+### 7.1 Lo que falta y quién lo destraba
+
+| # | Tarea | Qué la bloquea | Quién lo destraba |
+| --- | --- | --- | --- |
+| 1 | A1: rotar la secret key de Supabase y la contraseña de la base | Acceso al proyecto AlterEgo (organización "Chackmilo's Org") | Daniel invita a Kmilo |
+| 2 | A1: rotar la key de Anthropic | La key es de Daniel | Daniel |
+| 3 | A1: nuevas claves de las personas (`seed_personas --reset-passwords`) | Una secret key de Supabase vigente. En el `.env` de Kmilo la variable se llama `SUPABASE_SECRET`, pero el código lee `SUPABASE_SECRET_KEY`; y si es la key que quedó en un chat el 2 de octubre, deja de servir al rotarla | Kmilo, con la key nueva del punto 1 |
+| 4 | A1: confirmar que la Data API no expone `bank` ni `ops` | Ninguna migración activa RLS, así que la Data API es la única barrera. Se ve en el dashboard (Settings, Data API) | Kmilo, con el acceso del punto 1 |
+| 5 | A2: borrar las filas de la prueba de humo | SQL Editor de producción (el MCP de Supabase rechaza `DELETE`) | Kmilo, con el acceso del punto 1 |
+| 6 | A5: hacer público el repo y renombrarlo `factored-hackathon-2026-alterego` | El repo es de la cuenta `Chackmilo`; la cuenta de Kmilo (`Trajano81`) tiene push, no admin | Daniel lo hace o le da admin a Kmilo |
+| 7 | A5: video, correo de entrega y credenciales de los jurados | Lo graba y lo envía una persona; las credenciales salen del punto 3 | Kmilo |
+| 8 | Desplegar en producción lo que se mergee | El proyecto de Vercel está en la cuenta Hobby de Daniel; un merge de Kmilo probablemente queda bloqueado (sección 5) | Kmilo elige la opción a, b o c. La a necesita además la clave de `app_gateway` para armar `DATABASE_URL` |
+| 9 | B1: llevar el modelo de riesgo a producción | El `.joblib` está en el `.gitignore` y el despliegue depende del punto 8 | Decisión de Kmilo |
+| 10 | B2: etiquetas humanas y kappa (TQ-018) | Hacen falta dos personas que etiqueten los 50 casos dobles | Kmilo y una segunda persona |
+| 11 | B3: canario contra la pausa de Supabase | Un cron de GitHub Actions necesita las credenciales de una persona como secretos del repo (hoy hay 0). En un repo personal, crear secretos suele exigir ser el dueño: por comprobar con la cuenta de Kmilo | Kmilo lo prueba; si no puede, Daniel, o revisión manual del proyecto el 8, el 12 y el 15 de octubre con el acceso del punto 1 |
+| 12 | C: verificación manual de las respuestas con Claude, y que producción redacte | `ANTHROPIC_API_KEY` está vacía en el `.env` de Kmilo y no hay key en Vercel | Kmilo pone su propia key en el `.env` local (nunca en el chat) |
+| 13 | C: aplicar la migración 0005 (`search_path`) | Producción, punto 1 | Kmilo, con el acceso del punto 1 |
+
+No bloquea: la key de Jev (`TYPESAFE_API_KEY`) está en el `.env` de Kmilo, y los datos de IEEE-CIS (`data/kaggle`) y `data/lakehouse_full.duckdb` están en su máquina, así que B1 se puede entrenar y medir en local.
+
+### 7.2 Lo que avanza sin cuentas, y dónde quedó
+
+Cada punto va en su propio PR desde `main`, con TDD y la CI en verde. Ninguno está mergeado: Kmilo aprueba cada merge.
+
+| PR | Tarea | Estado |
+| --- | --- | --- |
+| #39 | B4: el bloqueo no elige una tarjeta al azar cuando el cliente tiene varias activas y el cargo no está en ninguna | Listo. Cambia 6 casos del held-out cuyas etiquetas de diseño premiaban el bloqueo de una tarjeta arbitraria (detalle en el PR) |
+| #41 | A1: `read_only=true` en el MCP de Supabase, y gitleaks sobre todo el historial | Listo. Gitleaks: 319 commits, un falso positivo (el SHA-256 del tokenizer de E5), registrado en `.gitleaksignore` |
+| #42 | A4: TQ-034 y TQ-035, las cifras del held-out recalculadas y los dos reportes del held-out commiteados | Listo. Corrida ciega: 68 de 230 en alcance y 39 de 250 inseguros. Posterior: 105 de 230 y 20 de 250 |
+| #43 | A3: los docs que decían que no había despliegue | Listo. La URL responde en producción (revisado el 3 oct) |
+| #44 | B1: el harness corre el held-out con el modelo de riesgo (`--model`) | Listo. Primera medición de punta a punta: 9 de 250 inseguros en vez de 20 |
+| #45 | B1: el modelo ve al servir lo que vio al calibrarse (AUD-27) | Listo. Con #44: 11 de 20 casos de alto riesgo detectados, 4 escalamientos de más en vez de 8, p50 de 28 ms |
+| #46 | C: una pregunta de reglas nunca abre el caso del único cargo de un cliente, y el explicador responde después de un saludo | Listo. En `main`, "Hola" y "¿Cuántos días tengo para disputar un cargo?" abrían un caso real; DEV-019 lo cubre |
+| #47 | C: `/health` dice AlterEgo, y la migración 0005 fija el `search_path` que marca el advisor | Listo. Falta aplicar 0005 en producción (punto 13) |
+| #48 | C: los commits de docs de MLflow del 2 oct recuperados, y las tres inconsistencias de docs | Listo |
+
+Sin PR, a propósito:
+- **gateway-8** (el gateway de Postgres inserta una segunda fila de bloqueo si no hay oferta, y su verificación lee la fila que acaba de escribir): el primer caso solo pasa si falta la fila de la oferta, y el segundo es un límite del diseño (`bank` es de solo lectura, así que ningún sistema del banco recibe el bloqueo). Se declara en las limitaciones del README en vez de tocar el código del bloqueo el día 9.
+- **Pasada final de docs**, después de los merges: las cifras del README, los "18 casos de desarrollo" (ahora 19) en `README.md`, `AGENTS.md`, `CLAUDE.md` y `docs/technical-discuss-points.md`, y la frase "is_fraud itself is random" de `CLAUDE.md`. Varios PRs abiertos editan esas mismas líneas.
+
+### 7.3 Decisiones de Kmilo
+
+1. **Orden de merge sugerido:** #41 y #43 (independientes), después #42 (las definiciones de las métricas), #44 y #45 (el modelo), y al final #39 (cambia casos del held-out). Después de cada merge que toque las cifras se regeneran `reports/eval_heldout.*` y la tabla del README.
+2. **#39:** mergear y declarar los 6 casos como etiquetas de diseño que premian una elección arbitraria (las corrigen las etiquetas humanas, TQ-018), o esperar a congelar las cifras del reporte.
+3. **El modelo de registro:** el bundle local del 29 de septiembre (ROC AUC 0,817, umbral 0,0669) o el reentrenado el 3 de octubre en el contenedor, con MLflow (0,815 y 0,0694). En el held-out los dos dan lo mismo.
+4. **Cómo llega el modelo a Vercel:** el `.joblib` está en el `.gitignore` y sale de los datos de una competencia de Kaggle, cuya licencia sigue pendiente con los mentores. Sin el archivo, producción corre en modo solo reglas, y el handoff dice "riesgo no calificado".
+5. **TQ-019:** confirmar que los reportes de evaluación viven commiteados en `reports/`.
+6. **La auditoría del 29 sep:** si se corrige su sección 0 y se quitan las rutas locales de `docs/reviews/2026-09-29-adversarial-audit-code-and-docs.*`.
+7. **TQ-036 (OpenTelemetry):** el handoff recomienda darla de baja formalmente; es una decisión, así que no se registra sin Kmilo.
+8. **Orden de merge con los PRs nuevos:** #47 y #48 junto con #41 y #43 (independientes); #46 antes de regenerar el reporte del split de desarrollo.

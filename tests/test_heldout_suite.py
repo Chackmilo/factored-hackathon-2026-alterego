@@ -74,6 +74,31 @@ def test_security_and_failure_cases_carry_their_scenario(cases):
     assert all(c.fault and c.expected["requires_human"] for c in failures)
 
 
+def test_the_builder_reads_a_relabeled_gold_in_the_vocabulary_the_suite_was_frozen_with(tmp_path):
+    """Suite v1 was frozen when gold wrote "Unknown Merchant" for every charge without a merchant; a rebuilt gold must reproduce the same file."""
+    import duckdb
+
+    from src.eval.heldout import Bank, has_merchant
+
+    path = tmp_path / "lakehouse.duckdb"  # team-generated fixture with the columns the builder reads
+    con = duckdb.connect(str(path))
+    con.execute("CREATE TABLE gold_customers (customer_id VARCHAR, segment VARCHAR, country VARCHAR, account_age_days INTEGER, complaints_last_90d INTEGER)")
+    con.execute("INSERT INTO gold_customers VALUES ('C1', 'Plus', 'Colombia', 400, 0)")
+    con.execute("""CREATE TABLE gold_transactions (transaction_id VARCHAR, customer_id VARCHAR, product_id VARCHAR, transaction_date TIMESTAMP,
+        process_date DATE, transaction_type VARCHAR, transaction_status VARCHAR, amount DOUBLE, currency VARCHAR, amount_usd DOUBLE,
+        amount_usd_source VARCHAR, merchant_name VARCHAR, merchant_category VARCHAR, channel VARCHAR, transaction_country VARCHAR)""")
+    con.execute("""INSERT INTO gold_transactions VALUES
+        ('T-WITHDRAWAL', 'C1', 'P1', TIMESTAMP '2026-06-10 12:00:00', DATE '2026-06-10', 'Withdrawal', 'Approved', 50.0, 'USD', 50.0, 'same_currency', 'Not Applicable', NULL, 'ATM', 'Colombia'),
+        ('T-PURCHASE-GAP', 'C1', 'P1', TIMESTAMP '2026-06-11 12:00:00', DATE '2026-06-11', 'Purchase', 'Approved', 60.0, 'USD', 60.0, 'same_currency', 'Unknown Merchant', NULL, 'POS', 'Colombia'),
+        ('T-PURCHASE', 'C1', 'P1', TIMESTAMP '2026-06-12 12:00:00', DATE '2026-06-12', 'Purchase', 'Approved', 70.0, 'USD', 70.0, 'same_currency', 'Oxxo', 'Food', 'POS', 'Colombia')""")
+    con.execute("CREATE TABLE silver_products (product_id VARCHAR, customer_id VARCHAR, product_type VARCHAR, product_status VARCHAR)")
+    con.close()
+    charges = {t["transaction_id"]: t for t in Bank(path).charges["C1"]}
+    assert charges["T-WITHDRAWAL"]["merchant_name"] == "Unknown Merchant" and not has_merchant(charges["T-WITHDRAWAL"])
+    assert charges["T-PURCHASE-GAP"]["merchant_name"] == "Unknown Merchant" and not has_merchant(charges["T-PURCHASE-GAP"])
+    assert charges["T-PURCHASE"]["merchant_name"] == "Oxxo" and has_merchant(charges["T-PURCHASE"])
+
+
 def test_the_recorded_hash_matches_the_frozen_file():
     digest = hashlib.sha256(SUITE.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
     assert HASH.read_text().split()[0] == digest

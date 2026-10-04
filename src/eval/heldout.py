@@ -110,7 +110,9 @@ class Bank:
                 self.charges[r[1]].append({
                     "transaction_id": r[0], "customer_id": r[1], "product_id": r[2], "transaction_date": r[3][:19], "process_date": r[4][:10],
                     "transaction_type": r[5], "transaction_status": r[6], "amount": round(float(r[7]), 2), "currency": r[8],
-                    "amount_usd": round(float(r[9]), 2) if r[9] is not None else None, "amount_usd_source": r[10], "merchant_name": r[11],
+                    "amount_usd": round(float(r[9]), 2) if r[9] is not None else None, "amount_usd_source": r[10],
+                    # suite v1 was frozen when gold wrote "Unknown Merchant" for every charge without a merchant
+                    "merchant_name": "Unknown Merchant" if r[11] == "Not Applicable" else r[11],
                     "merchant_category": r[12], "channel": r[13], "transaction_country": r[14]})
             self.cards: dict[str, list[dict[str, Any]]] = defaultdict(list)
             for r in con.execute("""SELECT product_id, customer_id, product_type, product_status FROM silver_products

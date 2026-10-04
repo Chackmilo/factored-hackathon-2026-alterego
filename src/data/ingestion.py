@@ -87,7 +87,10 @@ def build_gold_transactions(con, anchor_date: str) -> None:
             t.amount_usd,
             t.amount_usd_source,
             t.channel,
-            COALESCE(t.merchant_name, 'Unknown Merchant') as merchant_name,
+            -- the dataset never gives these five types a merchant (0 of 3.34 M rows): it does not apply; a purchase without one lost it
+            CASE WHEN t.merchant_name IS NOT NULL THEN t.merchant_name
+                 WHEN t.transaction_type IN ('Withdrawal', 'Transfer', 'Payment', 'Deposit', 'Adjustment') THEN 'Not Applicable'
+                 ELSE 'Unknown Merchant' END as merchant_name,
             t.merchant_category,
             t.transaction_country,
             t.transaction_city,

@@ -659,6 +659,15 @@ def add_account_transfer(db_path, transaction_id="TRX-A-ACC90", amount=90.0, mer
         con.close()
 
 
+@pytest.mark.parametrize("label", ["Unknown", "Unknown Merchant", "Not Applicable"])
+def test_a_placeholder_merchant_label_is_never_a_merchant_hint(orchestrator, label):
+    """Gold writes a label where a charge has no merchant; a message that happens to contain it names no merchant."""
+    from src.understand.keyword_extractor import UnderstandResult
+    u = UnderstandResult(language="es", message_lower=f"en mi extracto dice {label.lower()}")
+    assert orchestrator._merchant_in_message({"merchant_name_raw": label}, u) is False
+    assert orchestrator._merchant_in_message({"merchant_name_raw": "Tienda Este"}, UnderstandResult(language="es", message_lower="un cargo en tienda este")) is True
+
+
 def owner_product_statuses(db_path):
     return dict(fetch(db_path, "SELECT product_id, product_status FROM silver_products WHERE customer_id = 'CLI-FIX-OWNER'", []))
 
@@ -781,10 +790,11 @@ def test_a_sibling_charge_with_an_open_case_is_not_told_again(orchestrator, owne
     assert len(sibling_audit(ops_store, cid)) == 1
 
 
-def test_charges_without_a_merchant_on_record_are_no_siblings(orchestrator, owner_session, ops_store, bank_fixture_db):
-    """Most bank rows carry no merchant ("Unknown Merchant" in the data): two of them are not one merchant."""
-    add_card_charge(bank_fixture_db, "TRX-A-UNK1", "2026-06-16 10:00:00", 31.0, "Unknown Merchant")
-    add_card_charge(bank_fixture_db, "TRX-A-UNK2", "2026-06-16 11:00:00", 32.0, "Unknown Merchant")
+@pytest.mark.parametrize("label", ["Unknown Merchant", "Not Applicable"])
+def test_charges_without_a_merchant_on_record_are_no_siblings(orchestrator, owner_session, ops_store, bank_fixture_db, label):
+    """Most bank rows carry no merchant (gold writes Not Applicable or Unknown Merchant): two of them are not one merchant."""
+    add_card_charge(bank_fixture_db, "TRX-A-UNK1", "2026-06-16 10:00:00", 31.0, label)
+    add_card_charge(bank_fixture_db, "TRX-A-UNK2", "2026-06-16 11:00:00", 32.0, label)
     cid = start(orchestrator, owner_session)
     turn = orchestrator.handle_message(owner_session, cid, "No reconozco un cargo de 31 dólares")
     assert turn.case_id and ops_store.get_case(turn.case_id)["transaction_id"] == "TRX-A-UNK1"

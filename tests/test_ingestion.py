@@ -89,6 +89,26 @@ def test_gold_carries_the_fixed_amount_and_its_source_only(bronze_db):
     assert bronze_db.execute("SELECT amount_usd, amount_usd_source, days_since_transaction FROM gold_transactions WHERE transaction_id = 'T-COP-GAP'").fetchone() == (150.78, "daily_rate_fill", 6)
 
 
+def test_gold_tells_a_merchant_that_does_not_apply_from_one_that_is_missing(bronze_db):
+    """Five charge types never carry a merchant in the dataset (the field does not apply); a purchase without one is a gap."""
+    bronze_db.execute("""INSERT INTO bronze_transactions (transaction_id, transaction_date, process_date, product_id, customer_id, transaction_type, amount, currency, amount_usd, merchant_name, transaction_status) VALUES
+        ('T-PURCHASE-GAP', TIMESTAMP '2026-06-12 09:00:00', DATE '2026-06-12', 'P1', 'C1', 'Purchase', 10.0, 'USD', NULL, NULL, 'Approved'),
+        ('T-WITHDRAWAL', TIMESTAMP '2026-06-12 09:00:00', DATE '2026-06-12', 'P1', 'C1', 'Withdrawal', 11.0, 'USD', NULL, NULL, 'Approved'),
+        ('T-TRANSFER', TIMESTAMP '2026-06-12 09:00:00', DATE '2026-06-12', 'P1', 'C1', 'Transfer', 12.0, 'USD', NULL, NULL, 'Approved'),
+        ('T-PAYMENT', TIMESTAMP '2026-06-12 09:00:00', DATE '2026-06-12', 'P1', 'C1', 'Payment', 13.0, 'USD', NULL, NULL, 'Approved'),
+        ('T-DEPOSIT', TIMESTAMP '2026-06-12 09:00:00', DATE '2026-06-12', 'P1', 'C1', 'Deposit', 14.0, 'USD', NULL, NULL, 'Approved'),
+        ('T-ADJUSTMENT', TIMESTAMP '2026-06-12 09:00:00', DATE '2026-06-12', 'P1', 'C1', 'Adjustment', 15.0, 'USD', NULL, NULL, 'Approved'),
+        ('T-TRANSFER-NAMED', TIMESTAMP '2026-06-12 09:00:00', DATE '2026-06-12', 'P1', 'C1', 'Transfer', 16.0, 'USD', NULL, 'Tienda Este', 'Approved'),
+        ('T-NEW-TYPE', TIMESTAMP '2026-06-12 09:00:00', DATE '2026-06-12', 'P1', 'C1', 'Refund', 17.0, 'USD', NULL, NULL, 'Approved')""")
+    build_silver_transactions(bronze_db)
+    build_gold_transactions(bronze_db, "2026-06-17")
+    labels = dict(bronze_db.execute("SELECT transaction_id, merchant_name FROM gold_transactions").fetchall())
+    assert {labels[t] for t in ("T-WITHDRAWAL", "T-TRANSFER", "T-PAYMENT", "T-DEPOSIT", "T-ADJUSTMENT")} == {"Not Applicable"}
+    assert labels["T-PURCHASE-GAP"] == "Unknown Merchant"
+    assert labels["T-USD"] == "Oxxo" and labels["T-TRANSFER-NAMED"] == "Tienda Este"  # a name is never replaced
+    assert labels["T-NEW-TYPE"] == "Unknown Merchant"  # a type the dataset does not have is not declared merchant-free
+
+
 def test_month_globs_cover_the_dataset_period():
     globs = transaction_month_globs("s3://b/data")
     assert len(globs) == 37  # 2023-06 to 2026-06

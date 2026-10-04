@@ -609,6 +609,19 @@
       ],
       "recommendation": "Tell only: the customer and the specialist see them, POL-ESC-MULTI keeps counting disputed charges",
       "source": "3-Oct, session with Kmilo (sibling charges hook)"
+    },
+    {
+      "question_id": "TQ-040",
+      "topic": "Data and conversation: how a charge without a merchant reaches the agent and the customer",
+      "question": "Since 4-Oct gold_transactions.merchant_name tells two cases apart: 'Not Applicable' on a Withdrawal, Transfer, Payment, Deposit or Adjustment (the dataset never gives those types a merchant) and 'Unknown Merchant' on a purchase that lost its merchant. The label is text inside a name column, so each reader compares strings to know it is not a name, and it reaches the agent only on the local DuckDB path: the deployed API reads the Postgres copy and the frozen held-out suite keeps 'Unknown Merchant'. Two things to decide. (1) Should both gateways return a typed field beside the name (merchant_status: named, missing, not_applicable), computed by one rule, so the orchestrator and the handoff stop reading labels? (2) What should the customer see in the list of recent charges for a charge without a merchant: the label as today (English), or a description built from what the data has (the type in the customer's language, the payment category, the city)?",
+      "context": "Kmilo asked on 4-Oct why so many charges read 'Unknown Merchant' and for gold to say 'Not Applicable' on internal transactions. Measured on data/lakehouse_full.duckdb (derived from the organizer's data): merchant_name is NULL on 76.7 percent of the 4,425,008 transactions; all 3,341,602 Withdrawal, Transfer, Payment, Deposit and Adjustment rows have no merchant, on every channel, and 54,172 of 1,083,406 purchases (5.0 percent) lost theirs. Purchases are 29.3 percent of the disputable charges of the 60-day window, so a merchant can help on fewer than a third of them. What the data has instead: transaction_category on 95 percent of the payments (not in gold today); transaction_city on 90 percent and transaction_country on every row (both in gold). branch_id, on 95 percent of the ATM and Branch channel charges, is not the place of the charge: it is always a branch of the customer's country, and its city equals the charge's own city on 17.5 percent of the rows that have one, so it is left out. No policy outcome depends on the label. Option (2) changes text the customer reads, and a typed field in the gateway rows needs the same column in the eval bank fixture. docs/technical-discuss-points.md section 11.",
+      "options": [
+        "Typed merchant_status in both gateways, and a description of the charge in the customer's language for the list (recommended)",
+        "Typed merchant_status in both gateways only; the customer keeps seeing the label",
+        "Keep the labels in gold as they are and compare strings"
+      ],
+      "recommendation": "Typed merchant_status in both gateways, and a description of the charge in the customer's language for the list",
+      "source": "4-Oct, Kmilo (chat); src/data/ingestion.py"
     }
   ]
 }

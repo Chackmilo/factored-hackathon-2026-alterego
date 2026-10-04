@@ -159,9 +159,11 @@ built it, so the aggregations are comparable to ours.
   contract, one customer-safe phrase per feature, and the top three contributions still travel in
   `risk_top_features`.
 - Limitation stated in the report and the console: the competition holds card-not-present
-  transactions only, so on POS, ATM and Branch charges the model extrapolates. The rules baseline
-  (amount above 1,000 USD, ratio above 3, foreign country) stays as the second opinion on those
-  channels, and the policy's other escalations (`POL-ESC-500`, `POL-ESC-MULTI`) are unchanged.
+  transactions only, so on POS, ATM and Branch charges the model would extrapolate. Since 3-Oct
+  (AUD-27) the scorer rates only the channels its threshold was calibrated on (Web and App) and
+  reports any other charge as not scored. The rules baseline (amount above 1,000 USD, ratio above
+  3, foreign country) is measured offline only; at serving nothing scores those channels, and the
+  policy's other escalations (`POL-ESC-500`, `POL-ESC-MULTI`) still apply to them.
 - Leakage guards: `tests/test_fraud_risk.py` keeps asserting that `is_fraud` and `fraud_score`
   are absent from the contract, and a new test asserts that no feature reads a row dated after the
   charge.

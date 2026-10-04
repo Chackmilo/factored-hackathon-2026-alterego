@@ -25,8 +25,14 @@ class TransferRiskScorer:
         self.model, self.features, self.ranker = bundle["model"], bundle["features"], bundle["ranker"]
         self.medians, self.threshold, self.threshold_kind = bundle["medians"], bundle["threshold"], bundle["threshold_kind"]
         self.policy_threshold = float(self.threshold)  # read by the orchestrator for POL-ESC-ML-RISK
+        # The threshold is a percentile of the bank's Web and App charges (TQ-026): other channels are out of the model's scope.
+        calibration = (bundle.get("report") or {}).get("bank_calibration") or {}
+        self.channels = tuple(calibration.get("channels") or ("Web", "App"))
 
-    def __call__(self, matched: dict[str, Any], history: list[dict[str, Any]], profile: dict[str, Any]) -> tuple[float, list[dict[str, Any]]]:
+    def __call__(self, matched: dict[str, Any], history: list[dict[str, Any]], profile: dict[str, Any]) -> tuple[float | None, list[dict[str, Any]]]:
+        """The score and its top 3 contributions, or (None, []) for a charge outside the channels the threshold was calibrated on."""
+        if matched.get("channel") not in self.channels:
+            return None, []
         feats = build_contract_features(rows_to_canonical(matched, history, profile))
         current = feats[feats["row_id"] == matched.get("transaction_id")].iloc[-1:]
         x = self.ranker.transform(current[self.features]).iloc[0].astype(float)

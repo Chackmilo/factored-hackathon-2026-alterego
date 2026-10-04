@@ -227,6 +227,7 @@ class DisputeOrchestrator:
             recent = recent | {matched["transaction_id"]}
         recent = recent | {r["transaction_id"] for r in named}  # charges named at once count like charges disputed one by one
         ml_score, top_features = (self.risk_scorer(matched, rows, profile) if (self.risk_scorer and matched) else (0.0, []))
+        scored = ml_score is not None  # None: the charge is outside the channels the model's threshold was calibrated on
 
         policy_input = DisputePolicyInput(
             customer_id=session.customer_id,
@@ -242,7 +243,7 @@ class DisputeOrchestrator:
             amount_usd=(float(matched["amount_usd"]) if matched and matched.get("amount_usd") is not None else None),
             transaction_type=matched["transaction_type"] if matched else None,
             transaction_status=matched["transaction_status"] if matched else None,
-            ml_risk_score=ml_score,
+            ml_risk_score=ml_score if scored else 0.0,
             ml_risk_threshold=float(getattr(self.risk_scorer, "policy_threshold", 0.70) or 0.70),
             risk_top_features=top_features,
             recent_disputed_charges_count=max(1, len(recent)),
@@ -593,6 +594,8 @@ class DisputeOrchestrator:
             facts.append("ML risk score: not scored, no risk model is loaded")
         elif matched is None:
             facts.append("ML risk score: not scored, no charge identified")
+        elif matched.get("channel") not in getattr(self.risk_scorer, "channels", (matched.get("channel"),)):
+            facts.append(f"ML risk score: not scored, the model scores {' and '.join(self.risk_scorer.channels)} charges only")
         else:
             facts.append(f"ML risk score: {policy_input.ml_risk_score:.2f} (escalation threshold {policy_input.ml_risk_threshold:.2f})")
         facts.append(f"{policy_input.recent_disputed_charges_count} distinct charge(s) disputed within 48 hours")

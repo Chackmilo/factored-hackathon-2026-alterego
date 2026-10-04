@@ -46,7 +46,8 @@ class PostgresBankingGateway:
             rows = con.execute(f"""
                 SELECT t.transaction_id, t.transaction_date, t.process_date, t.transaction_type, t.amount, t.currency, t.amount_usd,
                        t.product_id, p.product_type, s.product_status, t.channel, t.merchant_name, t.merchant_category, t.transaction_status,
-                       (ops.business_today() - t.process_date) AS days_since_transaction
+                       (ops.business_today() - t.process_date) AS days_since_transaction, t.transaction_country, t.transaction_city,
+                       p.currency AS product_currency
                 FROM bank.transactions t
                 LEFT JOIN bank.products p ON p.product_id = t.product_id
                 LEFT JOIN ops.v_product_status s ON s.product_id = t.product_id
@@ -54,7 +55,7 @@ class PostgresBankingGateway:
                 ORDER BY t.transaction_date DESC LIMIT %s""", [session.customer_id, limit]).fetchall()
         out = []
         for r in rows:
-            (tid, tdate, pdate, ttype, amount, currency, usd, pid, ptype, pstatus, channel, merchant, mcat, status, days) = r
+            (tid, tdate, pdate, ttype, amount, currency, usd, pid, ptype, pstatus, channel, merchant, mcat, status, days, tcountry, tcity, pcurrency) = r
             raw_merchant = str(merchant or "Unknown")
             out.append({
                 "transaction_id": tid, "transaction_date": tdate.isoformat() if isinstance(tdate, datetime) else str(tdate),
@@ -64,16 +65,19 @@ class PostgresBankingGateway:
                 "merchant_name": f"<untrusted_merchant_data>{html.escape(raw_merchant)}</untrusted_merchant_data>",
                 "merchant_category": html.escape(str(mcat)) if mcat is not None else None, "transaction_status": status,
                 "is_within_60_days": 0 <= int(days) <= 60, "days_since_transaction": int(days),
+                "transaction_country": tcountry, "transaction_city": html.escape(str(tcity)) if tcity is not None else None,
+                "product_currency": pcurrency,
             })
         return out
 
     def get_customer_profile(self, session: VerifiedSession) -> dict[str, Any]:
         with self._con() as con:
-            row = con.execute("""SELECT customer_id, full_name, country, segment, account_age_days, is_account_mature, complaints_last_90d, active_products
-                                 FROM ops.v_customer_policy_facts WHERE customer_id = %s""", [session.customer_id]).fetchone()
+            row = con.execute("""SELECT f.customer_id, f.full_name, f.country, f.segment, f.account_age_days, f.is_account_mature, f.complaints_last_90d,
+                                        f.active_products, (SELECT c.city FROM bank.customers c WHERE c.customer_id = f.customer_id)
+                                 FROM ops.v_customer_policy_facts f WHERE f.customer_id = %s""", [session.customer_id]).fetchone()
         if not row:
             raise RecordNotFoundError(f"Customer {session.customer_id} not found in system of record.")
-        keys = ["customer_id", "full_name", "country", "segment", "account_age_days", "is_account_mature", "complaints_last_90d", "active_products"]
+        keys = ["customer_id", "full_name", "country", "segment", "account_age_days", "is_account_mature", "complaints_last_90d", "active_products", "city"]
         profile = dict(zip(keys, row))
         profile["complaints_include_ops_cases"] = True  # the live view already counts the system's own cases
         return profile

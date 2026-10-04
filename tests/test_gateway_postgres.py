@@ -19,12 +19,13 @@ def pg_stack(tmp_path):
     url = os.environ["TEST_DATABASE_URL"]
     OpsStore.apply_postgres_migration(url)
     bank = build_bank_fixture(tmp_path / "bank.duckdb",
-                              [{"customer_id": "CLI-PG-1", "segment": "Plus", "country": "Colombia", "account_age_days": 250, "complaints_last_90d": 0},
+                              [{"customer_id": "CLI-PG-1", "segment": "Plus", "country": "Colombia", "city": "Bogotá", "account_age_days": 250, "complaints_last_90d": 0},
                                {"customer_id": "CLI-PG-2", "segment": "Basic", "country": "Argentina", "account_age_days": 90, "complaints_last_90d": 1}],
-                              [{"product_id": "PRD-PG-1", "customer_id": "CLI-PG-1"}, {"product_id": "PRD-PG-2", "customer_id": "CLI-PG-2"},
+                              [{"product_id": "PRD-PG-1", "customer_id": "CLI-PG-1", "currency": "COP"}, {"product_id": "PRD-PG-2", "customer_id": "CLI-PG-2"},
                                {"product_id": "PRD-PG-ACC", "customer_id": "CLI-PG-2", "product_type": "Cuenta Ahorros"},
                                {"product_id": "PRD-PG-OFF", "customer_id": "CLI-PG-2", "product_status": "Cancelled"}],
-                              [{"transaction_id": "TRX-PG-1", "customer_id": "CLI-PG-1", "product_id": "PRD-PG-1", "process_date": "2026-06-10", "amount": 80.0, "merchant_name": "Oxxo"},
+                              [{"transaction_id": "TRX-PG-1", "customer_id": "CLI-PG-1", "product_id": "PRD-PG-1", "process_date": "2026-06-10", "amount": 80.0, "merchant_name": "Oxxo",
+                                "channel": "Web", "transaction_country": "USA", "transaction_city": "Miami"},
                                {"transaction_id": "TRX-PG-2", "customer_id": "CLI-PG-2", "product_id": "PRD-PG-2", "process_date": "2026-06-12", "amount": 50.0, "merchant_name": "Oxxo"}])
     publish(url, bank)
     with psycopg.connect(url, autocommit=True) as con:
@@ -120,3 +121,13 @@ def test_postgres_lock_of_a_card_already_locked_writes_no_second_lock(pg_stack):
         orchestrator.gateway.execute_lock_card(session, "PRD-PG-1")
     with psycopg.connect(url, autocommit=True) as con:
         assert con.execute("SELECT count(*) FROM ops.card_locks WHERE product_id = 'PRD-PG-1'").fetchone() == (1,)
+
+
+def test_postgres_search_and_profile_carry_what_the_risk_model_reads(pg_stack):
+    """AUD-27: the served features are read from bank, not imputed with the training median."""
+    from tests.conftest import make_session
+    orchestrator, _ = pg_stack
+    session = make_session("CLI-PG-1")
+    [row] = orchestrator.gateway.search_customer_transactions(session)
+    assert (row["channel"], row["transaction_country"], row["transaction_city"], row["product_currency"]) == ("Web", "USA", "Miami", "COP")
+    assert orchestrator.gateway.get_customer_profile(session)["city"] == "Bogotá"

@@ -92,7 +92,10 @@ class BankingToolGateway:
                     merchant_category,
                     transaction_status,
                     is_within_60_days,
-                    days_since_transaction
+                    days_since_transaction,
+                    transaction_country,
+                    transaction_city,
+                    (SELECT any_value(p.currency) FROM silver_products p WHERE p.product_id = gold_transactions.product_id) AS product_currency
                 FROM gold_transactions
                 WHERE customer_id = ? {window_clause}
                 ORDER BY transaction_date DESC
@@ -130,6 +133,7 @@ class BankingToolGateway:
                     customer_id,
                     full_name,
                     country,
+                    city,
                     segment,
                     account_age_days,
                     is_account_mature,

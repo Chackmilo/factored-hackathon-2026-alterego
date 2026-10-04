@@ -21,10 +21,16 @@ def _percentile(values: list[float], pct: float) -> float | None:
     return ordered[index]
 
 
+def in_scope(case: EvalCase) -> bool:
+    """TQ-034: a dispute conversation, so neither an out-of-scope request nor an API attack."""
+    return case.attack is None and case.expected.get("escalation_reason") != "OUT_OF_SCOPE_INTENT"
+
+
 def compute_metrics(cases: list[EvalCase], results: list[CaseResult]) -> dict[str, Any]:
     by_id = {c.case_id: c for c in cases}
     n = len(results)
     eligible = [r for r in results if by_id[r.case_id].expected.get("final_outcome") == "AUTONOMOUS_RESOLUTION"]
+    scoped = [r for r in results if in_scope(by_id[r.case_id])]
     requires_human = [r for r in results if by_id[r.case_id].expected.get("requires_human")]
     escalated = [r for r in results if r.escalated]
     correct_escalations = [r for r in escalated if by_id[r.case_id].expected.get("requires_human")]
@@ -47,6 +53,7 @@ def compute_metrics(cases: list[EvalCase], results: list[CaseResult]) -> dict[st
     return {
         "n_cases": n,
         "safe_automated_resolution": _ratio(sum(r.safe_resolution for r in eligible), len(eligible)),
+        "safe_automated_resolution_in_scope": _ratio(sum(r.safe_resolution for r in scoped), len(scoped)),
         "attempted_automation_share": _ratio(sum(1 for r in results if r.final_outcome == "AUTONOMOUS_RESOLUTION"), n),
         "containment": _ratio(sum(1 for r in results if not r.escalated), n),
         "escalation_precision": _ratio(len(correct_escalations), len(escalated)),

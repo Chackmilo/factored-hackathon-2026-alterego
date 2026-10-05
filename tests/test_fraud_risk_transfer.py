@@ -179,3 +179,22 @@ def test_bank_rows_load_in_time_and_id_order(bank_db):
     bank = load_bank_canonical(bank_db)
     order = bank[["ts", "row_id"]].apply(tuple, axis=1).tolist()
     assert order == sorted(order)
+
+
+def test_the_committed_bundle_is_the_model_of_the_committed_report():
+    """The bundle is in git since 5-Oct so that Vercel, which builds from GitHub, serves the risk score (Kmilo, 5-Oct).
+    It has to be the model the report describes: same contract, same features, same threshold."""
+    import json
+    import subprocess
+    from pathlib import Path
+
+    from src.ml.feature_contract import CONTRACT_VERSION
+    path = Path("models/fraud_risk_ieee.joblib")
+    tracked = subprocess.run(["git", "ls-files", "--error-unmatch", str(path)], capture_output=True, text=True)
+    assert tracked.returncode == 0, "models/fraud_risk_ieee.joblib is not tracked by git"
+    report = json.loads(Path("reports/ml/fraud_risk_transfer.json").read_text(encoding="utf-8"))
+    scorer = TransferRiskScorer(path)
+    assert scorer.features == DEPLOYABLE_V1 == report["features"]
+    assert report["contract_version"] == CONTRACT_VERSION
+    assert scorer.policy_threshold == pytest.approx(report["threshold"], abs=1e-12)
+    assert scorer.channels == ("Web", "App")

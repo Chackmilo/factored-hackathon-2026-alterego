@@ -193,6 +193,24 @@ Medido de nuevo con Jev (`reports/jev_evaluation_report.md`): los inseguros vuel
 
 El flujo completo, con diagrama, está en [`docs/deliverables/flujo_conversacion_agente.docx`](../deliverables/flujo_conversacion_agente.docx).
 
+### 2.14 La hipótesis 4, probada en un banco de mensajes variados
+
+El held-out no podía probarla: sus mensajes salen de pocas plantillas y los dos motores leen bien los 225. Se escribió un banco de 140 mensajes de cliente (`team-generated, LLM-drafted`; 40 de desarrollo y 100 de test, mitad español y mitad portugués), con paráfrasis, habla regional, errores de tipeo y varios temas por mensaje. Las reglas de decisión se comprometieron antes de medir (commit `fd7f1d1`).
+
+| Mensajes de test bien leídos | Español | Portugués | Total |
+| --- | --- | --- | --- |
+| Extractor de palabras clave | 22 de 50 | 27 de 50 | 49,0 % (49 de 100) |
+| Jev | 46 de 50 | 46 de 50 | 92,0 % (92 de 100) |
+| Mezcla que llama a Jev solo si las palabras clave dudan | 40 de 50 | 41 de 50 | 81,0 % (81 de 100) |
+
+- **La hipótesis 4 se sostiene en este banco.** Jev acierta 44 mensajes que el extractor falla, contra 1 al revés (McNemar exacto, p menor a 0,0001), y va adelante en los dos idiomas.
+- **Qué pierde el extractor.** Lo que no viene dicho con sus palabras: 18 de 24 tarjetas perdidas o robadas, 19 de 62 disputas y 15 de 26 pedidos de otro canal.
+- **Calibración, casi igual en los dos idiomas.** Error de calibración esperado: 0,07 y 0,09 en "disputa un cargo", 0,04 y 0,05 en "tarjeta perdida o robada", 0,12 y 0,12 en "pide otra cosa" (español y portugués).
+- **Jev se equivoca dudando.** En sus 8 errores la respuesta fallida está entre 0,40 y 0,48, la banda en la que la política ya pregunta al cliente.
+- **La mezcla por "qué tan seguro está el extractor" no conviene.** Ahorra el 42 % de las llamadas y pierde 11 mensajes: cuando el extractor encuentra una frase de disputa se da por seguro y no ve lo demás que dice el mensaje. La estructura que sí respaldan los datos es la del router: Jev lee el significado, el extractor lee los datos exactos (montos, fechas, sí o no, opción) y toma los turnos triviales y las caídas de Jev.
+
+Límites: una sola persona (el asistente) escribió mensajes y etiquetas el mismo día; el banco se escribió para variar la redacción, que es donde una lista de palabras es más débil; y mide la lectura de un mensaje, no el resultado de una conversación. Detalle en [`reports/intent_hypothesis4_report.md`](../../reports/intent_hypothesis4_report.md).
+
 ## 3. Decisiones que necesitan al equipo
 
 | Tema | Qué hay que decidir | Recomendación de esta guía |
@@ -201,6 +219,7 @@ El flujo completo, con diagrama, está en [`docs/deliverables/flujo_conversacion
 | Preguntas abiertas | TQ-002, TQ-004, TQ-016, TQ-023, TQ-025 y TQ-040 no tienen respuesta; TQ-038 y TQ-039 dependen del PR #59. TQ-041 a TQ-043 las respondió Kmilo el 5-oct | Responderlas en el archivo; TQ-002 y TQ-004 ya están implementadas como se recomendó |
 | Respondidas sin código | TQ-028 (reintentos), TQ-029 (pregunta para reportes de pérdida) y TQ-031 (palabras completas) | Declararlas como límite o implementarlas con su test |
 | Respuestas de Claude | Faltan las tareas 3 a 7 y una key | Declarar como trabajo futuro |
+| Jev en producción (sección 2.14) | Jev lee mejor los mensajes variados, pero producción no tiene key | Decidir si se pone `TYPESAFE_API_KEY` en Vercel, con el tope diario de 2 USD; y pedir que una segunda persona revise las etiquetas del banco |
 | Regla de E5 contra BM25 | Se usó la regla que proponía el roadmap, sin ratificar | Ratificarla; el resultado no cambia lo que sirve Vercel |
 | Orden del texto con varios temas (sección 2.13) | La respuesta nombra al especialista antes de ofrecer el bloqueo, aunque el bloqueo es lo pendiente | Invertir el orden del texto; y, tras la entrega, una lista de temas abiertos por conversación |
 

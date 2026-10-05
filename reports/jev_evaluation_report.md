@@ -21,7 +21,7 @@ Source: `reports/eval_heldout_jev.md` and `.json` (commit 66609e1, 3 repeats, 30
 - **Development split:** 9 of 9 safe resolutions, 0 of 19 unsafe and 19 of 19 exact in each of three repeats (first measurement: 7 or 8 of 9).
 - **Intent on the first message:** still 225 of 225 for both engines on the dispute against out-of-scope label, so the suite cannot rank them on it.
 
-Hypothesis 4 says Jev classifies intent better. On this suite it is 2 exact outcomes ahead (223 against 221) with the same safety, which 250 template-built cases cannot separate from chance.
+Hypothesis 4 says Jev classifies intent better. On this suite it is 2 exact outcomes ahead (223 against 221) with the same safety, which 250 template-built cases cannot separate from chance. The test that can separate them, on a bank of varied customer messages, is `reports/intent_hypothesis4_report.md`: Jev reads 92 of 100 right against 49.
 
 ## First measurement: one intent among five
 

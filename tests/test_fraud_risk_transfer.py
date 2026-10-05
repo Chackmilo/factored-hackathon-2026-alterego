@@ -56,7 +56,7 @@ def bank_db(tmp_path):
 
 def test_train_reports_competition_split_ablations_and_bank_percentile(competition_dir, bank_db, tmp_path):
     report = train(competition_dir, tmp_path / "reports", tmp_path / "model.joblib", lakehouse=bank_db, holdout_fraction_of_days=0.25, percentile=90.0)
-    assert report["fraud_score_used"] is False and report["contract_version"] == "1.1" and report["features"] == DEPLOYABLE_V1
+    assert report["fraud_score_used"] is False and report["contract_version"] == "1.2" and report["features"] == DEPLOYABLE_V1
     assert report["split"]["test_rows"] > 0 and report["split"]["test_positives"] > 0
     assert report["model"]["test"]["roc_auc"] > 0.75  # the planted signal is learnable through the contract
     assert set(report["ablations"]) == {"without_card_aggregates", "without_discrete_block"}
@@ -139,7 +139,7 @@ def test_train_logs_an_mlflow_run_with_params_metrics_and_reports(competition_di
     run = client.get_run(report["mlflow"]["run_id"])
     assert run.info.status == "FINISHED"
     assert client.get_experiment(run.info.experiment_id).name == "fraud_risk_transfer"
-    assert run.data.params["contract_version"] == "1.1" and run.data.params["fraud_score_used"] == "False" and run.data.params["n_features"] == "19"
+    assert run.data.params["contract_version"] == "1.2" and run.data.params["fraud_score_used"] == "False" and run.data.params["n_features"] == "19"
     assert run.data.params["percentile"] == "90.0" and run.data.params["threshold_kind"] == "percentile"
     assert run.data.metrics["test_roc_auc"] == pytest.approx(report["model"]["test"]["roc_auc"])
     assert run.data.metrics["threshold"] == pytest.approx(report["threshold"])

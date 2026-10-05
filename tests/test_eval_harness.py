@@ -281,3 +281,36 @@ def test_a_suite_run_with_the_explainer_names_it_in_the_versions(tmp_path):
     assert "policy explainer" not in plain["meta"]["versions"]
     with pytest.raises(FileNotFoundError):
         run_suite(CASES, tmp_path / "missing", repeats=1, systems=("proposed",), explainer_gate=tmp_path / "no_gate.json")
+
+
+# ------------------------------------------- the harness with Jev behind the router (Hypothesis 4)
+def test_the_proposed_stack_runs_with_a_router_and_records_the_engine_of_each_turn(tmp_path):
+    from src.understand.jev_extractor import StubJev
+    from src.understand.router import UnderstandRouter
+    jev = StubJev()
+    result = run_case_proposed(_case(case_id="T-JEV"), tmp_path, router=UnderstandRouter(jev=jev, claude_key=""))
+    assert result.final_outcome == "AUTONOMOUS_RESOLUTION" and jev.calls == 1
+    assert result.signals_engines == ["jev"]
+    assert result.first_signals["intent"] == "cargo_no_reconocido" and result.first_signals["intent_confidence"] == 0.9
+    assert result.first_signals["keyword_intent"] == "cargo_no_reconocido"
+    plain = run_case_proposed(_case(case_id="T-KW"), tmp_path)
+    assert plain.signals_engines == [] and plain.first_signals == {}
+
+
+def test_a_jev_failure_falls_back_to_keywords_and_the_result_says_so(tmp_path):
+    from src.understand.jev_extractor import StubJev
+    from src.understand.router import UnderstandRouter
+    result = run_case_proposed(_case(case_id="T-FAIL"), tmp_path, router=UnderstandRouter(jev=StubJev(fail=True), claude_key=""))
+    assert result.final_outcome == "AUTONOMOUS_RESOLUTION" and result.signals_engines == ["keyword"]
+
+
+def test_a_suite_run_with_a_router_names_the_engine_and_counts_its_calls(tmp_path):
+    from src.understand.jev_extractor import StubJev
+    from src.understand.router import UnderstandRouter
+    payload = run_suite(CASES, tmp_path / "with_jev", repeats=1, systems=("proposed",), router=UnderstandRouter(jev=StubJev(), claude_key=""))
+    versions = payload["meta"]["versions"]
+    assert "extractor jev-stub behind the router" in versions and "keyword-v1" in versions
+    engines = payload["meta"]["signals_engines"]
+    assert engines["jev"] > 0 and engines["jev"] + engines["keyword"] == sum(r["turns"] for r in payload["results"]["proposed"])
+    plain = run_suite(CASES, tmp_path / "plain2", repeats=1, systems=("proposed",))
+    assert "signals_engines" not in plain["meta"] and "behind the router" not in plain["meta"]["versions"]

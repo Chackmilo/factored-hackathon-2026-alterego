@@ -1,0 +1,64 @@
+{
+  "fixture_id": "FX-LATE-ARRIVAL-001",
+  "provenance": "team-generated",
+  "provenance_note": "Filas inventadas por el equipo el 5-oct. El dataset declara llegadas tardías, pero no se observaron (AGENTS.md sec. 7): en junio de 2026 y julio de 2023, process_date siempre es el día de la partición. Este fixture las demuestra, como pide esa sección.",
+  "today": "2026-06-17",
+  "late_posting": {
+    "description": "Un cargo del 15 de abril que el banco procesó el 20 de abril, cinco días tarde. La ventana de 60 días se cuenta desde el día de proceso: el cliente no pierde su derecho por una demora del banco.",
+    "transaction": {
+      "transaction_id": "TRX-LATE-POSTING-0001",
+      "customer_id": "CLI-LATE-0001",
+      "product_id": "PRD-LATE-0001",
+      "transaction_date_raw": "2026-04-15 14:00:00",
+      "process_date": "2026-04-20",
+      "transaction_type": "Purchase",
+      "transaction_status": "Approved",
+      "amount": 95.0,
+      "currency": "USD",
+      "merchant_name": "Super Ahorro"
+    },
+    "expected": {
+      "days_since_process_day": 58,
+      "days_since_event_day": 63,
+      "is_within_60_days": true,
+      "policy_outcome_from_process_day": "AUTONOMOUS_RESOLUTION",
+      "policy_outcome_from_event_time": "SAFE_POLICY_ABSTENTION"
+    }
+  },
+  "late_reprocess": {
+    "description": "El mismo cargo llega dos veces: en la partición del 10 de junio como Pending y, reprocesado, en la del 12 de junio como Approved. Silver se queda con la fila del día de proceso más reciente y la anterior va a cuarentena.",
+    "rows": [
+      {
+        "transaction_id": "TRX-LATE-REPROCESS-0002",
+        "customer_id": "CLI-LATE-0001",
+        "product_id": "PRD-LATE-0001",
+        "transaction_date_raw": "2026-06-10 15:30:10",
+        "process_date": "2026-06-10",
+        "transaction_type": "Purchase",
+        "transaction_status": "Pending",
+        "amount": 60.0,
+        "currency": "USD",
+        "merchant_name": "Cine Premium"
+      },
+      {
+        "transaction_id": "TRX-LATE-REPROCESS-0002",
+        "customer_id": "CLI-LATE-0001",
+        "product_id": "PRD-LATE-0001",
+        "transaction_date_raw": "2026-06-10 15:30:10",
+        "process_date": "2026-06-12",
+        "transaction_type": "Purchase",
+        "transaction_status": "Approved",
+        "amount": 60.0,
+        "currency": "USD",
+        "merchant_name": "Cine Premium"
+      }
+    ],
+    "expected": {
+      "silver_rows": 1,
+      "silver_process_date": "2026-06-12",
+      "silver_transaction_status": "Approved",
+      "quarantined_rows": 1,
+      "quarantined_process_date": "2026-06-10"
+    }
+  }
+}

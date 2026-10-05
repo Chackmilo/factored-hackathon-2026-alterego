@@ -1,12 +1,17 @@
 """
 Tests for which S3 partitions the ingestion pipeline reads, against a local copy of the partition layout.
 """
+import json
+from datetime import date, datetime
+from pathlib import Path
+
 import duckdb
 import pytest
 
 from src.data.ingestion import (
     IngestionContractError,
     build_gold_transactions,
+    build_quarantine_duplicate_transactions,
     build_silver_transactions,
     ingest_transactions_chunked,
     transaction_month_globs,
@@ -145,3 +150,60 @@ def test_chunked_load_gives_up_after_the_retries(partition_root):
 
     with pytest.raises(IngestionContractError):
         ingest_transactions_chunked(con, transaction_month_globs(partition_root, first=(2026, 6), last=(2026, 6)), retries=2, wait_seconds=0, sleep=lambda s: None, execute=always_fails)
+
+
+LATE_ARRIVALS = Path("data/fixtures/late_arrival_transactions.json")
+
+
+@pytest.fixture
+def late_arrivals(bronze_db):
+    """The labeled late-arrival fixture (team-generated; AGENTS.md section 7 asks for one) loaded into an empty bronze table."""
+    fixture = json.loads(LATE_ARRIVALS.read_text(encoding="utf-8"))
+    bronze_db.execute("DELETE FROM bronze_transactions")
+    for row in [fixture["late_posting"]["transaction"], *fixture["late_reprocess"]["rows"]]:
+        bronze_db.execute("""INSERT INTO bronze_transactions (transaction_id, transaction_date, process_date, product_id, customer_id, transaction_type,
+            amount, currency, merchant_name, transaction_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                          [row["transaction_id"], row["transaction_date_raw"], row["process_date"], row["product_id"], row["customer_id"],
+                           row["transaction_type"], row["amount"], row["currency"], row["merchant_name"], row["transaction_status"]])
+    return bronze_db, fixture
+
+
+def test_a_reprocessed_row_keeps_its_latest_process_day_and_the_earlier_one_is_quarantined(late_arrivals):
+    con, fixture = late_arrivals
+    expected, txn = fixture["late_reprocess"]["expected"], fixture["late_reprocess"]["rows"][0]["transaction_id"]
+    build_quarantine_duplicate_transactions(con)
+    build_silver_transactions(con)
+    silver = con.execute("SELECT CAST(process_date AS VARCHAR), transaction_status FROM silver_transactions WHERE transaction_id = ?", [txn]).fetchall()
+    assert len(silver) == expected["silver_rows"]
+    assert silver[0] == (expected["silver_process_date"], expected["silver_transaction_status"])
+    quarantined = con.execute("SELECT CAST(process_date AS VARCHAR) FROM quarantine_duplicate_transactions WHERE transaction_id = ?", [txn]).fetchall()
+    assert quarantined == [(expected["quarantined_process_date"],)] and len(quarantined) == expected["quarantined_rows"]
+
+
+def test_a_charge_posted_late_counts_its_window_from_the_process_day(late_arrivals):
+    con, fixture = late_arrivals
+    row, expected = fixture["late_posting"]["transaction"], fixture["late_posting"]["expected"]
+    build_silver_transactions(con)
+    build_gold_transactions(con, fixture["today"])
+    gold = con.execute("SELECT days_since_transaction, is_within_60_days FROM gold_transactions WHERE transaction_id = ?", [row["transaction_id"]]).fetchone()
+    assert gold == (expected["days_since_process_day"], expected["is_within_60_days"])
+    event_day = (datetime.fromisoformat(row["transaction_date_raw"])).date()
+    assert (date.fromisoformat(fixture["today"]) - event_day).days == expected["days_since_event_day"] > 60
+
+
+def test_the_policy_reads_a_late_charge_by_its_process_day_not_by_its_event_time(late_arrivals):
+    """For a late arrival, date(transaction_date - 6 h) is not process_date: the caller passes process_date, as the orchestrator does."""
+    from src.rules.dispute_policy import DisputePolicyEngine, DisputePolicyInput
+    _, fixture = late_arrivals
+    row, expected = fixture["late_posting"]["transaction"], fixture["late_posting"]["expected"]
+
+    def decide(transaction_date):
+        return DisputePolicyEngine.evaluate(DisputePolicyInput(
+            customer_id=row["customer_id"], customer_segment="Basic", customer_country="México", account_age_days=400, complaints_last_90d=0,
+            transaction_id=row["transaction_id"], transaction_date=transaction_date, transaction_amount=row["amount"],
+            transaction_currency=row["currency"], amount_usd=row["amount"], transaction_type=row["transaction_type"],
+            transaction_status=row["transaction_status"], current_date=date.fromisoformat(fixture["today"])))
+
+    assert decide(date.fromisoformat(row["process_date"])).policy_outcome == expected["policy_outcome_from_process_day"]
+    late = decide(datetime.fromisoformat(row["transaction_date_raw"]))
+    assert late.policy_outcome == expected["policy_outcome_from_event_time"] and "POL-WIN-60" in late.cited_clauses

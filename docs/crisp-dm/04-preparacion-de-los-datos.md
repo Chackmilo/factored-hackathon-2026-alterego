@@ -232,7 +232,7 @@ Ningún modelo ve el mensaje crudo del cliente. `PIIMasker` ([`src/privacy/pii_m
 - **`data/README.md` está desactualizado.** Su clave de deduplicación (`customer_id`, `transaction_date`, `amount`, `merchant_name`) no trae `currency` ni el corte al minuto del código, y nombra `amount_usd_normalized`, que ya no existe.
 - **Tamaño del split de desarrollo.** La pregunta de TQ-018 y la fila del día 3 de `docs/PLAN.md` hablan de 18 casos; el archivo tiene 19 desde el 3-oct. La fila "Suite de evaluación" de `docs/PLAN.md` planeaba 60.
 - **Cuarentena en la publicación.** `docs/SUPABASE_VERCEL.md` sec. 4.3 propone una tabla de cuarentena en DuckDB y `AGENTS.md` sec. 9 dice "orphans quarantined"; `publish_serving.py` solo reporta conteos.
-- **Llegadas tardías.** `AGENTS.md` sec. 7 pide demostrarlas con un fixture etiquetado; no se encontró ninguno ([Entendimiento de los datos](03-entendimiento-de-los-datos.md), sección 3).
+- **Llegadas tardías.** `AGENTS.md` sec. 7 pide demostrarlas con un fixture etiquetado. Existe desde el 5-oct: `data/fixtures/late_arrival_transactions.json` (`team-generated`), con un cargo procesado cinco días tarde y una fila reprocesada ([Plan de pendientes](09-plan-de-pendientes.md), sección 2.8).
 
 ## Fuentes
 

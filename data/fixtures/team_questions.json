@@ -622,6 +622,45 @@
       ],
       "recommendation": "Typed merchant_status in both gateways, and a description of the charge in the customer's language for the list",
       "source": "4-Oct, Kmilo (chat); src/data/ingestion.py"
+    },
+    {
+      "question_id": "TQ-041",
+      "topic": "Conversation: several rules questions after a greeting end with a human",
+      "question": "After a greeting, the first rules question reaches the policy explainer, but the next one takes the dispute flow and a third one is escalated to a human with POL-ESC-AMBIG, although the customer disputed nothing. Should a message that the explainer answered stop counting as an earlier dispute?",
+      "context": "Read from the code on 4-Oct and reproduced on 5-Oct by tests/test_policy_rag.py::test_rules_questions_after_a_greeting_keep_reaching_the_explainer_and_never_a_human (an expected failure until this is decided). The question '¿Cuántos días tengo para disputar un cargo?' carries intent cargo_no_reconocido because it names 'un cargo', and _disputed_earlier in src/orchestrator/dispute_orchestrator.py reads any earlier intent other than consulta_general as a dispute. In the reproduction the second question gets 'No encontramos un cargo que coincida con su descripción' and the third opens a handoff. The explainer is on in production (data/rag_gate.json). No held-out case asks a rules question, so the suite does not see it (reports/eval_heldout_explainer.md). A fix needs its own test and, per the rule for cases found by hand, the approval of Daniel and Kmilo.",
+      "options": [
+        "An earlier message with policy_question set never counts as a dispute, and a rules question never adds a clarification attempt (recommended)",
+        "Keep the behavior and state it as a limit",
+        "Turn the explainer off until it is fixed (remove data/rag_gate.json)"
+      ],
+      "recommendation": "An earlier message with policy_question set never counts as a dispute, and a rules question never adds a clarification attempt",
+      "source": "5-Oct, CRISP-DM audit; docs/crisp-dm/09-plan-de-pendientes.md"
+    },
+    {
+      "question_id": "TQ-042",
+      "topic": "Conversation: the language is fixed by the first message",
+      "question": "The conversation language is set while the state is new and never changes afterwards. A customer who greets in Spanish and then writes the dispute in Portuguese gets the case confirmation in Spanish. Should each reply follow the language of the message it answers?",
+      "context": "Read from the code on 4-Oct (handle_message in src/orchestrator/dispute_orchestrator.py takes understanding.language only in state new) and reproduced on 5-Oct by tests/test_policy_rag.py::test_a_customer_who_switches_to_portuguese_after_the_first_message_is_answered_in_portuguese (an expected failure until this is decided). The dispute itself is understood: the case opens. No held-out conversation changes language, and the 2 reply-language misses of the suite (HO-245, HO-250) are single messages that mix both. A one-word reply such as 'sim' or 'no' carries little language signal, so following the last message needs a rule for short replies.",
+      "options": [
+        "Follow the language of each message, keeping the conversation language for option, yes and no replies (recommended)",
+        "Keep the first-message language and state it as a limit",
+        "Follow the language picker of the chat instead of detecting it"
+      ],
+      "recommendation": "Follow the language of each message, keeping the conversation language for option, yes and no replies",
+      "source": "5-Oct, CRISP-DM audit; docs/crisp-dm/09-plan-de-pendientes.md"
+    },
+    {
+      "question_id": "TQ-043",
+      "topic": "ML: floating-point residue in two features of the risk contract",
+      "question": "amount_zscore_card and tx_sum_card_7d of the feature contract (v1.1) carry floating-point residue. When a card's earlier amounts are all equal, the variance is a tiny positive number instead of zero and the z-score divides by it. Should a spread under a small epsilon count as zero (contract 1.2, model retrained), or does the model of record keep v1.1?",
+      "context": "Found on 5-Oct by the EDA of the 19 served features (reports/ml/risk_feature_eda.md). On the IEEE-CIS competition amount_zscore_card runs from about -67 million to 528 million; 308 of 590,540 rows pass 1,000 in absolute value, 667 pass 50, and 2,355 have a card spread between 0 and 0.001. On the bank's Web and App window the maximum is 609.83. tx_sum_card_7d has a median of 3.0e-09 instead of 0 for the same reason (a running sum minus the current amount). The model reads per-source percentile ranks, so the effect is bounded to those rows, but their rank is noise: the sign of the residue decides whether the row ranks at the bottom or at the top. Fixing it changes the features, so the bundle, its threshold and reports/eval_heldout_model.md would be regenerated. The retrain is reproducible since 5-Oct (rows load in a fixed order).",
+      "options": [
+        "Fix it after the submission as contract 1.2, retrain and re-measure (recommended)",
+        "Fix it now and regenerate the reports before the submission",
+        "Keep contract 1.1 and state the residue as a limit"
+      ],
+      "recommendation": "Fix it after the submission as contract 1.2, retrain and re-measure",
+      "source": "5-Oct, EDA of the risk features; src/ml/feature_contract.py"
     }
   ]
 }

@@ -91,7 +91,11 @@ El pipeline inicial trae un "modelo" sin entrenar, `MLFraudDetector`: una sigmoi
 
 **Explicación y validez.** El scorer entrega las 3 contribuciones mayores, reemplazando cada feature por su mediana de entrenamiento; no son valores SHAP (`AGENTS.md` sec. 9). Ninguna etiqueta del banco valida la transferencia: el score enruta cargos a un humano y no es un detector de fraude validado en LATAM Bank (`README.md`, "Risk model").
 
-**Medición con el modelo (sin reporte comprometido).** Solo existe en los cuerpos de los PR #44 y #45, con el bundle local de Kmilo y sin ajustar nada. En el held-out: 9 de 250 resultados inseguros contra 20 sin modelo; 11 de 20 casos de alto riesgo detectados; 4 escalaciones de más (8 antes del arreglo de canales); 101 de 107 resoluciones seguras contra 105. Su p50 (28 ms contra 24 ms) es de otra máquina que la del reporte comprometido (161,6 ms sin modelo). Un reentrenamiento dio ROC AUC 0,815 y umbral 0,0694; el bundle de registro sigue sin decidirse (PR #45).
+**Medición con el modelo.** Desde el 5-oct tiene reporte ([`reports/eval_heldout_model.md`](../../reports/eval_heldout_model.md), 3 repeticiones, nada ajustado), con las mismas cifras que traían los cuerpos de los PR #44 y #45. En el held-out: 9 de 250 resultados inseguros contra 20 sin modelo; 11 de 20 casos de alto riesgo escalados; 4 escalaciones de más (8 antes del arreglo de canales); 101 de 107 resoluciones seguras contra 105. Su p50 (27,1 ms) es de otra máquina que la del reporte solo reglas (161,6 ms).
+
+**Reproducibilidad.** El PR #45 dejó abierto el bundle de registro porque un reentrenamiento dio ROC AUC 0,815 y umbral 0,0694. La causa era el orden de las filas con la misma marca de tiempo, que el motor rompía distinto en cada lectura. Con el orden fijo (commit `4db45f3`), dos reentrenamientos dan el mismo reporte: 0,817 y 0,0669, las cifras del 30-sep ([Plan de pendientes](09-plan-de-pendientes.md), sección 2.1).
+
+**EDA de las 19 features.** [`reports/ml/risk_feature_eda.md`](../../reports/ml/risk_feature_eda.md) trae mínimo, máximo y media de cada feature en las dos fuentes, una gráfica por feature y lo observado contra lo predicho: en el holdout de la competencia, 3.513 fraudes observados contra 3.298 esperados, y el decil más alto predice 14,64 % y observa 15,71 %. También encontró un residuo numérico en `amount_zscore_card` y `tx_sum_card_7d`, que queda como decisión (Plan de pendientes, secciones 2.5 y 3).
 
 **Contradicciones abiertas y siguiente paso.**
 
@@ -116,7 +120,7 @@ El explicador responde preguntas sobre las reglas ("¿cuántos días tengo para 
 
 **Por qué BM25.** El runtime pesa 358 MB y el bundle sin E5, unos 377 MB. E5 suma unos 232 MB y llevaría el bundle a unos 609 MB, sobre el límite de 500 MB de Vercel. Cabría (unos 466 MB) si el riesgo se sirviera en ONNX sin `scikit-learn` ni `scipy`, pero TQ-022 los mantuvo ([`docs/SUPABASE_VERCEL.md`](../SUPABASE_VERCEL.md) sec. 6.3; roadmap sec. 5, Tarea 2.0).
 
-**La hipótesis 5 no está decidida.** Ningún reporte comprometido mide E5 contra BM25, y la Tarea 4.2 sigue pendiente (roadmap sec. 6). El PR #24 solo trae "a first look, not evidence" sobre 6 preguntas de tests unitarios.
+**La hipótesis 5 se midió el 5-oct y BM25 se queda.** La regla se comprometió antes de medir (la propuesta de la Tarea 4.2). En test, E5 da recall@3 de 87,0 % (20 de 23) contra 69,6 % (16 de 23) de BM25: 3 preguntas de ventaja en español y 1 en portugués, cuando la regla pedía 2 en cada idioma. Su acción correcta no mejora (10 de 30 contra 11 de 30), porque su compuerta dejó pasar una sola respuesta: lo que limita al explicador es la compuerta, no el recuperador. La corrida usó una CPU ARM64, distinta de la que espera el archivo int8 ([`reports/rag_evaluation_report.md`](../../reports/rag_evaluation_report.md)).
 
 **Compuerta de confianza.** El score del primer resultado cae en tres bandas ([`src/rag/gate.py`](../../src/rag/gate.py)): desde `tau_upper` responde (o redirige si la cláusula es interna), entre los dos umbrales pide aclaración, y debajo se abstiene. Los umbrales, 3,862 y 3,835 ([`data/rag_gate.json`](../../data/rag_gate.json)), son el par que acierta más acciones en desarrollo y, a igualdad, el más alto (`src/eval/rag_benchmark.py`). Commitear ese archivo encendió el explicador el 2-oct (PR #28).
 

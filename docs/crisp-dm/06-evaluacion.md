@@ -124,7 +124,7 @@ Resolución segura del propuesto en la corrida ciega y en la posterior, e insegu
 - Cada corte tiene entre 25 y 61 casos elegibles: un caso mueve entre 1,6 y 4 puntos. Los reportes lo advierten: "read the counts, not the rates".
 - Todo el portugués es `team-generated`: el dataset no tiene portugués (README, "Data").
 - Los inseguros por corte solo reparten los 20 casos de alto riesgo.
-- La brecha entre países de la corrida ciega (Colombia 15 de 36, México 30 de 35) no se analizó. Inferido: con unos 35 elegibles por país, el reparto de unas pocas plantillas basta para moverla.
+- La brecha entre países de la corrida ciega (Colombia 15 de 36, México 30 de 35) sale de una plantilla: los 26 casos que mencionan el extracto fallaron todos, y a Colombia le tocaron 16, a Argentina 8 y a México 2. Sin ellos, Colombia resuelve 15 de 20 y México 30 de 33 (calculado de `reports/eval_heldout_blind.json`; [09-plan-de-pendientes.md](09-plan-de-pendientes.md), sección 2.4).
 
 ## 5. La iteración: ciega, análisis de errores, arreglos
 
@@ -162,9 +162,9 @@ Son HO-161 a HO-180, todos `high_fraud_anomaly`: 12 en español y 8 en portugué
 
 La etiqueta pide humano con `HIGH_FRAUD_RISK_SCORE`. Sin archivo de modelo, `POL-ESC-ML-RISK` nunca se dispara y, con 500 USD o menos, la política abre el caso (README, "Risk model"). Producción tiene el mismo hueco: corre sin el archivo del modelo (README, "Limitations"; commit `a18f045`).
 
-## 7. Con el modelo de riesgo: solo en los cuerpos de los PR #44 y #45
+## 7. Con el modelo de riesgo
 
-No hay reporte comprometido con el modelo. Las cifras usaron el bundle local de Kmilo, 1 repetición (PR #44) y nada ajustado:
+Desde el 5-oct hay reporte comprometido: [reports/eval_heldout_model.md](../../reports/eval_heldout_model.md), con el modelo reentrenado en orden fijo, 3 repeticiones y nada ajustado. Da 101 de 107 resoluciones seguras, 9 de 250 inseguros, 11 de 20 casos de alto riesgo escalados y 4 escalaciones de más, las cifras de la última columna. Sus intervalos y la prueba pareada contra la corrida solo reglas están en [reports/eval_intervals.md](../../reports/eval_intervals.md), y el detalle por caso en [09-plan-de-pendientes.md](09-plan-de-pendientes.md), sección 2.2. La tabla conserva las corridas de los PR #44 y #45 (bundle local de Kmilo, 1 repetición):
 
 | Medida | Solo reglas | Modelo, antes del arreglo de canales | Modelo, con el arreglo (PR #45) |
 | --- | --- | --- | --- |
@@ -177,9 +177,9 @@ No hay reporte comprometido con el modelo. Las cifras usaron el bundle local de 
 **Límites.**
 
 - Estas latencias son de otra máquina que la del reporte comprometido (161,6 ms sin modelo); no se comparan con él.
-- Inferido: los 9 inseguros que quedan son los 9 casos de alto riesgo no detectados, que siguen abriendo caso.
+- Los 9 inseguros que quedan son los 9 casos de alto riesgo no escalados, que siguen abriendo caso (calculado de `reports/eval_heldout_model.json`).
 - Con el modelo, 10 conversaciones de varios cargos (HO-149 a HO-160) escalan en el primer cargo y pierden la oferta de bloqueo (PR #44).
-- Un reentrenamiento dio ROC AUC 0,815 y umbral 0,0694, cerca de 0,817 y 0,0669; el PR #45 deja al equipo decidir cuál es el bundle de registro. El bundle no está en el repo ni en producción.
+- Un reentrenamiento dio ROC AUC 0,815 y umbral 0,0694, cerca de 0,817 y 0,0669. La diferencia venía del orden de las filas; con el orden fijo, el reentrenamiento reproduce 0,817 y 0,0669 (commit `4db45f3`). El bundle no está en el repo ni en producción.
 
 ## 8. Explicador de políticas
 
@@ -193,7 +193,7 @@ Benchmark aparte, sobre 60 preguntas `team-generated, LLM-drafted`: 30 de desarr
 | Abstención indebida (se esperaba respuesta) | 33,3 % (6 de 18) | 61,1 % (11 de 18) |
 | Cita equivocada (de las respuestas dadas) | 21,4 % (3 de 14) | 27,3 % (3 de 11) |
 
-En test, la acción correcta es 40,0 % (6 de 15) en ES y 33,3 % (5 de 15) en PT. Por qué falla, las desviaciones declaradas del banco y la comparación pendiente con E5 están en [05-modelado.md](05-modelado.md), sección 3. El explicador está encendido en producción (`data/rag_gate.json`, PR #28), pero ninguna corrida de punta a punta lo incluye (README, "Limitations").
+En test, la acción correcta es 40,0 % (6 de 15) en ES y 33,3 % (5 de 15) en PT. Por qué falla, las desviaciones declaradas del banco y la comparación con E5 (medida el 5-oct; BM25 se queda) están en [05-modelado.md](05-modelado.md), sección 3. El explicador está encendido en producción (`data/rag_gate.json`, PR #28), y desde el 5-oct el harness puede correr con él (`--explainer`): los 250 casos dan el mismo resultado, porque ninguno hace una pregunta de reglas ([reports/eval_heldout_explainer.md](../../reports/eval_heldout_explainer.md)).
 
 Las métricas offline del modelo de riesgo (ROC AUC de test 0,497 sobre la etiqueta del banco; 0,817 en el holdout de IEEE-CIS) están en [05-modelado.md](05-modelado.md), sección 2.
 
@@ -207,9 +207,9 @@ Las métricas offline del modelo de riesgo (ROC AUC de test 0,497 sobre la etiqu
 ## 10. Qué no prueban estos resultados
 
 1. **No son ganancias de producción.** Corren offline, en proceso, con un banco DuckDB por caso, ops store en memoria, sin red ni Postgres y, salvo los 12 ataques, sin token (regla 11).
-2. **No miden lo desplegado.** Producción corre solo reglas más el explicador BM25, sin archivo de modelo y sin key de Jev ni de LLM: toda respuesta es plantilla (README, "Limitations"; commit `a18f045`). Dos comportamientos que la suite no ve, inferidos del código: una segunda pregunta de política tras un saludo puede ir al flujo de disputa, porque `_disputed_earlier` cuenta la primera si nombra un "cargo"; y el idioma queda fijo al salir del estado `new` (`src/orchestrator/dispute_orchestrator.py:171`). Inferido: ninguna conversación de la suite cambia de idioma.
+2. **No miden lo desplegado.** Producción corre solo reglas más el explicador BM25, sin archivo de modelo y sin key de Jev ni de LLM: toda respuesta es plantilla (README, "Limitations"; commit `a18f045`). Dos comportamientos que la suite no ve, leídos del código y reproducidos el 5-oct con tests de fallo esperado (TQ-041 y TQ-042; [09-plan-de-pendientes.md](09-plan-de-pendientes.md), sección 2.9): una segunda pregunta de política tras un saludo puede ir al flujo de disputa, porque `_disputed_earlier` cuenta la primera si nombra un "cargo"; y el idioma queda fijo al salir del estado `new` (`src/orchestrator/dispute_orchestrator.py:171`). Inferido: ninguna conversación de la suite cambia de idioma.
 3. **No prueban generalización.** La cifra posterior reutiliza los casos que guiaron los arreglos (sección 5).
-4. **No miden los componentes aprendidos.** El "propuesto" es la versión solo reglas, que el plan llama baseline principal (README, "Results"), así que la hipótesis 1 solo se probó contra el pipeline inicial. Las hipótesis 3, 4 y 5 no se confirman: el modelo tiene cifras en un PR, Jev no tiene medición y E5 no se comparó (`docs/PLAN.md` sec. 1).
+4. **No miden los componentes aprendidos.** El "propuesto" es la versión solo reglas, que el plan llama baseline principal (README, "Results"), así que la hipótesis 1 solo se probó contra el pipeline inicial. Desde el 5-oct hay reporte con el modelo (sección 7) y medición de E5 contra BM25 ([09-plan-de-pendientes.md](09-plan-de-pendientes.md), secciones 2.2 y 2.6); la hipótesis 3 sigue sin soporte en los datos del banco y Jev sigue sin medición (`docs/PLAN.md` sec. 1).
 5. **No juzgan el contexto del handoff**, que el enunciado pide útil (`AGENTS.md` sec. 5): el juez solo revisa la escalación y su razón.
 6. **Cero fallas en una muestra chica no es riesgo cero**, como 0 inseguros en 25 casos adversariales (`AGENTS.md` sec. 5).
 7. **No hay prueba de carga ni de concurrencia, ni costo medido** más allá de los 0 tokens del modo solo reglas (README, "Limitations").

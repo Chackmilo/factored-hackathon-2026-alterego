@@ -45,7 +45,7 @@ from src.ml.feature_contract import (
     build_contract_features,
 )
 from src.ml.fraud_risk import _metrics, cost_threshold
-from src.ml.ieee_cis_adapter import load_competition
+from src.ml.ieee_cis_adapter import holdout_mask, load_competition
 
 DEFAULT_PERCENTILE = 98.0
 MLFLOW_EXPERIMENT = "fraud_risk_transfer"
@@ -135,9 +135,7 @@ def _train(competition, out_dir, model_path, lakehouse, holdout_fraction_of_days
     continuous = [f for f in features if f not in DISCRETE]
     canon = load_competition(competition, limit=limit)
     feats = build_contract_features(canon)
-    days = sorted(feats["ts"].dt.date.unique())
-    split_at = days[max(1, int(round(len(days) * (1 - holdout_fraction_of_days))))] if len(days) > 1 else days[0]
-    is_test = feats["ts"].dt.date >= split_at
+    is_test, days, split_at = holdout_mask(feats["ts"], holdout_fraction_of_days)
     tr, te = feats[~is_test], feats[is_test]
     y_tr, y_te = tr["label"].to_numpy(int), te["label"].to_numpy(int)
     ranker_comp = QuantileRanker(continuous).fit(tr[features])

@@ -81,6 +81,7 @@ Varias preguntas quedaron respondidas sin código. Conviene saberlo antes de lee
 | Pregunta | Respuesta | Estado en el código | Evidencia |
 | --- | --- | --- | --- |
 | TQ-028, caída del banco | Mantener el handoff, sumar 2 reintentos acotados y pasar a un humano la oferta de bloqueo perdida | Sin reintentos; si falla la lista de tarjetas, la oferta solo se pierde | README, "Limitations" ("no bounded retries"); `CLAUDE.md` |
+| TQ-029, reporte de pérdida sin cargo | Una pregunta propia para esos reportes y otro texto tras el no | Sin código: es un cambio de texto de la política y pide actualizar la spec | `docs/HANDOFF.md` sec. 3, C; TQ-029 |
 | TQ-031, palabras de robo y angustia | Comparar palabras completas | Siguen las subcadenas ("aprobaron" contiene "robaron") | `docs/HANDOFF.md`; `src/rules/dispute_policy.py`; [05-modelado.md](05-modelado.md) sec. 1 |
 | TQ-026, cherry-picking de variables | Elegir entre unas 400 variables de la competencia | El modelo usa solo las 19 de `DEPLOYABLE_V1`; inferido: el proceso no empezó (sin código en `src/`) | `src/ml/feature_contract.py`; `reports/ml/ieee_cis_feature_importance.md` |
 | Canario contra la pausa de Supabase | Cron doble con una persona dedicada | No existe | `docs/PLAN.md`, filas "Pausa de Supabase" y "Despliegue" |

@@ -175,7 +175,7 @@ Reglas del desvío:
   - Compuerta (todas las preguntas): acción correcta (`answer`, `clarify`, `abstain`), abstención en fuera de alcance, abstención indebida y cita equivocada (responde con una cláusula fuera de `expected_clause_ids`).
   - Latencia p50/p95 en caliente; el arranque en frío viene de la Tarea 2.0.
   - Cada métrica con su denominador. Los retrievers son deterministas: las 3 repeticiones de las reglas de reporte no aplican a la recuperación, y el reporte lo dice.
-- [ ] **Tarea 4.2:** Generar `reports/rag_evaluation_report.md`:
+- [x] **Tarea 4.2:** Generar `reports/rag_evaluation_report.md` (hecha el 5-Oct con la regla propuesta abajo, comprometida antes de medir y sin ratificar por el equipo; resultado: BM25 se queda, E5 gana recall@3 por 3 preguntas en ES y 1 en PT):
   - Regla de decisión fijada antes de medir. Propuesta: E5 se adopta si en test supera a BM25 en `Recall@3` por al menos 2 preguntas en ES y en PT, sin más citas equivocadas, y pasó la Tarea 2.0; si no, BM25 ([`revisión tecnológica:97`](reviews/2026-09-26-revision-tecnologica.md#L97)). Con 15 preguntas por idioma, una pregunta vale 6.7 puntos.
   - Cortes por idioma con advertencia de muestra pequeña; modelo, commit y SHA-256 registrados; resultado offline, etiquetado como tal.
 
@@ -209,7 +209,7 @@ Entrega: 2026-10-05 ([`AGENTS.md`](../AGENTS.md), sección 3). La corrida RAG co
 | **3.2 Explicador por plantillas** | B | 1.0 h | Hecha | `src/rag/policy_explainer.py` |
 | **3.3 Tests (precedencia y exposición incluidas)** | B | 2.0 h | Hecha | `tests/test_policy_rag.py` |
 | **4.1 Benchmark y calibración en dev** | A / B | 1.5 h | Corrida el 2-Oct: gate de BM25 escrito; test 36,7 % de acciones correctas | `src/eval/rag_benchmark.py` |
-| **4.2 Reporte y decisión H5** | A | 1.0 h | Pendiente | `reports/rag_evaluation_report.md` |
+| **4.2 Reporte y decisión H5** | A | 1.0 h | Hecha el 5-Oct | `reports/rag_evaluation_report.md` |
 | **5.1 Señal `policy_question` y desvío seguro** | B | 2.0 h | Hecha; encendida el 2-Oct (4.1) | `src/understand/`, `src/orchestrator/` |
 | **5.2 Bundle real en Vercel** | B | 0.5 h | Pendiente | Logs de deploy |
 | **5.3 AUD-03 / AUD-15, parte RAG** | B / PM | 0.5 h | Pendiente | `docs/reviews/` |

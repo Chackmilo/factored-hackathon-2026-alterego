@@ -1,0 +1,539 @@
+{
+  "meta": {
+    "generated_at": "2026-10-05T14:49:22+00:00",
+    "commit": "8e9b9c7",
+    "corpus_sha256": "c2bbf76e977ab5bba3998429ee58d2283cb7ccd0923cea5494c15c2baec32e42",
+    "dev": {
+      "path": "data/eval/policy_questions_dev.jsonl",
+      "questions": 30,
+      "sha256": "ed4ea7d8499f142fc9f46e761657b0c5712136bd86b3484fbe4aa9d235bf229e",
+      "provenance": "team-generated, LLM-drafted"
+    },
+    "test": {
+      "path": "data/eval/policy_questions_test.jsonl",
+      "questions": 30,
+      "sha256": "445ce4f8fd4150810f221426067a14c7c6bf5cd554c2997edc157b28bf1cbafa",
+      "frozen": "matches its SHA-256",
+      "provenance": "team-generated, LLM-drafted"
+    },
+    "e5": {
+      "model": "intfloat/multilingual-e5-small",
+      "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+      "model_dir": "models/e5-small"
+    }
+  },
+  "retrievers": {
+    "bm25": {
+      "gate": {
+        "tau_upper": 3.862405871420239,
+        "tau_lower": 3.8349948793114086
+      },
+      "dev": {
+        "all": {
+          "n": 30,
+          "recall_at_1": {
+            "numerator": 13,
+            "denominator": 23,
+            "rate": 0.5652173913043478
+          },
+          "recall_at_3": {
+            "numerator": 19,
+            "denominator": 23,
+            "rate": 0.8260869565217391
+          },
+          "mrr": {
+            "value": 0.7195322793148881,
+            "denominator": 23
+          },
+          "correct_action": {
+            "numerator": 17,
+            "denominator": 30,
+            "rate": 0.5666666666666667
+          },
+          "oos_abstained": {
+            "numerator": 7,
+            "denominator": 7,
+            "rate": 1.0
+          },
+          "wrong_abstention": {
+            "numerator": 6,
+            "denominator": 18,
+            "rate": 0.3333333333333333
+          },
+          "wrong_citation": {
+            "numerator": 3,
+            "denominator": 14,
+            "rate": 0.21428571428571427
+          },
+          "latency_ms": {
+            "p50": 0.05562498699873686,
+            "p95": 0.09233297896571457
+          }
+        },
+        "es": {
+          "n": 15,
+          "recall_at_1": {
+            "numerator": 5,
+            "denominator": 12,
+            "rate": 0.4166666666666667
+          },
+          "recall_at_3": {
+            "numerator": 9,
+            "denominator": 12,
+            "rate": 0.75
+          },
+          "mrr": {
+            "value": 0.6221590909090909,
+            "denominator": 12
+          },
+          "correct_action": {
+            "numerator": 8,
+            "denominator": 15,
+            "rate": 0.5333333333333333
+          },
+          "oos_abstained": {
+            "numerator": 3,
+            "denominator": 3,
+            "rate": 1.0
+          },
+          "wrong_abstention": {
+            "numerator": 4,
+            "denominator": 9,
+            "rate": 0.4444444444444444
+          },
+          "wrong_citation": {
+            "numerator": 1,
+            "denominator": 5,
+            "rate": 0.2
+          },
+          "latency_ms": {
+            "p50": 0.05562498699873686,
+            "p95": 0.08066699956543744
+          }
+        },
+        "pt": {
+          "n": 15,
+          "recall_at_1": {
+            "numerator": 8,
+            "denominator": 11,
+            "rate": 0.7272727272727273
+          },
+          "recall_at_3": {
+            "numerator": 10,
+            "denominator": 11,
+            "rate": 0.9090909090909091
+          },
+          "mrr": {
+            "value": 0.8257575757575758,
+            "denominator": 11
+          },
+          "correct_action": {
+            "numerator": 9,
+            "denominator": 15,
+            "rate": 0.6
+          },
+          "oos_abstained": {
+            "numerator": 4,
+            "denominator": 4,
+            "rate": 1.0
+          },
+          "wrong_abstention": {
+            "numerator": 2,
+            "denominator": 9,
+            "rate": 0.2222222222222222
+          },
+          "wrong_citation": {
+            "numerator": 2,
+            "denominator": 9,
+            "rate": 0.2222222222222222
+          },
+          "latency_ms": {
+            "p50": 0.06054100231267512,
+            "p95": 0.08299999171867967
+          }
+        }
+      },
+      "test": {
+        "all": {
+          "n": 30,
+          "recall_at_1": {
+            "numerator": 12,
+            "denominator": 23,
+            "rate": 0.5217391304347826
+          },
+          "recall_at_3": {
+            "numerator": 16,
+            "denominator": 23,
+            "rate": 0.6956521739130435
+          },
+          "mrr": {
+            "value": 0.638233746929399,
+            "denominator": 23
+          },
+          "correct_action": {
+            "numerator": 11,
+            "denominator": 30,
+            "rate": 0.36666666666666664
+          },
+          "oos_abstained": {
+            "numerator": 6,
+            "denominator": 7,
+            "rate": 0.8571428571428571
+          },
+          "wrong_abstention": {
+            "numerator": 11,
+            "denominator": 18,
+            "rate": 0.6111111111111112
+          },
+          "wrong_citation": {
+            "numerator": 3,
+            "denominator": 11,
+            "rate": 0.2727272727272727
+          },
+          "latency_ms": {
+            "p50": 0.06341701373457909,
+            "p95": 0.10683300206437707
+          }
+        },
+        "es": {
+          "n": 15,
+          "recall_at_1": {
+            "numerator": 7,
+            "denominator": 11,
+            "rate": 0.6363636363636364
+          },
+          "recall_at_3": {
+            "numerator": 7,
+            "denominator": 11,
+            "rate": 0.6363636363636364
+          },
+          "mrr": {
+            "value": 0.6728725819634911,
+            "denominator": 11
+          },
+          "correct_action": {
+            "numerator": 6,
+            "denominator": 15,
+            "rate": 0.4
+          },
+          "oos_abstained": {
+            "numerator": 3,
+            "denominator": 4,
+            "rate": 0.75
+          },
+          "wrong_abstention": {
+            "numerator": 6,
+            "denominator": 9,
+            "rate": 0.6666666666666666
+          },
+          "wrong_citation": {
+            "numerator": 1,
+            "denominator": 5,
+            "rate": 0.2
+          },
+          "latency_ms": {
+            "p50": 0.061583996284753084,
+            "p95": 0.08429100853390992
+          }
+        },
+        "pt": {
+          "n": 15,
+          "recall_at_1": {
+            "numerator": 5,
+            "denominator": 12,
+            "rate": 0.4166666666666667
+          },
+          "recall_at_3": {
+            "numerator": 9,
+            "denominator": 12,
+            "rate": 0.75
+          },
+          "mrr": {
+            "value": 0.6064814814814815,
+            "denominator": 12
+          },
+          "correct_action": {
+            "numerator": 5,
+            "denominator": 15,
+            "rate": 0.3333333333333333
+          },
+          "oos_abstained": {
+            "numerator": 3,
+            "denominator": 3,
+            "rate": 1.0
+          },
+          "wrong_abstention": {
+            "numerator": 5,
+            "denominator": 9,
+            "rate": 0.5555555555555556
+          },
+          "wrong_citation": {
+            "numerator": 2,
+            "denominator": 6,
+            "rate": 0.3333333333333333
+          },
+          "latency_ms": {
+            "p50": 0.07233300129882991,
+            "p95": 0.10683300206437707
+          }
+        }
+      }
+    },
+    "e5": {
+      "gate": {
+        "tau_upper": 0.8673494172261298,
+        "tau_lower": 0.8544936692710241
+      },
+      "dev": {
+        "all": {
+          "n": 30,
+          "recall_at_1": {
+            "numerator": 8,
+            "denominator": 23,
+            "rate": 0.34782608695652173
+          },
+          "recall_at_3": {
+            "numerator": 22,
+            "denominator": 23,
+            "rate": 0.9565217391304348
+          },
+          "mrr": {
+            "value": 0.6413043478260869,
+            "denominator": 23
+          },
+          "correct_action": {
+            "numerator": 15,
+            "denominator": 30,
+            "rate": 0.5
+          },
+          "oos_abstained": {
+            "numerator": 7,
+            "denominator": 7,
+            "rate": 1.0
+          },
+          "wrong_abstention": {
+            "numerator": 8,
+            "denominator": 18,
+            "rate": 0.4444444444444444
+          },
+          "wrong_citation": {
+            "numerator": 1,
+            "denominator": 7,
+            "rate": 0.14285714285714285
+          },
+          "latency_ms": {
+            "p50": 6.196250003995374,
+            "p95": 7.295999996131286
+          }
+        },
+        "es": {
+          "n": 15,
+          "recall_at_1": {
+            "numerator": 4,
+            "denominator": 12,
+            "rate": 0.3333333333333333
+          },
+          "recall_at_3": {
+            "numerator": 11,
+            "denominator": 12,
+            "rate": 0.9166666666666666
+          },
+          "mrr": {
+            "value": 0.6319444444444444,
+            "denominator": 12
+          },
+          "correct_action": {
+            "numerator": 8,
+            "denominator": 15,
+            "rate": 0.5333333333333333
+          },
+          "oos_abstained": {
+            "numerator": 3,
+            "denominator": 3,
+            "rate": 1.0
+          },
+          "wrong_abstention": {
+            "numerator": 5,
+            "denominator": 9,
+            "rate": 0.5555555555555556
+          },
+          "wrong_citation": {
+            "numerator": 1,
+            "denominator": 4,
+            "rate": 0.25
+          },
+          "latency_ms": {
+            "p50": 6.3733329880051315,
+            "p95": 7.295999996131286
+          }
+        },
+        "pt": {
+          "n": 15,
+          "recall_at_1": {
+            "numerator": 4,
+            "denominator": 11,
+            "rate": 0.36363636363636365
+          },
+          "recall_at_3": {
+            "numerator": 11,
+            "denominator": 11,
+            "rate": 1.0
+          },
+          "mrr": {
+            "value": 0.6515151515151515,
+            "denominator": 11
+          },
+          "correct_action": {
+            "numerator": 7,
+            "denominator": 15,
+            "rate": 0.4666666666666667
+          },
+          "oos_abstained": {
+            "numerator": 4,
+            "denominator": 4,
+            "rate": 1.0
+          },
+          "wrong_abstention": {
+            "numerator": 3,
+            "denominator": 9,
+            "rate": 0.3333333333333333
+          },
+          "wrong_citation": {
+            "numerator": 0,
+            "denominator": 3,
+            "rate": 0.0
+          },
+          "latency_ms": {
+            "p50": 5.744374997448176,
+            "p95": 6.535041989991441
+          }
+        }
+      },
+      "test": {
+        "all": {
+          "n": 30,
+          "recall_at_1": {
+            "numerator": 13,
+            "denominator": 23,
+            "rate": 0.5652173913043478
+          },
+          "recall_at_3": {
+            "numerator": 20,
+            "denominator": 23,
+            "rate": 0.8695652173913043
+          },
+          "mrr": {
+            "value": 0.743167701863354,
+            "denominator": 23
+          },
+          "correct_action": {
+            "numerator": 10,
+            "denominator": 30,
+            "rate": 0.3333333333333333
+          },
+          "oos_abstained": {
+            "numerator": 6,
+            "denominator": 7,
+            "rate": 0.8571428571428571
+          },
+          "wrong_abstention": {
+            "numerator": 10,
+            "denominator": 18,
+            "rate": 0.5555555555555556
+          },
+          "wrong_citation": {
+            "numerator": 0,
+            "denominator": 1,
+            "rate": 0.0
+          },
+          "latency_ms": {
+            "p50": 6.40966699575074,
+            "p95": 8.956000005127862
+          }
+        },
+        "es": {
+          "n": 15,
+          "recall_at_1": {
+            "numerator": 9,
+            "denominator": 11,
+            "rate": 0.8181818181818182
+          },
+          "recall_at_3": {
+            "numerator": 10,
+            "denominator": 11,
+            "rate": 0.9090909090909091
+          },
+          "mrr": {
+            "value": 0.8766233766233765,
+            "denominator": 11
+          },
+          "correct_action": {
+            "numerator": 5,
+            "denominator": 15,
+            "rate": 0.3333333333333333
+          },
+          "oos_abstained": {
+            "numerator": 3,
+            "denominator": 4,
+            "rate": 0.75
+          },
+          "wrong_abstention": {
+            "numerator": 4,
+            "denominator": 9,
+            "rate": 0.4444444444444444
+          },
+          "wrong_citation": {
+            "numerator": 0,
+            "denominator": 1,
+            "rate": 0.0
+          },
+          "latency_ms": {
+            "p50": 6.898749998072162,
+            "p95": 8.956000005127862
+          }
+        },
+        "pt": {
+          "n": 15,
+          "recall_at_1": {
+            "numerator": 4,
+            "denominator": 12,
+            "rate": 0.3333333333333333
+          },
+          "recall_at_3": {
+            "numerator": 10,
+            "denominator": 12,
+            "rate": 0.8333333333333334
+          },
+          "mrr": {
+            "value": 0.6208333333333333,
+            "denominator": 12
+          },
+          "correct_action": {
+            "numerator": 5,
+            "denominator": 15,
+            "rate": 0.3333333333333333
+          },
+          "oos_abstained": {
+            "numerator": 3,
+            "denominator": 3,
+            "rate": 1.0
+          },
+          "wrong_abstention": {
+            "numerator": 6,
+            "denominator": 9,
+            "rate": 0.6666666666666666
+          },
+          "wrong_citation": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "latency_ms": {
+            "p50": 6.315208011073992,
+            "p95": 6.863624992547557
+          }
+        }
+      }
+    }
+  }
+}

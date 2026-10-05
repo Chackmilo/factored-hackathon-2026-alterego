@@ -260,3 +260,24 @@ def test_a_suite_run_with_a_model_names_it_in_the_versions(tmp_path, monkeypatch
     assert "no ML model" not in payload["meta"]["versions"]
     plain = run_suite(CASES, tmp_path / "without_model", repeats=1, systems=("proposed",))
     assert "no ML model" in plain["meta"]["versions"]
+
+
+# ------------------------------------------- the harness with the policy explainer (what production serves)
+def test_the_proposed_stack_sends_a_rules_question_to_the_explainer_when_one_is_given(tmp_path):
+    from src.rag.policy_explainer import load_policy_explainer
+    question = _case(case_id="T-RULES", messages=["¿Cuántos días tengo para disputar una compra?"],
+                     expected={"final_outcome": "POLICY_EXPLANATION", "requires_human": False, "case_opened": False})
+    with_explainer = run_case_proposed(question, tmp_path, explainer=load_policy_explainer(Path("data/rag_gate.json")))
+    assert with_explainer.final_outcome in ("POLICY_EXPLANATION", "SAFE_POLICY_ABSTENTION") and not with_explainer.case_opened
+    assert with_explainer.error is None
+    dispute = run_case_proposed(_case(case_id="T-3"), tmp_path, explainer=load_policy_explainer(Path("data/rag_gate.json")))
+    assert dispute.final_outcome == "AUTONOMOUS_RESOLUTION" and dispute.case_opened  # a dispute never goes to the explainer
+
+
+def test_a_suite_run_with_the_explainer_names_it_in_the_versions(tmp_path):
+    payload = run_suite(CASES, tmp_path / "with_explainer", repeats=1, systems=("proposed",), explainer_gate="data/rag_gate.json")
+    assert "policy explainer bm25 (rag_gate.json)" in payload["meta"]["versions"]
+    plain = run_suite(CASES, tmp_path / "plain", repeats=1, systems=("proposed",))
+    assert "policy explainer" not in plain["meta"]["versions"]
+    with pytest.raises(FileNotFoundError):
+        run_suite(CASES, tmp_path / "missing", repeats=1, systems=("proposed",), explainer_gate=tmp_path / "no_gate.json")

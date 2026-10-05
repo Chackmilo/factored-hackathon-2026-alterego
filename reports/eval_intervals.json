@@ -1,0 +1,186 @@
+{
+  "cases": "data/eval/heldout_cases.jsonl",
+  "method": "Wilson 95 % interval; exact two-sided McNemar test",
+  "comparisons": [
+    {
+      "title": "Blind run (30-Sep): starter pipeline against the proposed stack, rules only",
+      "a": {
+        "report": "reports/eval_heldout_blind.json",
+        "system": "baseline_starter",
+        "versions": "commit 011e931; extractor keyword-v1; policy v2.3; no ML model, no LLM; outcomes from commit 011e931 (PR #12, the first blind run of 30-Sep), re-scored with the TQ-034 and TQ-035 judge and metrics of commit 3dc2fdf"
+      },
+      "b": {
+        "report": "reports/eval_heldout_blind.json",
+        "system": "proposed",
+        "versions": "commit 011e931; extractor keyword-v1; policy v2.3; no ML model, no LLM; outcomes from commit 011e931 (PR #12, the first blind run of 30-Sep), re-scored with the TQ-034 and TQ-035 judge and metrics of commit 3dc2fdf"
+      },
+      "n_cases": 250,
+      "safe_automated_resolution": {
+        "a": {
+          "numerator": 4,
+          "denominator": 107,
+          "rate": 0.037383177570093455,
+          "ci95": [
+            0.014631899269525926,
+            0.09220049852352191
+          ]
+        },
+        "b": {
+          "numerator": 68,
+          "denominator": 107,
+          "rate": 0.6355140186915887,
+          "ci95": [
+            0.5410961319079854,
+            0.7205388222738489
+          ]
+        },
+        "only_a": 1,
+        "only_b": 65,
+        "p_value": 1.81603863891322e-18
+      },
+      "unsafe_outcomes": {
+        "a": {
+          "numerator": 122,
+          "denominator": 250,
+          "rate": 0.488,
+          "ci95": [
+            0.42669031031533017,
+            0.5496728888725603
+          ]
+        },
+        "b": {
+          "numerator": 39,
+          "denominator": 250,
+          "rate": 0.156,
+          "ci95": [
+            0.11626576522540502,
+            0.20614594482746082
+          ]
+        },
+        "only_a": 102,
+        "only_b": 19,
+        "p_value": 6.364983531202538e-15
+      }
+    },
+    {
+      "title": "After the error analysis: starter pipeline against the proposed stack, rules only",
+      "a": {
+        "report": "reports/eval_heldout.json",
+        "system": "baseline_starter",
+        "versions": "commit 9efb497; extractor keyword-v1; policy v2.3; no ML model, no LLM"
+      },
+      "b": {
+        "report": "reports/eval_heldout.json",
+        "system": "proposed",
+        "versions": "commit 9efb497; extractor keyword-v1; policy v2.3; no ML model, no LLM"
+      },
+      "n_cases": 250,
+      "safe_automated_resolution": {
+        "a": {
+          "numerator": 4,
+          "denominator": 107,
+          "rate": 0.037383177570093455,
+          "ci95": [
+            0.014631899269525926,
+            0.09220049852352191
+          ]
+        },
+        "b": {
+          "numerator": 105,
+          "denominator": 107,
+          "rate": 0.9813084112149533,
+          "ci95": [
+            0.9343961469302772,
+            0.9948590351638246
+          ]
+        },
+        "only_a": 1,
+        "only_b": 102,
+        "p_value": 2.0510383535746307e-29
+      },
+      "unsafe_outcomes": {
+        "a": {
+          "numerator": 122,
+          "denominator": 250,
+          "rate": 0.488,
+          "ci95": [
+            0.42669031031533017,
+            0.5496728888725603
+          ]
+        },
+        "b": {
+          "numerator": 20,
+          "denominator": 250,
+          "rate": 0.08,
+          "ci95": [
+            0.052382328372331775,
+            0.12032964320384165
+          ]
+        },
+        "only_a": 113,
+        "only_b": 11,
+        "p_value": 1.7582222198414876e-22
+      }
+    },
+    {
+      "title": "Proposed stack: rules only against rules plus the transferred risk model",
+      "a": {
+        "report": "reports/eval_heldout.json",
+        "system": "proposed",
+        "versions": "commit 9efb497; extractor keyword-v1; policy v2.3; no ML model, no LLM"
+      },
+      "b": {
+        "report": "reports/eval_heldout_model.json",
+        "system": "proposed",
+        "versions": "commit 53e1545; extractor keyword-v1; policy v2.3; risk model fraud_risk_ieee.joblib (threshold 0.06692), no LLM"
+      },
+      "n_cases": 250,
+      "safe_automated_resolution": {
+        "a": {
+          "numerator": 105,
+          "denominator": 107,
+          "rate": 0.9813084112149533,
+          "ci95": [
+            0.9343961469302772,
+            0.9948590351638246
+          ]
+        },
+        "b": {
+          "numerator": 101,
+          "denominator": 107,
+          "rate": 0.9439252336448598,
+          "ci95": [
+            0.8830303848234273,
+            0.9740496374963752
+          ]
+        },
+        "only_a": 4,
+        "only_b": 0,
+        "p_value": 0.125
+      },
+      "unsafe_outcomes": {
+        "a": {
+          "numerator": 20,
+          "denominator": 250,
+          "rate": 0.08,
+          "ci95": [
+            0.052382328372331775,
+            0.12032964320384165
+          ]
+        },
+        "b": {
+          "numerator": 9,
+          "denominator": 250,
+          "rate": 0.036,
+          "ci95": [
+            0.019053279530003277,
+            0.06699042240176928
+          ]
+        },
+        "only_a": 11,
+        "only_b": 0,
+        "p_value": 0.0009765625
+      }
+    }
+  ]
+}

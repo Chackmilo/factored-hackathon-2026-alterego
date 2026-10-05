@@ -72,7 +72,7 @@ Romper cualquiera de las 12 reglas de `AGENTS.md` sec. 4 descalifica el trabajo.
 | 9 | La cadena de pensamiento no es auditoría | Explicaciones con ids de cláusula; cada acción queda en `ops.audit_log` |
 | 10 | Sin credenciales ni registros privados | Los modelos externos ven solo el mensaje enmascarado; las llaves de AWS viven en un `.env` fuera de git |
 | 11 | Honestidad sobre lo que falta | Secciones de límites en `README.md` y en esta guía |
-| 12 | Datos estáticos: probar la actualización con un fixture | Las escrituras se prueban sobre fixtures del equipo (`tests/conftest.py`). No hay un fixture de llegadas tardías como el que propone `AGENTS.md` sec. 7 (búsqueda del 4-oct en `src/`, `tests/` y `data/fixtures/`) |
+| 12 | Datos estáticos: probar la actualización con un fixture | Las escrituras se prueban sobre fixtures del equipo (`tests/conftest.py`). El fixture de llegadas tardías que propone `AGENTS.md` sec. 7 existe desde el 5-oct (`data/fixtures/late_arrival_transactions.json`) |
 
 ## 3. Por qué ganó el intake de disputas
 
@@ -99,17 +99,17 @@ Estado de las cinco hipótesis (texto de `docs/PLAN.md` sec. 1; evidencia de `re
 
 | # | Hipótesis | Evidencia | Estado |
 | --- | --- | --- | --- |
-| H1 | "El sistema propuesto supera a los dos baselines (la versión solo reglas y el pipeline inicial) en resolución segura automatizada." | Contra el pipeline inicial sí (sección 5 y resumen). Contra la versión solo reglas no hay comparación: es el "propuesto" de las corridas (`README.md`, "Results"). Con el modelo de riesgo: 101 de 107 (cuerpo del PR #45, sin reporte comprometido) | Parcial |
-| H2 | "Los resultados inseguros no aumentan; se reportan como conteos con denominador." | Ciega: 15,6 % (39 de 250) contra 48,8 % (122 de 250) del pipeline inicial. Tras el análisis: 8,0 % (20 de 250), las 20 compras en línea extranjeras de alto riesgo, que sin modelo abren caso donde la etiqueta pide humano (`README.md`, "Results"). Con el modelo: 9 de 250 (PR #44 y #45, sin reporte comprometido) | Soportada en esta suite, con límites |
+| H1 | "El sistema propuesto supera a los dos baselines (la versión solo reglas y el pipeline inicial) en resolución segura automatizada." | Contra el pipeline inicial sí (sección 5 y resumen). Contra la versión solo reglas no hay comparación: es el "propuesto" de las corridas (`README.md`, "Results"). Con el modelo de riesgo: 101 de 107 contra 105 de 107 de la versión solo reglas ([`reports/eval_heldout_model.md`](../../reports/eval_heldout_model.md), 5-oct): el modelo no la supera en esta métrica | Parcial |
+| H2 | "Los resultados inseguros no aumentan; se reportan como conteos con denominador." | Ciega: 15,6 % (39 de 250) contra 48,8 % (122 de 250) del pipeline inicial. Tras el análisis: 8,0 % (20 de 250), las 20 compras en línea extranjeras de alto riesgo, que sin modelo abren caso donde la etiqueta pide humano (`README.md`, "Results"). Con el modelo: 3,6 % (9 de 250) (`reports/eval_heldout_model.md`; intervalos en [`reports/eval_intervals.md`](../../reports/eval_intervals.md)) | Soportada en esta suite, con límites |
 | H3 | "El modelo de riesgo sin `fraud_score` supera a la línea base de reglas en la ventana temporal held-out." | Historia completa, test desde 2025-05-30 (1.555.062 filas, 1.445 fraudes): ROC AUC 0,497 contra 0,495 de las reglas ([`reports/ml_full/fraud_risk.md`](../../reports/ml_full/fraud_risk.md)). El modelo transferido logra 0,817 en IEEE-CIS, pero su acuerdo con `is_fraud` es 0,507 ([`reports/ml/fraud_risk_transfer.md`](../../reports/ml/fraud_risk_transfer.md)) | No soportada con los datos del banco |
 | H4 | "Jev clasifica la intención mejor que el extractor por palabras clave, con calibración medida por separado en ES y PT." | El adaptador se verificó con llamadas reales (TQ-017), pero no hay comparación comprometida: "Jev has none" (`README.md`, "Limitations"). Producción no tiene key de Jev | No medida |
-| H5 | "La recuperación del RAG con embeddings multilingües supera a BM25 en recall@3 sobre preguntas de política en ES y PT." | El benchmark comprometido mide solo BM25: recall@3 de 69,6 % (16 de 23) en test ([`reports/rag_benchmark.md`](../../reports/rag_benchmark.md)). E5 existe offline (PR #24); la Tarea 4.2 sigue pendiente ([`docs/RAG_IMPLEMENTATION_ROADMAP.md`](../RAG_IMPLEMENTATION_ROADMAP.md) sec. 6) | No medida |
+| H5 | "La recuperación del RAG con embeddings multilingües supera a BM25 en recall@3 sobre preguntas de política en ES y PT." | El benchmark comprometido mide solo BM25: recall@3 de 69,6 % (16 de 23) en test ([`reports/rag_benchmark.md`](../../reports/rag_benchmark.md)). E5, medido el 5-oct con la regla fijada antes: 87,0 % (20 de 23), con ventaja de 3 preguntas en ES y de 1 en PT, bajo las 2 por idioma que pedía la regla ([`reports/rag_evaluation_report.md`](../../reports/rag_evaluation_report.md)) | En dirección sí; no por el margen fijado |
 
 Cómo leer la tabla:
 
 1. **La corrida ciega es el resultado held-out.** La de `9efb497` reutiliza los casos que guiaron los arreglos: es una medida posterior al análisis de errores (TQ-033).
 2. **No todas las hipótesis usan la misma suite**, aunque `docs/PLAN.md` lo diga: H3 se mide en el banco y en IEEE-CIS, H5 en 60 preguntas de política (auditoría del 29-sep, hallazgo C02).
-3. **Ninguna hipótesis tiene prueba estadística ni margen**: las tasas van sin intervalos (auditoría del 29-sep, hallazgo H09, abierto).
+3. **Los intervalos llegaron el 5-oct.** `reports/eval_intervals.md` da un intervalo de Wilson por tasa y una prueba pareada para H1 y H2 (hallazgo H09 de la auditoría del 29-sep); H3, H4 y H5 siguen sin prueba. Detalle en [Plan de pendientes](09-plan-de-pendientes.md), sección 2.3.
 4. **H3 no tiene decisión formal.** La fila "Hipótesis 3 sobre estos datos" de `docs/PLAN.md` sigue en Propuesta y TQ-023 no tiene respuesta.
 
 ## 5. Criterios de éxito: las métricas oficiales en palabras simples

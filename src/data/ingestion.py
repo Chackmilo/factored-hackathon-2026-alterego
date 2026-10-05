@@ -58,6 +58,27 @@ SILVER_TRANSACTIONS_SQL = """
 """
 
 
+QUARANTINE_DUPLICATE_TRANSACTIONS_SQL = """
+    CREATE OR REPLACE TABLE quarantine_duplicate_transactions AS
+    WITH ranked AS (
+        SELECT *,
+            ROW_NUMBER() OVER (
+                PARTITION BY customer_id, amount, currency, COALESCE(merchant_name, 'UNKNOWN'), DATE_TRUNC('minute', transaction_date)
+                ORDER BY process_date DESC
+            ) as duplicate_rank
+        FROM bronze_transactions
+    )
+    SELECT * EXCLUDE (duplicate_rank)
+    FROM ranked
+    WHERE duplicate_rank > 1;
+"""
+
+
+def build_quarantine_duplicate_transactions(con) -> None:
+    """The rows silver leaves out: every copy of a business key but the one with the latest process day (a late reprocess wins)."""
+    con.execute(QUARANTINE_DUPLICATE_TRANSACTIONS_SQL)
+
+
 def build_silver_transactions(con) -> None:
     """Deduplicate on the business key and fix amount_usd at silver: USD rows copy the amount, native values stay,
     COP and ARS gaps are filled from the daily mid rate of the process day. A non-USD row with neither a native
@@ -236,21 +257,7 @@ def run_ingestion_pipeline(sample_only: bool = True, db_path: Path | None = None
     # ----------------------------------------------------
     console.print("\n[yellow]Building Silver Layer with Business-Key Deduplication...[/yellow]")
 
-    # Quarantine duplicates for transactions
-    con.execute("""
-        CREATE OR REPLACE TABLE quarantine_duplicate_transactions AS
-        WITH ranked AS (
-            SELECT *,
-                ROW_NUMBER() OVER (
-                    PARTITION BY customer_id, amount, currency, COALESCE(merchant_name, 'UNKNOWN'), DATE_TRUNC('minute', transaction_date)
-                    ORDER BY process_date DESC
-                ) as duplicate_rank
-            FROM bronze_transactions
-        )
-        SELECT * EXCLUDE (duplicate_rank)
-        FROM ranked
-        WHERE duplicate_rank > 1;
-    """)
+    build_quarantine_duplicate_transactions(con)
     dups_trx = con.execute("SELECT COUNT(*) FROM quarantine_duplicate_transactions").fetchone()[0]
     console.print(f" -> [magenta]quarantine_duplicate_transactions[/magenta]: {dups_trx:,} duplicates isolated")
 

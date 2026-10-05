@@ -14,7 +14,7 @@ Measured on 5-Oct, with Kmilo's approval of the spend. Source: `reports/eval_hel
 | Escalation precision | 100.0 % (78 of 78) | 100.0 % (72 of 72) |
 | Missed / unnecessary transfers | 20 / 0 | 26 / 0 |
 | Exact outcome | 88.4 % (221 of 250) | 85.2 % (213 of 250) |
-| Latency p50 / p95 (ms, in-process plus the Jev call) | 24.8 / not compared | 447.4 / 1,375.1 |
+| Latency p50 (ms, same machine; the keyword figure is a rerun that is not committed) | 24.8 | 447.4 |
 
 Paired on the 250 cases (`reports/eval_intervals.md`): no safe resolution gained or lost; 6 cases become unsafe with Jev and none stops being unsafe (exact McNemar p 0.031). The safe resolution rate was the same in the three repeats.
 

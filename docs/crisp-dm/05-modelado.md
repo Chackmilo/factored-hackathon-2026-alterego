@@ -95,6 +95,8 @@ El pipeline inicial trae un "modelo" sin entrenar, `MLFraudDetector`: una sigmoi
 
 **Reproducibilidad.** El PR #45 dejó abierto el bundle de registro porque un reentrenamiento dio ROC AUC 0,815 y umbral 0,0694. La causa era el orden de las filas con la misma marca de tiempo, que el motor rompía distinto en cada lectura. Con el orden fijo (commit `4db45f3`), dos reentrenamientos dan el mismo reporte: 0,817 y 0,0669, las cifras del 30-sep ([Plan de pendientes](09-plan-de-pendientes.md), sección 2.1).
 
+**Contrato 1.2 y bundle en git (5-oct).** El contrato 1.2 trata como cero el residuo de punto flotante que el EDA encontró en `amount_zscore_card` y `tx_sum_card_7d` (TQ-043). El modelo reentrenado da ROC AUC de holdout 0,816 y umbral 0,0637, y en el held-out mantiene 101 de 107 y 9 de 250. `models/fraud_risk_ieee.joblib` está en git para que el build de Vercel lo lleve; producción lo sirve desde el primer despliegue que lo incluya ([Plan de pendientes](09-plan-de-pendientes.md), sección 2.11).
+
 **EDA de las 19 features.** [`reports/ml/risk_feature_eda.md`](../../reports/ml/risk_feature_eda.md) trae mínimo, máximo y media de cada feature en las dos fuentes, una gráfica por feature y lo observado contra lo predicho: en el holdout de la competencia, 3.513 fraudes observados contra 3.298 esperados, y el decil más alto predice 14,64 % y observa 15,71 %. También encontró un residuo numérico en `amount_zscore_card` y `tx_sum_card_7d`, que queda como decisión (Plan de pendientes, secciones 2.5 y 3).
 
 **Contradicciones abiertas y siguiente paso.**
@@ -147,7 +149,7 @@ Understand interpreta el mensaje y llena un esquema tipado; no decide (`AGENTS.m
 
 **Por qué el extractor es el respaldo.** Jev estaba en acceso anticipado, y su documentación dice que el inglés es su idioma principal, así que su ventaja en ES y PT no está garantizada. CI y tests corren sin red ni costo ([`docs/JEV_TYPESAFE_AI.md`](../JEV_TYPESAFE_AI.md) secs. 1 y 5).
 
-**Qué se midió.** La hipótesis 4 no tiene medición: "Jev has none" (`README.md`, "Limitations"). Jev sí se usó en análisis: categorizó 1.013 transcripciones, todas como `consulta_general` (`docs/technical-discuss-points.md` sec. 5), y dio 61 respuestas tipadas para homologar niveles de IEEE-CIS (spec sec. 10.2).
+**Qué se midió.** La hipótesis 4 se midió el 5-oct y no se sostiene en esta suite: con Jev detrás del router el held-out da la misma resolución segura (105 de 107) y 26 de 250 inseguros contra 20, porque un mensaje con tarjeta robada y cargo no reconocido baja su confianza de 0,70 y recibe una aclaración en vez de llegar a un humano ([`reports/jev_evaluation_report.md`](../../reports/jev_evaluation_report.md)). Jev sí se usó en análisis: categorizó 1.013 transcripciones, todas como `consulta_general` (`docs/technical-discuss-points.md` sec. 5), y dio 61 respuestas tipadas para homologar niveles de IEEE-CIS (spec sec. 10.2).
 
 **En producción** no hay key de Jev: todo turno usa el extractor. Inferido de la lectura del código: el idioma se fija al salir del estado `new` (`src/orchestrator/dispute_orchestrator.py:171`), así que un mensaje posterior en portugués recibe respuestas en español.
 

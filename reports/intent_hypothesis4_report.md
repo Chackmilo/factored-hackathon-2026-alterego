@@ -83,6 +83,28 @@ So a mix by "how sure the keywords are" is not the structure to use. The structu
 
 Cost is not the constraint that would justify the gate: 140 calls cost one cent.
 
+### The structured mix against Jev on its own
+
+Computed after the run, from the answers stored in `reports/intent_benchmark.json`; no new call, no threshold chosen on these messages. The row called "Jev" above is already the structured mix: Jev's three answers plus the keyword signal for a question about the rules, which Jev is not asked. Jev on its own is the three answers alone.
+
+| Test split | Spanish | Portuguese | All |
+| --- | --- | --- | --- |
+| Keyword extractor alone | 22 of 50 | 27 of 50 | 49 of 100 |
+| Jev alone (its three answers) | 43 of 50 | 42 of 50 | 85 of 100 |
+| Structured mix (Jev for the topics, keywords for the rules question) | 46 of 50 | 46 of 50 | 92 of 100 |
+
+The mix reads 7 messages right that Jev alone misses and loses none (exact McNemar p 0.016). All 7 are questions about the rules: Jev alone sees no topic in 6 of the 8 and reads the other 2 as disputes ("Si disputo un cargo, ¿cuánto se demoran en responderme?"). On the development split the mix is 37 of 40 against 34.
+
+With the doubt band the policy already has (an answer between 0.40 and 0.60 asks the customer instead of deciding):
+
+| Test split, structured mix | Messages |
+| --- | --- |
+| Decided, and right | 88 |
+| Asked the customer | 12 (4 of them it had read right) |
+| Decided, and wrong | 0 |
+
+Every one of the 8 wrong readings falls in the band, so none becomes a wrong decision; the price is 4 questions the customer did not need.
+
 ### Limits
 
 - One author wrote the messages and the labels, the same day and without a second reader. Labels on the edge are debatable: "Cancelei a assinatura faz meses e continuam debitando todo mês" is labeled a dispute, and "No reconozco la cuota que me están cobrando del préstamo" is labeled a loan request by the team's rule that a loan installment is not a card charge.

@@ -91,7 +91,11 @@ El pipeline inicial trae un "modelo" sin entrenar, `MLFraudDetector`: una sigmoi
 
 **Explicación y validez.** El scorer entrega las 3 contribuciones mayores, reemplazando cada feature por su mediana de entrenamiento; no son valores SHAP (`AGENTS.md` sec. 9). Ninguna etiqueta del banco valida la transferencia: el score enruta cargos a un humano y no es un detector de fraude validado en LATAM Bank (`README.md`, "Risk model").
 
-**Medición con el modelo (sin reporte comprometido).** Solo existe en los cuerpos de los PR #44 y #45, con el bundle local de Kmilo y sin ajustar nada. En el held-out: 9 de 250 resultados inseguros contra 20 sin modelo; 11 de 20 casos de alto riesgo detectados; 4 escalaciones de más (8 antes del arreglo de canales); 101 de 107 resoluciones seguras contra 105. Su p50 (28 ms contra 24 ms) es de otra máquina que la del reporte comprometido (161,6 ms sin modelo). Un reentrenamiento dio ROC AUC 0,815 y umbral 0,0694; el bundle de registro sigue sin decidirse (PR #45).
+**Medición con el modelo.** Desde el 5-oct tiene reporte ([`reports/eval_heldout_model.md`](../../reports/eval_heldout_model.md), 3 repeticiones, nada ajustado), con las mismas cifras que traían los cuerpos de los PR #44 y #45. En el held-out: 9 de 250 resultados inseguros contra 20 sin modelo; 11 de 20 casos de alto riesgo escalados; 4 escalaciones de más (8 antes del arreglo de canales); 101 de 107 resoluciones seguras contra 105. Su p50 (27,1 ms) es de otra máquina que la del reporte solo reglas (161,6 ms).
+
+**Reproducibilidad.** El PR #45 dejó abierto el bundle de registro porque un reentrenamiento dio ROC AUC 0,815 y umbral 0,0694. La causa era el orden de las filas con la misma marca de tiempo, que el motor rompía distinto en cada lectura. Con el orden fijo (commit `4db45f3`), dos reentrenamientos dan el mismo reporte: 0,817 y 0,0669, las cifras del 30-sep ([Plan de pendientes](09-plan-de-pendientes.md), sección 2.1).
+
+**EDA de las 19 features.** [`reports/ml/risk_feature_eda.md`](../../reports/ml/risk_feature_eda.md) trae mínimo, máximo y media de cada feature en las dos fuentes, una gráfica por feature y lo observado contra lo predicho: en el holdout de la competencia, 3.513 fraudes observados contra 3.298 esperados, y el decil más alto predice 14,64 % y observa 15,71 %. También encontró un residuo numérico en `amount_zscore_card` y `tx_sum_card_7d`, que queda como decisión (Plan de pendientes, secciones 2.5 y 3).
 
 **Contradicciones abiertas y siguiente paso.**
 

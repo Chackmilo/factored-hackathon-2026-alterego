@@ -124,7 +124,7 @@ Resolución segura del propuesto en la corrida ciega y en la posterior, e insegu
 - Cada corte tiene entre 25 y 61 casos elegibles: un caso mueve entre 1,6 y 4 puntos. Los reportes lo advierten: "read the counts, not the rates".
 - Todo el portugués es `team-generated`: el dataset no tiene portugués (README, "Data").
 - Los inseguros por corte solo reparten los 20 casos de alto riesgo.
-- La brecha entre países de la corrida ciega (Colombia 15 de 36, México 30 de 35) no se analizó. Inferido: con unos 35 elegibles por país, el reparto de unas pocas plantillas basta para moverla.
+- La brecha entre países de la corrida ciega (Colombia 15 de 36, México 30 de 35) sale de una plantilla: los 26 casos que mencionan el extracto fallaron todos, y a Colombia le tocaron 16, a Argentina 8 y a México 2. Sin ellos, Colombia resuelve 15 de 20 y México 30 de 33 (calculado de `reports/eval_heldout_blind.json`; [09-plan-de-pendientes.md](09-plan-de-pendientes.md), sección 2.4).
 
 ## 5. La iteración: ciega, análisis de errores, arreglos
 
@@ -162,9 +162,9 @@ Son HO-161 a HO-180, todos `high_fraud_anomaly`: 12 en español y 8 en portugué
 
 La etiqueta pide humano con `HIGH_FRAUD_RISK_SCORE`. Sin archivo de modelo, `POL-ESC-ML-RISK` nunca se dispara y, con 500 USD o menos, la política abre el caso (README, "Risk model"). Producción tiene el mismo hueco: corre sin el archivo del modelo (README, "Limitations"; commit `a18f045`).
 
-## 7. Con el modelo de riesgo: solo en los cuerpos de los PR #44 y #45
+## 7. Con el modelo de riesgo
 
-No hay reporte comprometido con el modelo. Las cifras usaron el bundle local de Kmilo, 1 repetición (PR #44) y nada ajustado:
+Desde el 5-oct hay reporte comprometido: [reports/eval_heldout_model.md](../../reports/eval_heldout_model.md), con el modelo reentrenado en orden fijo, 3 repeticiones y nada ajustado. Da 101 de 107 resoluciones seguras, 9 de 250 inseguros, 11 de 20 casos de alto riesgo escalados y 4 escalaciones de más, las cifras de la última columna. Sus intervalos y la prueba pareada contra la corrida solo reglas están en [reports/eval_intervals.md](../../reports/eval_intervals.md), y el detalle por caso en [09-plan-de-pendientes.md](09-plan-de-pendientes.md), sección 2.2. La tabla conserva las corridas de los PR #44 y #45 (bundle local de Kmilo, 1 repetición):
 
 | Medida | Solo reglas | Modelo, antes del arreglo de canales | Modelo, con el arreglo (PR #45) |
 | --- | --- | --- | --- |
@@ -177,9 +177,9 @@ No hay reporte comprometido con el modelo. Las cifras usaron el bundle local de 
 **Límites.**
 
 - Estas latencias son de otra máquina que la del reporte comprometido (161,6 ms sin modelo); no se comparan con él.
-- Inferido: los 9 inseguros que quedan son los 9 casos de alto riesgo no detectados, que siguen abriendo caso.
+- Los 9 inseguros que quedan son los 9 casos de alto riesgo no escalados, que siguen abriendo caso (calculado de `reports/eval_heldout_model.json`).
 - Con el modelo, 10 conversaciones de varios cargos (HO-149 a HO-160) escalan en el primer cargo y pierden la oferta de bloqueo (PR #44).
-- Un reentrenamiento dio ROC AUC 0,815 y umbral 0,0694, cerca de 0,817 y 0,0669; el PR #45 deja al equipo decidir cuál es el bundle de registro. El bundle no está en el repo ni en producción.
+- Un reentrenamiento dio ROC AUC 0,815 y umbral 0,0694, cerca de 0,817 y 0,0669. La diferencia venía del orden de las filas; con el orden fijo, el reentrenamiento reproduce 0,817 y 0,0669 (commit `4db45f3`). El bundle no está en el repo ni en producción.
 
 ## 8. Explicador de políticas
 

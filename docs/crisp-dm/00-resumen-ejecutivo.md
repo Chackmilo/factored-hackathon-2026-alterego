@@ -44,6 +44,8 @@ Fuentes: [`reports/eval_heldout_blind.md`](../../reports/eval_heldout_blind.md) 
 
 ## Estado al 4-oct y pendientes
 
+La lista completa de pendientes, con lo que se cerró el 5-oct (modelo reproducible, held-out con el modelo, intervalos y EDA de las features), está en [09-plan-de-pendientes.md](09-plan-de-pendientes.md).
+
 - **Producción** sirve `d25891e` (PR #53); el commit directo `c71cc09` quedó bloqueado, porque Vercel Hobby solo despliega commits atribuidos a la cuenta dueña (estados de despliegue de GitHub; `docs/HANDOFF.md`, nota inicial).
 - **Repo privado** cuyo historial enlaza el PDF del diccionario de datos, con llaves de AWS de solo lectura (`AGENTS.md` regla 10). El PR #49 no reescribió el historial; la auditoría del 4-oct, no comprometida, recomienda publicar `factored-hackathon-2026-alterego` desde una copia sin historial.
 - **`cliente-hasta-150`** tiene un caso abierto sobre su cargo (`docs/HANDOFF.md`, A2; la auditoría registra `CASE-ECB3AEEF4C1B`) y no muestra `POL-AUT-150`. Se borra desde el SQL Editor de Supabase ([01-guia-de-uso.md](01-guia-de-uso.md), sección 1.5).

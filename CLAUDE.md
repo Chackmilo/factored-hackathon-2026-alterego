@@ -26,11 +26,13 @@ uv run python -m src.auth.seed_personas --email-pattern 'you+{label}@gmail.com' 
 uv run python -m src.eval.run data/eval/dev_cases.jsonl --out reports/eval_dev --repeats 3   # evaluation, baseline vs proposed: reports/eval_dev.json and .md
 uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out reports/eval_heldout --repeats 3   # frozen held-out suite
 uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out reports/eval_heldout_model --repeats 3 --systems proposed --model models/fraud_risk_ieee.joblib   # the held-out with the transferred risk model the API serves (B1); without --model the run is rules-only
+uv run python -m src.eval.intervals --out reports/eval_intervals   # Wilson 95 % intervals and exact paired tests, read from the committed report JSONs (regenerates no report)
 uv run python -m src.eval.heldout                     # rebuild the held-out suite from the lakehouse sample; must reproduce data/eval/heldout_cases.sha256
 uv run python -m src.eval.rag_benchmark --out reports/rag_benchmark   # policy explainer on the policy question bank (Task 1.2); add --e5 models/e5-small to measure E5 beside BM25, --write-gate data/rag_gate.json to turn the explainer on
 uv run python -m src.rag.onnx_retriever download      # E5 int8 model into models/e5-small (git-ignored, 135 MB), pinned revision, SHA-256 checked
 uv run python -m src.eval.labeling kappa              # Cohen's kappa once the four sheets in data/eval/labeling are filled
 uv run python -m src.ml.fraud_risk_transfer --competition data/kaggle --lakehouse data/lakehouse_full.duckdb --out reports/ml --model models/fraud_risk_ieee.joblib   # risk model transferred from IEEE-CIS (files in data/kaggle, git-ignored); logs the run to MLflow in ./mlflow.db and ./mlruns
+uv run python -m src.ml.risk_feature_eda --competition data/kaggle --lakehouse data/lakehouse_full.duckdb --model models/fraud_risk_ieee.joblib --out reports/ml   # EDA of the 19 served features (min, max, mean, one chart each in reports/ml/eda) and observed against predicted on IEEE-CIS
 docker-compose up --build -d                          # API plus the React build in one image, lakehouse read from ./data
 uvx ruff check <files you touched>                    # lint (ruff is not a project dependency)
 docker run --rm -v "$PWD:/repo:ro" ghcr.io/gitleaks/gitleaks:latest git /repo --redact --log-opts=--all   # secret scan of the whole history before the repo goes public, from the main checkout (in a worktree `.git` points outside the mount and it scans 0 bytes); .gitleaksignore lists the reviewed false positives

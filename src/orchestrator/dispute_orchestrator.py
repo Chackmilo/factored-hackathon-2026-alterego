@@ -40,6 +40,7 @@ from src.tools.gateway import (
 from src.tools.risk_zone import RiskZoneValidator, RiskZoneVerdict, cross_check
 from src.understand.keyword_extractor import KeywordIntentExtractor, UnderstandResult
 from src.understand.router import UnderstandRouter
+from src.understand.topics import OUT_OF_SCOPE_TOPICS
 
 # The bank did not answer: both gateways raise SystemOfRecordUnavailableError; a proxy or a client library may raise the builtins.
 SYSTEM_OF_RECORD_UNAVAILABLE = (SystemOfRecordUnavailableError, TimeoutError, ConnectionError)
@@ -49,6 +50,15 @@ TEXT = {
     "language_offer": {
         "es": ' Se preferir continuar em português, escreva "português".',
         "pt": ' Si prefiere continuar en español, escriba "español".',
+    },
+    # TQ-044: several topics in one message are taken one by one, the most critical first; the count is never shown
+    "several_topics": {
+        "es": "Veo que nos escribe por más de un tema. Los atenderemos uno por uno, empezando por el más urgente. ",
+        "pt": "Vejo que você nos escreve por mais de um assunto. Vamos atender um de cada vez, começando pelo mais urgente. ",
+    },
+    "topic_not_related": {
+        "es": " Sobre su consulta de {label}: ese tema no corresponde a este canal, que atiende disputas de cargos. Lo atiende la línea de atención o la sección correspondiente de la app.",
+        "pt": " Sobre a sua solicitação de {label}: esse assunto não corresponde a este canal, que atende contestações de cobranças. Ele é atendido pela central de atendimento ou pela seção correspondente do aplicativo.",
     },
     "language_set": {
         "es": "Listo, continuamos en español. Puede seguir con su solicitud.",
@@ -213,10 +223,26 @@ class DisputeOrchestrator:
                 result = self._explain_policy(session, conv, understanding, masked, language)
             else:
                 result = self._handle_dispute_turn(session, conv, understanding, masked, language)
+        if chosen_language is None:
+            self._tell_the_topics(session, conv, understanding, language, result)
         if chosen_language is None and shift == "ask":
             result.reply += TEXT["language_offer"][language]
         self.ops.add_message(conversation_id, "assistant", result.reply, {"state": result.state, "outcome": result.policy_outcome})
         return result
+
+    def _tell_the_topics(self, session: VerifiedSession, conv: dict[str, Any], u: UnderstandResult, language: str, result: TurnResult) -> None:
+        """TQ-044. With several topics in the message the reply says they are taken one by one, and a request this channel does
+        not handle is named as such while the dispute goes on. The count goes to the audit log, never to the customer. The answer
+        to the lock question carries no topics of its own."""
+        if conv["state"] == STATE_AWAITING_LOCK or len(u.topics) < 2:
+            return
+        self.ops.audit(conversation_id=conv["conversation_id"], customer_id=session.customer_id, actor="system", action="TOPICS_DETECTED",
+                       details={"topic_count": len(u.topics), "topics": list(u.topics)})
+        for topic in u.topics:
+            if topic in OUT_OF_SCOPE_TOPICS and result.escalation_reason != "OUT_OF_SCOPE_INTENT":  # the abstention already names it
+                label_es, label_pt = DisputePolicyEngine.OUT_OF_SCOPE_LABELS[topic]
+                result.reply += TEXT["topic_not_related"][language].format(label=label_pt if language == "pt" else label_es)
+        result.reply = TEXT["several_topics"][language] + result.reply
 
     # ------------------------------------------------------------ policy question
     def _asks_the_explainer(self, session: VerifiedSession, conv: dict[str, Any], u: UnderstandResult, masked: str) -> bool:

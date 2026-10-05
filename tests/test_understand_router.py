@@ -99,19 +99,20 @@ def test_real_adapter_maps_the_sdk_response_without_network():
         def system_one(self, state, questions, model=None):
             self.calls.append((state, sorted(questions), model))
             return NS(model="jev-1.13.0", request_id="req_fake", usage=NS(input_tokens=650, output_tokens=100),
-                      choices={"intent": NS(choice="fuera_de_alcance", confidence=0.91, probabilities={"fuera_de_alcance": 0.91, "cargo_no_reconocido": 0.09}),
-                               "category": NS(choice="prestamo_o_credito", confidence=0.8, probabilities={})},
-                      nouls={"stolen_card": NS(noul=0.03)}, scores={"distress": NS(score=0.4, confidence=0.7, probabilities={})})
+                      choices={"category": NS(choice="prestamo_o_credito", confidence=0.8, probabilities={})},
+                      nouls={"dispute": NS(noul=0.09), "stolen_card": NS(noul=0.03), "other_request": NS(noul=0.91)},
+                      scores={"distress": NS(score=0.4, confidence=0.7, probabilities={})})
 
     fake = FakeClient()
     jev = JevExtractor(api_key="test-key", client=fake)
     signals = jev.signals("[REDACTED_DOCUMENT] quiero un préstamo", ["hola"])
     assert signals.intent == "fuera_de_alcance" and signals.out_of_scope_category == "prestamo_o_credito"
+    assert signals.intent_confidence == 0.91
     assert signals.stolen_card_probability == 0.03 and signals.distress_score == 0.4 and signals.tokens_in == 650 and signals.request_id == "req_fake"
     state, questions, model = fake.calls[0]
     assert state["message"].startswith("[REDACTED") and "previous_messages" not in state and model == "jev-1.13.0"  # history bleeds into stolen and distress
     assert "previous_messages" in JevExtractor(api_key="test-key", client=fake, include_history=True).__class__.__name__ or True
-    assert questions == ["category", "distress", "intent", "stolen_card"]
+    assert questions == ["category", "dispute", "distress", "other_request", "stolen_card"]  # one yes or no per statement (TQ-044)
 
 
 def test_router_sends_only_the_masked_message_to_jev():

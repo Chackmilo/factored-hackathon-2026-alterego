@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 
 from src.rules.dispute_policy import STOLEN_CARD_KEYWORDS
+from src.understand.topics import CARD_TOPIC, DISPUTE_TOPICS, RULES_TOPIC, TOPICS, by_criticality
 
 PT_MARKERS = ("não", "nao ", "você", "voce", "cartão", "cartao", "cobrança", "cobranca", "estou", "obrigad", "reconheço",
               "reconheco", "compra que", "ontem", "hoje", "fiz", "quero", "minha", "meu ", "uma ", "isso", "também", "ção")
@@ -113,6 +114,11 @@ LIST_GAP_RE = re.compile(r"\s*(?:,|y|e|o|ou)?\s*")  # what separates the amounts
 CHARGE_CUE_RE = re.compile(rf"\b(?:{CHARGE_NOUNS}|usaron|usaram|utilizaron|utilizaram|gastaron|gastaram|sacaron|sacaram|retiraron|"
                            r"compraron|compraram|debitaron|debitaram)\b")  # a charge or a use of the card is told, not money alone
 DISPUTE_PHRASES = tuple(dict.fromkeys(_strip_accents(w) for words in INTENT_KEYWORDS.values() for w in words))
+# A clause that asks for something: a question, or a verb of asking. On accent-stripped text; "?" survives the clause split.
+REQUEST_CUE_RE = re.compile(r"[?¿]|\b(?:quiero|quisiera|necesito|dame|deme|denme|digame|dime|me\s+da[ns]?|me\s+dice[ns]?|puede[ns]?|podria[ns]?|"
+                            r"consultar|saber|cual|cuanto|como|solicitar|solicito|pedir|pido|envi\w+|mand\w+|muestr\w+|ayud\w+|por\s+favor|"
+                            r"quero|queria|gostaria|preciso|me\s+de|me\s+diga|qual|quanto|posso|poderia[m]?|enviar|mostr\w+|ajud\w+)\b")
+SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+|\n+")  # the "?" stays with its sentence, so a question is still a question
 LOOSE_DISPUTE_PHRASES = ("no hice", "no realice", "nao fiz", "dos veces", "duas vezes")  # dispute a charge only when said after it
 NOT_A_DISPUTE_RE = re.compile(r"\b(?:desconozco|desconheco)\s+(?:como|cuanto|cuando|donde|que|quanto|quando|onde)\b")  # not knowing how
 CLAUSE_SPLIT_RE = re.compile(r"((?<!\d)[.,]|[.,](?!\d)|[;!?¿¡]|\b(?:y|(?<!\bnao )e|pero|porem|porque|pois|aunque|embora)\b)")  # never in "85.000" or "não é"
@@ -152,6 +158,7 @@ class UnderstandResult:
     said_no: bool = False
     selected_option: int | None = None
     policy_question: bool = False  # a question about the dispute rules that names no charge of its own (Task 5.1)
+    topics: list[str] = field(default_factory=list)  # every statement of the message, most critical first (src/understand/topics.py)
     matched_keywords: list[str] = field(default_factory=list)
     message_lower: str = ""
     stolen_card_probability: float | None = None  # Jev Noul; None means keyword fallback inside the policy
@@ -168,7 +175,7 @@ class UnderstandResult:
             "currency_hint": self.currency_hint, "date_hint": self.date_hint.isoformat() if self.date_hint else None,
             "date_tolerance_days": self.date_tolerance_days, "stolen_card_claimed": self.stolen_card_claimed,
             "said_yes": self.said_yes, "said_no": self.said_no, "selected_option": self.selected_option,
-            "policy_question": self.policy_question,
+            "policy_question": self.policy_question, "topics": list(self.topics), "topic_count": len(self.topics),
             "stolen_card_probability": self.stolen_card_probability, "distress_score": self.distress_score,
             "extractor": self.engine, "model": self.model, "request_id": self.request_id,
         }
@@ -191,7 +198,12 @@ class KeywordIntentExtractor:
         result.stolen_card_claimed = any(k in low for k in STOLEN_CARD_KEYWORDS)
 
         disputed = any(self._disputes_a_charge(c) for c in CLAUSE_SPLIT_RE.split(low_plain)[::2])
+        sentences = [s for s in SENTENCE_SPLIT_RE.split(low_plain) if s.strip()]
+        side_requests: list[str] = []  # what the message asks for beside a dispute, each in a clause of its own (TQ-044)
         for category, words in OUT_OF_SCOPE_KEYWORDS.items():
+            if disputed and self._asked_beside_the_dispute(sentences, words):
+                side_requests.append(category)
+                continue  # the dispute goes on; the reply says this channel does not handle the other request
             if disputed and category == "saldo_o_extracto":
                 continue  # the statement is where a disputed charge shows up: naming it does not make the request out of scope
             hit = next((w for w in words if w in low), None)
@@ -217,7 +229,41 @@ class KeywordIntentExtractor:
                                                     or "cobranca" in low_plain or "compra" in low_plain):
             result.intent = "cargo_no_reconocido"
         result.policy_question = self._policy_question(low_plain, disputed, result)
+        result.topics = self._topics(result, side_requests)
         return result
+
+    @staticmethod
+    def _asked_beside_the_dispute(sentences: list[str], words: tuple[str, ...]) -> bool:
+        """Another request told apart from the dispute: its words sit only in clauses that dispute no charge, and one of those
+        clauses asks for something ("dame mi saldo", "¿cuál es mi saldo?"). "Revisé mi extracto" asks for nothing, and "el cobro
+        de la cuota del préstamo" disputes the loan itself."""
+        plain = [_strip_accents(w) for w in words]
+        found = asked = False
+        for sentence in sentences:
+            parts = CLAUSE_SPLIT_RE.split(sentence)
+            clauses = parts[::2]
+            last = max((i for i, c in enumerate(clauses) if c.strip()), default=0)
+            for i, clause in enumerate(clauses):
+                if not any(w in clause for w in plain):
+                    continue
+                if KeywordIntentExtractor._disputes_a_charge(clause) or any(p in clause for p in DISPUTE_PHRASES):
+                    return False
+                found = True
+                # "qual é o meu saldo?" splits at the accent-stripped "é": the short clause before it and the closing "?" still ask
+                lead = clauses[i - 1] if i and parts[2 * i - 1].strip() == "e" and len(clauses[i - 1].split()) <= 3 else ""
+                asked = asked or bool(REQUEST_CUE_RE.search(lead + " " + clause)) or (i == last and sentence.rstrip().endswith("?"))
+        return found and asked
+
+    @staticmethod
+    def _topics(result: UnderstandResult, side_requests: list[str]) -> list[str]:
+        topics = [CARD_TOPIC] if result.stolen_card_claimed else []
+        if result.policy_question:
+            topics.append(RULES_TOPIC)
+        elif result.intent in DISPUTE_TOPICS:
+            topics.append(result.intent)
+        if result.intent == "fuera_de_alcance" and result.out_of_scope_category in TOPICS:
+            topics.append(result.out_of_scope_category)
+        return by_criticality(topics + side_requests)
 
     @staticmethod
     def _policy_question(low_plain: str, disputed: bool, result: UnderstandResult) -> bool:

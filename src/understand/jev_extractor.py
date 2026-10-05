@@ -18,17 +18,19 @@ from src.understand.keyword_extractor import (
     KeywordIntentExtractor,
     UnderstandResult,
 )
+from src.understand.topics import (
+    CARD_TOPIC,
+    DISPUTE_TOPICS,
+    OUT_OF_SCOPE_TOPICS,
+    RULES_TOPIC,
+    TOPIC_THRESHOLD,
+    TOPICS,
+    by_criticality,
+)
 
 JEV_MODEL = "jev-1.13.0"  # pinned (docs/PLAN.md row 'Versiones de Jev'); the aliases jev-latest and jev-preview move on their own
 JEV_INPUT_USD_PER_MILLION_TOKENS = 0.042
 
-INTENT_CRITERIA = {
-    "cargo_no_reconocido": "El cliente no reconoce una transacción o compra en su cuenta o tarjeta.",
-    "cobro_indebido": "El cliente reconoce el comercio pero impugna un cobro duplicado, un monto erróneo o un cobro de más.",
-    "tarjeta_robada": "El cliente reporta pérdida física, hurto de la tarjeta o fraude masivo en curso.",
-    "consulta_general": "Pregunta general sobre saldo, extracto o movimientos, sin disputar un cargo.",
-    "fuera_de_alcance": "Créditos, préstamos, inversiones, seguros, PIN o reposición de tarjeta y otras solicitudes que no son una disputa de cargos.",
-}
 CATEGORY_CRITERIA = {
     "prestamo_o_credito": "Préstamos, créditos, cupos o límites de crédito, financiamiento.",
     "saldo_o_extracto": "Saldos, extractos, estados de cuenta o movimientos.",
@@ -37,8 +39,15 @@ CATEGORY_CRITERIA = {
     "otro_producto": "Otro producto del banco que no es una tarjeta ni una cuenta con cargos.",
     "no_determinado": "No se puede determinar la categoría.",
 }
-STOLEN_CRITERIA = {"true": "La tarjeta fue extraviada, clonada con pérdida física o robada.",
-                   "false": "El cliente conserva su tarjeta física y solo impugna un cargo remoto o no reconocido."}
+# One yes or no question per statement (TQ-044): a message that reports a stolen card and an unrecognized charge is two true
+# statements, and a single choice among intents split its confidence between them (0.64 and 0.34 on the held-out of 5-Oct).
+DISPUTE_CRITERIA = {"true": f"{TOPICS['cargo_no_reconocido'].criteria()} También cuenta: {TOPICS['cobro_indebido'].criteria()}",
+                    "false": "El mensaje no impugna ningún cargo: saluda, pregunta por las reglas, pide otra cosa o solo reporta la pérdida de la tarjeta."}
+STOLEN_CRITERIA = {"true": TOPICS[CARD_TOPIC].criteria(),
+                   "false": "El cliente conserva su tarjeta física, o el mensaje no dice nada sobre haberla perdido."}
+OTHER_REQUEST_CRITERIA = {
+    "true": "El mensaje pide o pregunta algo que este canal no atiende: " + " ".join(TOPICS[t].criteria() for t in OUT_OF_SCOPE_TOPICS),
+    "false": "Todo lo que el mensaje pide es disputar un cargo, reportar la tarjeta perdida o robada, o preguntar por las reglas de disputa."}
 DISTRESS_CRITERIA = ["0: Tono neutral, consulta habitual sin urgencia.", "1: Preocupación moderada por la transacción.",
                      "2: Fuerte alteración, afectación de subsistencia o saldo esencial.", "3: Situación de crisis extrema o fraude masivo en curso."]
 
@@ -60,6 +69,9 @@ class JevSignals:
     tokens_in: int = 0
     tokens_out: int = 0
     probabilities: dict[str, float] = field(default_factory=dict)
+    dispute_probability: float | None = None  # Jev Noul: the message disputes a charge; None from a stub that names only the intent
+    other_request_probability: float | None = None  # Jev Noul: the message also asks for something this channel does not handle
+    other_request_category: str | None = None  # which one, also when a dispute comes with it
 
 
 class IntentEngine(Protocol):
@@ -72,10 +84,18 @@ class IntentEngine(Protocol):
 def build_questions():
     import typesafe_sdk as ts
 
+    apart = " Responde solo por esta afirmación, aunque el mensaje hable además de otros temas."
     return {
-        "intent": ts.Choice(instructions="Clasifica la intención principal del mensaje del cliente bancario.", criteria=INTENT_CRITERIA),
-        "category": ts.Choice(instructions="Si el mensaje no es una disputa de cargos, ¿a qué categoría pertenece? Si es una disputa, responde no_determinado.", criteria=CATEGORY_CRITERIA),
-        "stolen_card": ts.Noul(instructions="¿El cliente afirma haber perdido la tarjeta física o sufrido el robo de la tarjeta?", criteria=STOLEN_CRITERIA),
+        "dispute": ts.Noul(instructions="¿El cliente impugna un cargo de su tarjeta o cuenta: dice que no lo hizo, que no lo reconoce, "
+                                        "o que se lo cobraron mal?" + apart, criteria=DISPUTE_CRITERIA),
+        "stolen_card": ts.Noul(instructions="¿El cliente afirma haber perdido la tarjeta física o sufrido el robo de la tarjeta?" + apart,
+                               criteria=STOLEN_CRITERIA),
+        "other_request": ts.Noul(instructions="¿El mensaje pide o pregunta algo que no es una disputa de cargos ni un reporte de tarjeta "
+                                              "perdida o robada (saldo, extracto, préstamo, inversión, seguro, PIN, reposición u otro "
+                                              "producto)? Nombrar el extracto como el lugar donde vio el cargo no cuenta." + apart,
+                                 criteria=OTHER_REQUEST_CRITERIA),
+        "category": ts.Choice(instructions="Si el mensaje pide algo que no es una disputa de cargos, ¿a qué categoría pertenece eso que pide? "
+                                           "Si solo disputa un cargo o reporta la tarjeta, responde no_determinado.", criteria=CATEGORY_CRITERIA),
         "distress": ts.Score(instructions="Evalúa el nivel de angustia o vulnerabilidad manifestado por el cliente.", criteria=DISTRESS_CRITERIA),
     }
 
@@ -126,21 +146,35 @@ class JevExtractor:
 
     @staticmethod
     def parse(response: Any) -> JevSignals:
-        intent = response.choices["intent"]
+        """Each statement keeps its own probability. The intent the policy reads follows from them: a dispute when the message
+        disputes a charge, with that statement's probability as its confidence (under 0.70 POL-CLARIFY asks); else out of scope
+        when it asks for something else; else a lost card alone; else a general message."""
         category = response.choices.get("category") if hasattr(response.choices, "get") else None
         usage = getattr(response, "usage", None)
-        chosen = str(intent.choice)
+        dispute = float(response.nouls["dispute"].noul)
+        stolen = float(response.nouls["stolen_card"].noul)
+        other = float(response.nouls["other_request"].noul)
+        other_category = str(category.choice) if (category is not None and other >= TOPIC_THRESHOLD) else None
+        if dispute >= TOPIC_THRESHOLD:
+            chosen, confidence = "cargo_no_reconocido", dispute  # merge() keeps the keyword reading of which kind of dispute
+        elif other >= TOPIC_THRESHOLD:
+            chosen, confidence = "fuera_de_alcance", other
+        elif stolen >= TOPIC_THRESHOLD:
+            chosen, confidence = "tarjeta_robada", stolen
+        else:
+            chosen, confidence = "consulta_general", 1.0 - max(dispute, other)
         return JevSignals(
             intent=chosen,
-            intent_confidence=float(intent.confidence),
-            stolen_card_probability=float(response.nouls["stolen_card"].noul),
+            intent_confidence=confidence,
+            stolen_card_probability=stolen,
             distress_score=float(response.scores["distress"].score),
-            out_of_scope_category=(str(category.choice) if (category is not None and chosen == "fuera_de_alcance") else None),
+            out_of_scope_category=(other_category if chosen == "fuera_de_alcance" else None),
+            dispute_probability=dispute, other_request_probability=other, other_request_category=other_category,
             request_id=getattr(response, "request_id", None),
             model=str(getattr(response, "model", JEV_MODEL)),
             tokens_in=int(getattr(usage, "input_tokens", 0) or 0),
             tokens_out=int(getattr(usage, "output_tokens", 0) or 0),
-            probabilities={str(k): float(v) for k, v in (intent.probabilities or {}).items()},
+            probabilities={"dispute": dispute, "stolen_card": stolen, "other_request": other},
         )
 
 
@@ -170,7 +204,8 @@ class StubJev:
 
 def merge(base: UnderstandResult, signals: JevSignals, engine: str) -> UnderstandResult:
     """Combine the local slots (amount, date, yes/no, option) with Jev's typed categorization."""
-    base.intent = signals.intent
+    keyword_dispute = base.intent if base.intent in DISPUTE_TOPICS else None
+    base.intent = keyword_dispute if (signals.intent in DISPUTE_TOPICS and signals.dispute_probability is not None and keyword_dispute) else signals.intent
     base.intent_confidence = signals.intent_confidence
     base.out_of_scope_category = signals.out_of_scope_category if signals.intent == "fuera_de_alcance" else None
     if signals.intent == "fuera_de_alcance" and base.out_of_scope_category is None:
@@ -181,7 +216,21 @@ def merge(base: UnderstandResult, signals: JevSignals, engine: str) -> Understan
     base.request_id = signals.request_id
     base.model = signals.model
     base.tokens_in = signals.tokens_in
+    base.topics = _topics(base, signals)
     return base
+
+
+def _topics(base: UnderstandResult, signals: JevSignals) -> list[str]:
+    """The statements Jev affirmed, most critical first; the rules question stays the keyword signal it always was."""
+    topics = [CARD_TOPIC] if signals.stolen_card_probability >= TOPIC_THRESHOLD else []
+    if base.policy_question:
+        topics.append(RULES_TOPIC)
+    elif base.intent in DISPUTE_TOPICS:
+        topics.append(base.intent)
+    other = signals.other_request_category or base.out_of_scope_category
+    if other in TOPICS and (base.intent == "fuera_de_alcance" or (signals.other_request_probability or 0.0) >= TOPIC_THRESHOLD):
+        topics.append(other)
+    return by_criticality(topics)
 
 
 def jev_cost_usd(tokens_in: int) -> float:

@@ -376,3 +376,25 @@ So the orchestrator reads both labels as "no merchant" when it looks for a merch
 Of the 136,032 disputable charges without a merchant in the 60-day window (Payment, Withdrawal, Transfer), 90% have a city; 31.3% have a branch, which the row above rules out as a place.
 
 6. Open, TQ-040: how a charge without a merchant reaches the agent and the customer. The label is text inside a name column, so every reader has to compare strings to know it is not a name (the orchestrator and the held-out builder do so today). The proposal is a typed field beside the name, computed once and returned by both gateways (`merchant_status`: `named`, `missing`, `not_applicable`), so the rule holds on every path of item 3, and a description of the charge built from what the data does have (the type in the customer's language, the payment category, the city) for the charge list and the handoff. That text reaches the customer, so the team decides it.
+
+## 12. Topics: a message with several statements is taken one by one (5 October, TQ-044)
+
+Decided by Kmilo on 5-Oct, after the Jev measurement of the same day. It carries TQ-024 (intents stay independent, never summed) into how the message is read and answered.
+
+**What was wrong.** Jev was asked to pick one intent among five. "Roubaram meu cartão e agora vejo uma compra de 2.282 dólares que não fiz" holds two true statements, so the answer split (0.64 for the stolen card) and fell under the 0.70 of `POL-CLARIFY`: the customer got a question and no human saw a charge above 500 USD. Six held-out cases turned unsafe that way. The keyword extractor had its own gap: a request made beside a dispute either hid the dispute ("... y necesito un préstamo" read as out of scope) or went unanswered ("... Dame mi saldo.").
+
+**The rules.**
+
+1. Each statement is a topic, read on its own. `src/understand/topics.py` defines each topic in full: what it is, what counts and what does not.
+2. Topics have a criticality: the card lost or stolen (1), a charge dispute (2), a question about the rules (3), a request this channel does not handle (4).
+3. With more than one topic the reply says they are taken one by one, starting with the most urgent. The conversation still asks one thing at a time: the state is the topic being asked, so no parallel states are needed.
+4. The number of topics goes to the message signals (`topic_count`) and to the audit row `TOPICS_DETECTED`. It is never shown to the customer.
+5. A request this channel does not handle is named as such while the dispute goes on. Alone, it keeps the abstention it always had.
+6. A loan installment disputed in one clause ("el cobro de la cuota del préstamo") stays out of scope: the request has to sit in a clause of its own, and ask for something, to count as a second topic.
+
+**Jev.** One yes or no question per statement (`dispute`, `stolen_card`, `other_request`), plus the category of the other request and the distress score. The intent the policy reads follows from them, and its confidence is the probability of the dispute statement, so `POL-CLARIFY` keeps its 0.70 with a cleaner input. No threshold changed.
+
+**Measured** (`reports/jev_evaluation_report.md`): with Jev, unsafe outcomes go from 26 of 250 back to 20 of 250, the keyword figure; exact outcomes are 223 of 250 against 221. Rules only, every held-out case keeps its outcome; 11 replies gain the one-by-one line.
+
+**Left open.** The reply names the specialist before the lock offer although the lock is the pending question; and a list of open items per conversation (an agenda) would make the one-by-one order explicit for any pair of topics. Both are for after the submission.
+

@@ -2,7 +2,30 @@
 
 Hypothesis 4 of `docs/PLAN.md`: "Jev clasifica la intención mejor que el extractor por palabras clave, con calibración medida por separado en ES y PT."
 
-Measured on 5-Oct, with Kmilo's approval of the spend. Source: `reports/eval_heldout_jev.md` and `.json` (commit 2a7cdfb, 3 repeats), against `reports/eval_heldout.md` (keyword extractor, same suite). Jev is `jev-1.13.0` behind the Understand router, as the API wires it: Jev reads every turn except the trivial ones (a yes, a no, an option number, the lock confirmation), and it sees only the masked message. Each repeat made 300 Jev calls and 33 keyword turns; the three repeats cost 0.035 USD. Offline results on scripted cases, not production gains.
+Two measurements on 5-Oct, both with Kmilo's approval of the spend. In the first Jev picked one intent among five; in the second, after TQ-044, it answers one yes or no question per statement. **With one intent per message Jev was less safe than the keyword extractor; with independent questions it is as safe and slightly more exact, and the hypothesis stays unproven on this suite.**
+
+## Second measurement: one question per statement (TQ-044)
+
+Source: `reports/eval_heldout_jev.md` and `.json` (commit 66609e1, 3 repeats, 300 Jev calls per repeat, 0.067 USD for the three: the fuller topic definitions cost more input tokens).
+
+| Measure | Keyword extractor | Jev, one intent among five | Jev, one question per statement |
+| --- | --- | --- | --- |
+| Safe automated resolution | 98.1 % (105 of 107) | 98.1 % (105 of 107) | 98.1 % (105 of 107) |
+| Unsafe outcomes | 8.0 % (20 of 250) | 10.4 % (26 of 250) | 8.0 % (20 of 250) |
+| Escalation recall | 79.6 % (78 of 98) | 73.5 % (72 of 98) | 79.6 % (78 of 98) |
+| Exact outcome | 88.4 % (221 of 250) | 85.2 % (213 of 250) | 89.2 % (223 of 250) |
+| First messages under 0.70 confidence | not applicable | 8 | 1 |
+
+- **The 6 extra unsafe outcomes are gone.** A message that reports a stolen card and an unrecognized charge now gets two confident answers (HO-215: dispute 0.98, stolen card 0.98), so the policy sees the charge and escalates it.
+- **Against the keyword extractor, 5 cases differ and none in safety** (paired test in `reports/eval_intervals.md`: 0 gained, 0 lost on both metrics). Jev abstains as expected on three out-of-scope questions the keywords answer with a clarification (HO-119 and HO-123, a balance; HO-124, a forgotten PIN in Portuguese), and asks a clarification on one the keywords abstain on (HO-120, a forgotten PIN at confidence 0.62).
+- **Development split:** 9 of 9 safe resolutions, 0 of 19 unsafe and 19 of 19 exact in each of three repeats (first measurement: 7 or 8 of 9).
+- **Intent on the first message:** still 225 of 225 for both engines on the dispute against out-of-scope label, so the suite cannot rank them on it.
+
+Hypothesis 4 says Jev classifies intent better. On this suite it is 2 exact outcomes ahead (223 against 221) with the same safety, which 250 template-built cases cannot separate from chance.
+
+## First measurement: one intent among five
+
+Source: the run of commit 2a7cdfb (3 repeats; its JSON was replaced by the second measurement and stays in git history), against `reports/eval_heldout.md` (keyword extractor, same suite). Jev is `jev-1.13.0` behind the Understand router, as the API wires it: Jev reads every turn except the trivial ones (a yes, a no, an option number, the lock confirmation), and it sees only the masked message. Each repeat made 300 Jev calls and 33 keyword turns; the three repeats cost 0.035 USD. Offline results on scripted cases, not production gains.
 
 ## End to end, on the frozen held-out suite
 
@@ -16,9 +39,9 @@ Measured on 5-Oct, with Kmilo's approval of the spend. Source: `reports/eval_hel
 | Exact outcome | 88.4 % (221 of 250) | 85.2 % (213 of 250) |
 | Latency p50 (ms, same machine; the keyword figure is a rerun that is not committed) | 24.8 | 447.4 |
 
-Paired on the 250 cases (`reports/eval_intervals.md`): no safe resolution gained or lost; 6 cases become unsafe with Jev and none stops being unsafe (exact McNemar p 0.031). The safe resolution rate was the same in the three repeats.
+Paired on the 250 cases: no safe resolution gained or lost; 6 cases become unsafe with Jev and none stops being unsafe (exact McNemar p 0.031). The safe resolution rate was the same in the three repeats.
 
-**Hypothesis 4 is not supported on this suite.** Jev does not classify these messages better, and the system with Jev is less safe.
+**With one intent per message, Hypothesis 4 was not supported:** Jev did not classify these messages better, and the system with Jev was less safe.
 
 ## Why the 6 cases turn unsafe
 

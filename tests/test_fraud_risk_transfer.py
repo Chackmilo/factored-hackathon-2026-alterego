@@ -158,3 +158,24 @@ def test_train_tracks_in_the_default_store_from_the_environment(competition_dir,
     monkeypatch.setenv("MLFLOW_TRACKING_URI", store)
     report = train(competition_dir, tmp_path / "reports", tmp_path / "model.joblib", holdout_fraction_of_days=0.25)
     assert report["mlflow"]["tracking_uri"] == store and (tmp_path / "env" / "mlflow.db").is_file() and (tmp_path / "env" / "mlruns").is_dir()
+
+
+def test_competition_rows_that_share_a_timestamp_load_in_transaction_id_order(tmp_path):
+    """20,000 rows on 50 timestamps, written in descending id order: the load must not depend on how the engine breaks the ties."""
+    from src.ml.ieee_cis_adapter import load_competition
+    n = 20_000
+    rows = pd.DataFrame({"TransactionID": range(n - 1, -1, -1), "isFraud": 0, "TransactionDT": [86400 + (i % 50) for i in range(n)],
+                         "TransactionAmt": 10.0, "card1": 1, "card6": "debit", "addr1": 100.0, "dist1": 0.0, "D1": 0,
+                         **{m: "T" for m in ("M1", "M2", "M3", "M5", "M6", "M7", "M8", "M9")}, "M4": "M0"})
+    rows.to_csv(tmp_path / "train_transaction.csv", index=False)
+    loaded = load_competition(tmp_path)
+    ids = loaded["row_id"].astype(int)
+    assert loaded["ts"].is_monotonic_increasing
+    assert (ids.groupby(loaded["ts"]).apply(lambda s: s.is_monotonic_increasing)).all()
+
+
+def test_bank_rows_load_in_time_and_id_order(bank_db):
+    from src.ml.bank_adapter import load_bank_canonical
+    bank = load_bank_canonical(bank_db)
+    order = bank[["ts", "row_id"]].apply(tuple, axis=1).tolist()
+    assert order == sorted(order)

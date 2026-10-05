@@ -49,6 +49,8 @@ node_modules/
 
 # Trained models (regenerate with uv run python -m src.ml.fraud_risk)
 models/*.joblib
+# The served risk model is tracked: Vercel builds from GitHub, so an ignored file never reaches production (decided 5-Oct)
+!models/fraud_risk_ieee.joblib
 
 # E5 model files, 135 MB (download with uv run python -m src.rag.onnx_retriever download)
 models/e5-small/

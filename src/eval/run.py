@@ -32,16 +32,27 @@ def load_risk_scorer(path: str | Path):
     return TransferRiskScorer(path)
 
 
+def load_explainer(gate_path: str | Path):
+    """The policy explainer the API serves, built from its gate file (data/rag_gate.json), loaded only when a run asks for it."""
+    from src.rag.policy_explainer import load_policy_explainer
+
+    explainer = load_policy_explainer(Path(gate_path))
+    if explainer is None:
+        raise FileNotFoundError(f"no gate file at {gate_path}: the explainer is off without one")
+    return explainer
+
+
 def run_suite(cases_path: str | Path, out_prefix: str | Path, repeats: int = 1, systems: tuple[str, ...] = ("baseline_starter", "proposed"),
-              model_path: str | Path | None = None) -> dict:
+              model_path: str | Path | None = None, explainer_gate: str | Path | None = None) -> dict:
     cases = load_cases(cases_path)
     scorer = load_risk_scorer(model_path) if model_path else None
+    explainer = load_explainer(explainer_gate) if explainer_gate else None
     per_system_runs: dict[str, list] = {s: [] for s in systems}
     with tempfile.TemporaryDirectory() as workdir:
         for _ in range(repeats):
             for system in systems:
                 if system == "proposed":
-                    results = [run_case_proposed(c, workdir, risk_scorer=scorer) for c in cases]
+                    results = [run_case_proposed(c, workdir, risk_scorer=scorer, explainer=explainer) for c in cases]
                 else:
                     results = [run_case_baseline(c) for c in cases]
                 per_system_runs[system].append(results)
@@ -60,7 +71,7 @@ def run_suite(cases_path: str | Path, out_prefix: str | Path, repeats: int = 1, 
             "provenance": ", ".join(sorted({c.provenance for c in cases})),
             "versions": f"commit {commit}; extractor keyword-v1; policy v2.3; "
                         + (f"risk model {Path(model_path).name} (threshold {scorer.policy_threshold:.4g})" if scorer else "no ML model")
-                        + ", no LLM"}
+                        + ", no LLM" + (f"; policy explainer bm25 ({Path(explainer_gate).name})" if explainer else "")}
     out_prefix = Path(out_prefix)
     out_prefix.parent.mkdir(parents=True, exist_ok=True)
     payload = {"meta": meta, "metrics": metrics_by_system,
@@ -77,8 +88,10 @@ def main() -> None:
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument("--systems", default="baseline_starter,proposed")
     parser.add_argument("--model", default=None, help="risk model bundle for the proposed stack (models/fraud_risk_ieee.joblib); rules-only without")
+    parser.add_argument("--explainer", default=None, metavar="GATE", help="gate file of the policy explainer (data/rag_gate.json), as production serves it; off without")
     args = parser.parse_args()
-    payload = run_suite(args.cases, args.out, repeats=args.repeats, systems=tuple(args.systems.split(",")), model_path=args.model)
+    payload = run_suite(args.cases, args.out, repeats=args.repeats, systems=tuple(args.systems.split(",")), model_path=args.model,
+                        explainer_gate=args.explainer)
     for system, metrics in payload["metrics"].items():
         sar = metrics["safe_automated_resolution"]
         print(f"{system}: safe automated resolution {sar['numerator']}/{sar['denominator']}, unsafe {metrics['unsafe_outcomes']['numerator']}/{metrics['n_cases']}, "

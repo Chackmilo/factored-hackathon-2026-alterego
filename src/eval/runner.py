@@ -73,8 +73,9 @@ class _Faulty:
         return failing
 
 
-def run_case_proposed(case: EvalCase, workdir: str | Path, risk_scorer: Any = None) -> CaseResult:
-    """The proposed stack: keyword extractor, policy v2.3, no LLM, and the risk scorer when one is given (rules-only without)."""
+def run_case_proposed(case: EvalCase, workdir: str | Path, risk_scorer: Any = None, explainer: Any = None) -> CaseResult:
+    """The proposed stack: keyword extractor, policy v2.3, no LLM; the risk scorer and the policy explainer when given (rules-only without).
+    The API attack cases build their own orchestrator and take neither."""
     if case.attack:
         return _run_attack(case, workdir)
     bank_path = Path(workdir) / f"{case.case_id}.duckdb"
@@ -86,7 +87,7 @@ def run_case_proposed(case: EvalCase, workdir: str | Path, risk_scorer: Any = No
     orchestrator = DisputeOrchestrator(
         gateway=_Faulty(gateway, fault["method"], fault["mode"]) if fault.get("target") == "gateway" else gateway,
         ops=_Faulty(ops, fault["method"], fault["mode"]) if fault.get("target") == "ops" else ops,
-        risk_scorer=risk_scorer,
+        risk_scorer=risk_scorer, explainer=explainer,
     )
     session = VerifiedSession(customer_id=case.customer_id, name="Eval", country=case.customer.get("country", ""),
                               segment=case.customer.get("segment", ""), session_id=f"SESS-{case.case_id}", exp=9999999999)

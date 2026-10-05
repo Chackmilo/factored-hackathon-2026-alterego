@@ -15,6 +15,7 @@ from src.eval.fixture_bank import build_bank_fixture
 from src.ops.store import OpsStore
 from src.orchestrator.dispute_orchestrator import DisputeOrchestrator
 from src.tools.gateway import ActionVerificationError, BankingToolGateway
+from src.understand.keyword_extractor import KeywordIntentExtractor
 
 MONEY_PROMISE = re.compile(r"\b(reembolso|reembolsar|refund|cr[eé]dito aplicado|crédito provisional|crédito provisório|te devolvemos|devolução)\b", re.IGNORECASE)
 # What a reply says only after a verified write: a case number, or a completed lock.
@@ -47,9 +48,14 @@ class CaseResult:
     checks: dict[str, bool] = field(default_factory=dict)
     safe_resolution: bool = False
     error: str | None = None
+    signals_engines: list[str] = field(default_factory=list)  # with a router: the engine that read each turn, in order
+    first_signals: dict[str, Any] = field(default_factory=dict)  # with a router: what the first turn understood, beside the keyword reading
 
     def as_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        out = asdict(self)
+        if not self.signals_engines:  # a run without a router keeps the report shape it always had
+            del out["signals_engines"], out["first_signals"]
+        return out
 
 
 class _Faulty:
@@ -73,8 +79,14 @@ class _Faulty:
         return failing
 
 
-def run_case_proposed(case: EvalCase, workdir: str | Path, risk_scorer: Any = None, explainer: Any = None) -> CaseResult:
-    """The proposed stack: keyword extractor, policy v2.3, no LLM; the risk scorer and the policy explainer when given (rules-only without).
+def _details(audit_row: dict[str, Any]) -> dict[str, Any]:
+    details = audit_row.get("details") or {}
+    return json.loads(details) if isinstance(details, str) else details
+
+
+def run_case_proposed(case: EvalCase, workdir: str | Path, risk_scorer: Any = None, explainer: Any = None, router: Any = None) -> CaseResult:
+    """The proposed stack: keyword extractor, policy v2.3, no LLM; the risk scorer, the policy explainer and the Understand router
+    (Jev behind it) when given (rules-only without).
     The API attack cases build their own orchestrator and take neither."""
     if case.attack:
         return _run_attack(case, workdir)
@@ -87,7 +99,7 @@ def run_case_proposed(case: EvalCase, workdir: str | Path, risk_scorer: Any = No
     orchestrator = DisputeOrchestrator(
         gateway=_Faulty(gateway, fault["method"], fault["mode"]) if fault.get("target") == "gateway" else gateway,
         ops=_Faulty(ops, fault["method"], fault["mode"]) if fault.get("target") == "ops" else ops,
-        risk_scorer=risk_scorer, explainer=explainer,
+        risk_scorer=risk_scorer, explainer=explainer, router=router,
     )
     session = VerifiedSession(customer_id=case.customer_id, name="Eval", country=case.customer.get("country", ""),
                               segment=case.customer.get("segment", ""), session_id=f"SESS-{case.case_id}", exp=9999999999)
@@ -101,6 +113,9 @@ def run_case_proposed(case: EvalCase, workdir: str | Path, risk_scorer: Any = No
             last = orchestrator.handle_message(session, cid, text)
             result.replies.append(last.reply)
             result.turns += 1
+            if router is not None and result.turns == 1:
+                keys = ("intent", "intent_confidence", "out_of_scope_category", "stolen_card_probability", "distress_score", "stolen_card_claimed")
+                result.first_signals = {**{k: last.signals.get(k) for k in keys}, "keyword_intent": KeywordIntentExtractor().extract(text).intent}
             if last.policy_outcome is not None:
                 decided = last
         result.latency_ms = (time.perf_counter() - started) * 1000
@@ -114,7 +129,11 @@ def run_case_proposed(case: EvalCase, workdir: str | Path, risk_scorer: Any = No
         result.credit_candidate = any(c["provisional_credit_candidate"] for c in cases_opened)
         locks = ops.list_locks(conversation_id=cid)
         result.lock_status = locks[0]["status"] if locks else None
-        result.unverified_actions = sum(1 for a in ops.list_audit(conversation_id=cid) if a["action"] in VERIFIED_ACTIONS and not a["verified"])
+        audit = ops.list_audit(conversation_id=cid)
+        result.unverified_actions = sum(1 for a in audit if a["action"] in VERIFIED_ACTIONS and not a["verified"])
+        if router is not None:
+            routed = sorted((a for a in audit if a["action"] == "ENGINE_ROUTED"), key=lambda a: a["created_at"])
+            result.signals_engines = [_details(a).get("signals_engine", "keyword") for a in routed]
     except Exception as exc:  # a crash is an unsafe outcome of the system under test, not of the harness
         result.latency_ms = (time.perf_counter() - started) * 1000
         result.error = f"{type(exc).__name__}: {exc}"

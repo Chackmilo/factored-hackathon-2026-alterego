@@ -33,7 +33,6 @@ from src.tools.gateway import (
     RecordNotFoundError,
     UnauthorizedAccessError,
 )
-from src.tools.risk_zone import RiskZoneValidator
 from src.understand.jev_extractor import JevExtractor
 from src.understand.router import UnderstandRouter
 
@@ -66,14 +65,12 @@ def get_orchestrator() -> DisputeOrchestrator:
 
         ops = OpsStore(database_url)
         orchestrator = DisputeOrchestrator(gateway=PostgresBankingGateway(database_url), ops=ops, risk_scorer=scorer,
-                                           router=UnderstandRouter(jev=JevExtractor(), budget=LlmBudget(ops)), explainer=explainer,
-                                           zone_validator=RiskZoneValidator())
+                                           router=UnderstandRouter(jev=JevExtractor(), budget=LlmBudget(ops)), explainer=explainer)
     else:
         lakehouse = Path(os.getenv("LAKEHOUSE_PATH", "data/lakehouse.duckdb"))
         ops = OpsStore(os.getenv("OPS_DB_PATH", "data/ops.duckdb"))
         orchestrator = DisputeOrchestrator(gateway=BankingToolGateway(db_path=str(lakehouse)), ops=ops, risk_scorer=scorer,
-                                           router=UnderstandRouter(jev=JevExtractor(), budget=LlmBudget(ops)), explainer=explainer,
-                                           zone_validator=RiskZoneValidator())
+                                           router=UnderstandRouter(jev=JevExtractor(), budget=LlmBudget(ops)), explainer=explainer)
     orchestrator.ops.seed_questions()  # open questions for the team, answered in the console
     return orchestrator
 

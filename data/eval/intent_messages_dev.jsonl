@@ -1,0 +1,40 @@
+{"message_id": "IM-DEV-ES-001", "language": "es", "text": "No reconozco un cargo de 80 dólares en Oxxo.", "expected_topics": ["disputa"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-002", "language": "es", "text": "Me aparece un consumo en una tienda de ropa donde nunca compré.", "expected_topics": ["disputa"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-003", "language": "es", "text": "Hay una compra por internet de 120 dólares que yo no realicé.", "expected_topics": ["disputa"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-004", "language": "es", "text": "Sacaron dinero de mi cuenta sin mi permiso.", "expected_topics": ["disputa"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-005", "language": "es", "text": "Me cobraron dos veces la mensualidad del gimnasio.", "expected_topics": ["disputa"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-006", "language": "es", "text": "El cobro del hotel salió por un valor mayor al que firmé.", "expected_topics": ["disputa"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-007", "language": "es", "text": "Perdí mi tarjeta de crédito esta mañana.", "expected_topics": ["tarjeta"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-008", "language": "es", "text": "Me robaron la mochila con la tarjeta adentro.", "expected_topics": ["tarjeta"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-009", "language": "es", "text": "Me robaron la tarjeta y hay una compra de 300 dólares que no hice.", "expected_topics": ["tarjeta", "disputa"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-010", "language": "es", "text": "Perdí la tarjeta ayer y hoy aparece un retiro que no reconozco.", "expected_topics": ["tarjeta", "disputa"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-011", "language": "es", "text": "No reconozco un cargo de 50 dólares. ¿Cuál es mi saldo?", "expected_topics": ["disputa", "fuera:saldo_o_extracto"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-012", "language": "es", "text": "Hay un cobro que no es mío y quiero pedir un préstamo.", "expected_topics": ["disputa", "fuera:prestamo_o_credito"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-013", "language": "es", "text": "¿Cuál es el saldo de mi cuenta?", "expected_topics": ["fuera:saldo_o_extracto"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-014", "language": "es", "text": "Quiero solicitar un crédito hipotecario.", "expected_topics": ["fuera:prestamo_o_credito"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-015", "language": "es", "text": "Olvidé el PIN de mi tarjeta.", "expected_topics": ["fuera:soporte_de_tarjeta"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-016", "language": "es", "text": "¿Cómo invierto en un fondo?", "expected_topics": ["fuera:inversion_o_seguro"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-017", "language": "es", "text": "¿Cuántos días tengo para disputar un cargo?", "expected_topics": ["reglas"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-018", "language": "es", "text": "¿Qué movimientos se pueden reclamar?", "expected_topics": ["reglas"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-019", "language": "es", "text": "Buenos días.", "expected_topics": [], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-ES-020", "language": "es", "text": "No reconozco el cobro de la cuota de mi crédito.", "expected_topics": ["fuera:prestamo_o_credito"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-001", "language": "pt", "text": "Não reconheço uma cobrança de 80 dólares no mercado.", "expected_topics": ["disputa"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-002", "language": "pt", "text": "Aparece um gasto numa loja de roupas onde nunca comprei.", "expected_topics": ["disputa"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-003", "language": "pt", "text": "Tem uma compra pela internet de 120 dólares que eu não fiz.", "expected_topics": ["disputa"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-004", "language": "pt", "text": "Tiraram dinheiro da minha conta sem minha permissão.", "expected_topics": ["disputa"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-005", "language": "pt", "text": "Cobraram duas vezes a mensalidade da academia.", "expected_topics": ["disputa"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-006", "language": "pt", "text": "A cobrança do hotel veio com valor maior do que assinei.", "expected_topics": ["disputa"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-007", "language": "pt", "text": "Perdi meu cartão de crédito hoje de manhã.", "expected_topics": ["tarjeta"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-008", "language": "pt", "text": "Roubaram minha mochila com o cartão dentro.", "expected_topics": ["tarjeta"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-009", "language": "pt", "text": "Roubaram meu cartão e tem uma compra de 300 dólares que não fiz.", "expected_topics": ["tarjeta", "disputa"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-010", "language": "pt", "text": "Perdi o cartão ontem e hoje aparece um saque que não reconheço.", "expected_topics": ["tarjeta", "disputa"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-011", "language": "pt", "text": "Não reconheço uma cobrança de 50 dólares. Qual é o meu saldo?", "expected_topics": ["disputa", "fuera:saldo_o_extracto"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-012", "language": "pt", "text": "Tem uma cobrança que não é minha e quero pedir um empréstimo.", "expected_topics": ["disputa", "fuera:prestamo_o_credito"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-013", "language": "pt", "text": "Qual é o saldo da minha conta?", "expected_topics": ["fuera:saldo_o_extracto"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-014", "language": "pt", "text": "Quero solicitar um financiamento imobiliário.", "expected_topics": ["fuera:prestamo_o_credito"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-015", "language": "pt", "text": "Esqueci a senha do meu cartão.", "expected_topics": ["fuera:soporte_de_tarjeta"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-016", "language": "pt", "text": "Como invisto num fundo?", "expected_topics": ["fuera:inversion_o_seguro"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-017", "language": "pt", "text": "Quantos dias tenho para contestar uma cobrança?", "expected_topics": ["reglas"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-018", "language": "pt", "text": "Que movimentos podem ser contestados?", "expected_topics": ["reglas"], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-019", "language": "pt", "text": "Bom dia.", "expected_topics": [], "provenance": "team-generated, LLM-drafted"}
+{"message_id": "IM-DEV-PT-020", "language": "pt", "text": "Não reconheço a cobrança da parcela do meu crédito.", "expected_topics": ["fuera:prestamo_o_credito"], "provenance": "team-generated, LLM-drafted"}

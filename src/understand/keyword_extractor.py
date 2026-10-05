@@ -99,6 +99,7 @@ def _strip_accents(text: str) -> str:
 
 
 # All on accent-stripped text. The loss and theft words are the policy's own (S8), matched as whole words ("aprobaron" is no theft).
+LANGUAGE_CHOICE_RE = re.compile(r"^(?:(?:en|em|no)\s+)?(espanol|castellano|espanhol|portugues)[\s,]*(?:por\s+favor)?[\s.!]*$")
 LOSS_RE = re.compile(r"\b(?:" + "|".join(re.escape(_strip_accents(k)) for k in STOLEN_CARD_KEYWORDS) + r")\b")
 # Words that name one charge: the disputable types of POL-DISP-TYPE (purchase, payment, withdrawal, transfer) and a statement line.
 # A payment or a transfer is also something the customer makes ("no hice el pago a tiempo"), so a loose phrase never refers to one.
@@ -233,6 +234,24 @@ class KeywordIntentExtractor:
         pt = sum(low.count(m) for m in PT_MARKERS)
         es = sum(low.count(m) for m in ES_MARKERS)
         return "pt" if pt > es else "es"
+
+    @staticmethod
+    def language_shift(low: str, current: str) -> str:
+        """What a message says about the language of a conversation held in `current` (TQ-042): "switch" when the other
+        language has two markers or more and at least twice the current one's, "ask" when it has two or more without that
+        lead (the customer is asked), "keep" otherwise. One marker is never enough: "pesos" holds a Spanish one."""
+        pt = sum(low.count(m) for m in PT_MARKERS)
+        es = sum(low.count(m) for m in ES_MARKERS)
+        own, other = (es, pt) if current == "es" else (pt, es)
+        if other >= 2 and other >= 2 * own:
+            return "switch"
+        return "ask" if other >= 2 else "keep"
+
+    @staticmethod
+    def language_choice(text: str) -> str | None:
+        """The language a message asks for when it says nothing else ("português", "en español por favor"), else None."""
+        m = LANGUAGE_CHOICE_RE.match(_strip_accents((text or "").lower()).strip())
+        return None if m is None else ("pt" if m.group(1) == "portugues" else "es")
 
     @staticmethod
     def option_reply(text: str) -> int | None:

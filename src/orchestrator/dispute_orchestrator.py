@@ -45,6 +45,15 @@ from src.understand.router import UnderstandRouter
 SYSTEM_OF_RECORD_UNAVAILABLE = (SystemOfRecordUnavailableError, TimeoutError, ConnectionError)
 
 TEXT = {
+    # TQ-042: the offer is written in the other language, for the customer who may not read the one in use
+    "language_offer": {
+        "es": ' Se preferir continuar em português, escreva "português".',
+        "pt": ' Si prefiere continuar en español, escriba "español".',
+    },
+    "language_set": {
+        "es": "Listo, continuamos en español. Puede seguir con su solicitud.",
+        "pt": "Pronto, continuamos em português. Pode seguir com a sua solicitação.",
+    },
     "lock_offer": {
         "es": " Como reportó que su tarjeta pudo ser robada o extraviada, podemos aplicar un bloqueo temporal a la tarjeta {product}. ¿Desea que la bloqueemos ahora? Responda Sí o No.",
         "pt": " Como você relatou que o cartão pode ter sido roubado ou perdido, podemos aplicar um bloqueio temporário ao cartão {product}. Deseja que bloqueemos agora? Responda Sim ou Não.",
@@ -174,15 +183,27 @@ class DisputeOrchestrator:
             understanding, routing = self.router.understand(text, conv["state"], history)
         else:
             understanding = self.extractor.extract(text)
+        # The first message sets the language; later ones move it only on clear evidence, and a doubt is asked (TQ-042).
+        low = text.lower()
         language = understanding.language if conv["state"] == STATE_NEW else conv["language"]
-        if conv["state"] == STATE_NEW and language != conv["language"]:
+        shift = KeywordIntentExtractor.language_shift(low, language)
+        if conv["state"] != STATE_NEW and shift == "switch":
+            language = "pt" if language == "es" else "es"
+        chosen_language = KeywordIntentExtractor.language_choice(text)
+        language = chosen_language or language
+        if language != conv["language"]:
             conv = self.ops.update_conversation(conversation_id, language=language)
         self.ops.add_message(conversation_id, "customer", masked, {**understanding.as_signals(), **(routing.as_dict() if routing else {})})
         if routing is not None:
             self.ops.audit(conversation_id=conversation_id, customer_id=session.customer_id, actor="system", action="ENGINE_ROUTED",
                            details=routing.as_dict())
 
-        if conv["state"] == STATE_AWAITING_LOCK:
+        if chosen_language is not None:  # the message only names a language: nothing pending is answered or lost
+            self.ops.audit(conversation_id=conversation_id, customer_id=session.customer_id, actor="system", action="LANGUAGE_CHANGED",
+                           details={"language": language})
+            result = TurnResult(conversation_id=conversation_id, state=conv["state"], language=language, reply=TEXT["language_set"][language],
+                                signals=understanding.as_signals())
+        elif conv["state"] == STATE_AWAITING_LOCK:
             result = self._handle_lock_confirmation(session, conv, understanding, language)
         else:
             if conv["state"] in (STATE_CLOSED, STATE_ESCALATED):
@@ -192,6 +213,8 @@ class DisputeOrchestrator:
                 result = self._explain_policy(session, conv, understanding, masked, language)
             else:
                 result = self._handle_dispute_turn(session, conv, understanding, masked, language)
+        if chosen_language is None and shift == "ask":
+            result.reply += TEXT["language_offer"][language]
         self.ops.add_message(conversation_id, "assistant", result.reply, {"state": result.state, "outcome": result.policy_outcome})
         return result
 
@@ -221,6 +244,8 @@ class DisputeOrchestrator:
             signals = message.get("signals") or {}
             if isinstance(signals, str):
                 signals = json.loads(signals)
+            if signals.get("policy_question"):
+                continue  # a question about the rules disputes nothing, even when it names "un cargo" (TQ-041)
             if (signals.get("intent") not in (None, "consulta_general") or signals.get("amount_hint") is not None
                     or signals.get("date_hint") is not None or signals.get("stolen_card_claimed")):
                 return True

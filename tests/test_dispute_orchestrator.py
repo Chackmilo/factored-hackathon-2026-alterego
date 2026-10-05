@@ -855,9 +855,9 @@ def test_a_language_choice_keeps_a_pending_lock_question_pending(orchestrator, o
     assert orchestrator.handle_message(owner_session, cid, "Perdí la tarjeta").state == "awaiting_lock_confirmation"
     chosen = orchestrator.handle_message(owner_session, cid, "Em português, por favor")
     assert chosen.state == "awaiting_lock_confirmation" and chosen.language == "pt"
-    assert ops_store.list_locks(conversation_id=cid) == []
+    assert [lock["status"] for lock in ops_store.list_locks(conversation_id=cid)] == ["offered"]  # asked, not applied
     done = orchestrator.handle_message(owner_session, cid, "Sim")
-    assert done.lock_status == "verified" and done.language == "pt"
+    assert done.lock_status == "locked" and done.language == "pt"
 
 
 def test_a_clear_first_message_gets_no_language_question(orchestrator, owner_session):

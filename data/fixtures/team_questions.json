@@ -673,6 +673,23 @@
       "answer": "Fix it now. Contract 1.2 counts a card spread or a seven-day sum that is only floating-point residue as zero, and the model was retrained (holdout ROC AUC 0.816, threshold 0.0637). Kmilo asked whether an is_error flag would be enough: it would not, because the absurd value would stay in the feature and the flag would add a twentieth one; zeroing the residue is the rule the contract already had for a spread of exactly zero.",
       "answered_by": "Kmilo (chat, 5-Oct)",
       "answered_at": "2026-10-05T12:00:00"
+    },
+    {
+      "question_id": "TQ-044",
+      "topic": "Conversation: a message with several topics",
+      "question": "A message can state several things at once (a stolen card, an unrecognized charge and a request for the balance). Jev was asked to pick one intent, so two true statements split its confidence and the policy read it as doubt; and the keyword extractor let an unrelated request either hide the dispute or go unanswered. How should several topics in one message be read and handled?",
+      "context": "Measured on 5-Oct (reports/jev_evaluation_report.md): with one choice among five intents, 'Roubaram meu cartão e agora vejo uma compra ... que não fiz' got 0.64 for tarjeta_robada, under the 0.70 of POL-CLARIFY, and 6 held-out cases that needed a human ended in a clarification. TQ-024 had already decided that intents stay independent and are never summed. In the keyword extractor, 'No reconozco un cargo de 80 dólares y necesito un préstamo' was read as out of scope (the dispute was lost), and 'No reconozco un cargo. Dame mi saldo.' opened the case and never answered the balance request.",
+      "options": [
+        "Read each statement on its own, count the topics out of the customer's sight, tell the customer they are taken one by one by criticality, and name what this channel does not handle (chosen)",
+        "Keep one intent per message",
+        "Sum the dispute intents into one mass (rejected in TQ-024)"
+      ],
+      "recommendation": "Read each statement on its own and take the topics one by one by criticality",
+      "source": "5-Oct, Kmilo (chat); src/understand/topics.py",
+      "status": "answered",
+      "answer": "Each statement is a topic read on its own. Kmilo's rules: (1) if a message has more than one topic, tell the customer clearly that they are taken one by one, starting with the first by criticality; (2) count the topics, without showing the count to the customer; (3) if a topic is not a charge dispute (for example 'dame mi saldo'), say that it is not handled in this channel; (4) define the topics in full for the engine. In code since 5-Oct: src/understand/topics.py holds the definitions and the criticality order (card lost or stolen, charge dispute, question about the rules, requests of another channel); Jev answers one yes or no question per statement; the keyword extractor names every topic by clause; the reply announces the one-by-one order and names the unrelated request; the count goes to the message signals and to the audit row TOPICS_DETECTED. A loan installment disputed in one clause stays out of scope, as before. Re-measured with Jev: the 6 extra unsafe outcomes are gone (20 of 250, as with keywords).",
+      "answered_by": "Kmilo (chat, 5-Oct)",
+      "answered_at": "2026-10-05T14:00:00"
     }
   ]
 }

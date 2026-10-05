@@ -10,7 +10,7 @@ Estado al 5-oct. La primera parte entró a `main` con el PR #60; las decisiones 
 | --- | --- | --- |
 | Hecho | 12 | Corrida held-out con el modelo (1), modelo de registro reproducible y en git (2), E5 contra BM25 (3), Jev contra el extractor (4), comparación solo reglas contra reglas más modelo (5), intervalos y prueba pareada (6), explicador en el harness (8), fixture de llegadas tardías (10), brecha por país de la corrida ciega (11), los dos bugs de conversación reproducidos y arreglados (12), residuo numérico arreglado con el contrato 1.2, licencia de IEEE-CIS alineada |
 | Siguiente, sin cuentas ni gasto | 1 | Correcciones a esta guía que dependen de otras fuentes (sección 4) |
-| Necesita una decisión del equipo | 6 | Hipótesis 3, preguntas abiertas, decisiones respondidas sin código, respuestas de Claude, ratificar la regla de E5, confianza de Jev con dos intenciones |
+| Necesita una decisión del equipo | 6 | Hipótesis 3, preguntas abiertas, decisiones respondidas sin código, respuestas de Claude, ratificar la regla de E5, orden del texto con varios temas |
 | Necesita personas o acceso | 3 | Etiquetas humanas (7), utilidad del handoff (9), estado de producción |
 | Queda como limitación | 2 | Carga y concurrencia (13), familias C y D de la competencia (14) |
 
@@ -181,6 +181,18 @@ La hipótesis 4 no se sostiene en esta suite. Ninguna resolución segura se gana
 - **TQ-042 ("en caso de duda, preguntar al cliente").** El primer mensaje fija el idioma. Uno posterior lo cambia solo con evidencia clara: dos marcas o más del otro idioma y al menos el doble que las del actual (una sola no basta: "pesos" contiene una marca de español). Si el mensaje mezcla los dos sin que uno domine, el turno se atiende igual y la respuesta ofrece el otro idioma, escrita en ese idioma. Un mensaje que solo nombra un idioma ("português", "en español por favor") lo cambia sin responder nada pendiente, y deja `LANGUAGE_CHANGED` en la auditoría. Jev no interviene.
 - **Sin efecto en la suite.** Con los dos arreglos, las corridas solo reglas y con explicador dan el mismo resultado en los 250 casos del held-out, y ninguna respuesta de la suite lleva la pregunta de idioma.
 
+### 2.13 Temas: un mensaje con varias afirmaciones se atiende uno por uno (TQ-044)
+
+Decisión de Kmilo del 5-oct tras la medición de Jev. Cada afirmación del mensaje es un tema, leído por separado: tarjeta perdida o robada (criticidad 1), disputa de un cargo (2), pregunta sobre las reglas (3) y pedidos que este canal no atiende (4). `src/understand/topics.py` define cada uno con lo que incluye y lo que deja fuera.
+
+- **Jev** responde una pregunta de sí o no por afirmación, en vez de elegir una intención entre cinco. Dos afirmaciones verdaderas ya no se reparten la confianza.
+- **El cliente** lee que sus temas se atienden uno por uno, empezando por el más urgente, y que lo que no es una disputa de cargos no se atiende por este canal. El conteo de temas queda en las señales y en la auditoría (`TOPICS_DETECTED`), nunca en la respuesta.
+- **Sin estados en paralelo.** La conversación sigue preguntando una cosa a la vez; el estado es el tema que se está preguntando.
+
+Medido de nuevo con Jev (`reports/jev_evaluation_report.md`): los inseguros vuelven de 26 a 20 de 250, la cifra del extractor, y el resultado exacto sube a 223 de 250 (extractor: 221). En desarrollo, 9 de 9 y 0 de 19 en las tres repeticiones. Solo reglas, los 250 casos conservan su resultado y 11 respuestas ganan el aviso de "uno por uno". La hipótesis 4 queda sin probar: dos casos de ventaja no se distinguen del azar en esta suite.
+
+El flujo completo, con diagrama, está en [`docs/deliverables/flujo_conversacion_agente.docx`](../deliverables/flujo_conversacion_agente.docx).
+
 ## 3. Decisiones que necesitan al equipo
 
 | Tema | Qué hay que decidir | Recomendación de esta guía |
@@ -190,7 +202,7 @@ La hipótesis 4 no se sostiene en esta suite. Ninguna resolución segura se gana
 | Respondidas sin código | TQ-028 (reintentos), TQ-029 (pregunta para reportes de pérdida) y TQ-031 (palabras completas) | Declararlas como límite o implementarlas con su test |
 | Respuestas de Claude | Faltan las tareas 3 a 7 y una key | Declarar como trabajo futuro |
 | Regla de E5 contra BM25 | Se usó la regla que proponía el roadmap, sin ratificar | Ratificarla; el resultado no cambia lo que sirve Vercel |
-| Confianza de Jev con dos intenciones (sección 2.10) | Un mensaje con tarjeta robada y cargo no reconocido baja de 0,70 y recibe una aclaración | Decidirlo en la fila "Lectura de las señales de Jev" de `docs/PLAN.md` antes de poner una key de Jev en producción |
+| Orden del texto con varios temas (sección 2.13) | La respuesta nombra al especialista antes de ofrecer el bloqueo, aunque el bloqueo es lo pendiente | Invertir el orden del texto; y, tras la entrega, una lista de temas abiertos por conversación |
 
 ## 4. Correcciones pendientes a esta guía
 

@@ -192,7 +192,7 @@
       "b": {
         "report": "reports/eval_heldout_jev.json",
         "system": "proposed",
-        "versions": "commit 2a7cdfb; extractor jev behind the router (keyword-v1 on trivial turns and as fallback); policy v2.3; no ML model, no LLM"
+        "versions": "commit 66609e1; extractor jev behind the router (keyword-v1 on trivial turns and as fallback); policy v2.3; no ML model, no LLM"
       },
       "n_cases": 250,
       "safe_automated_resolution": {
@@ -229,17 +229,17 @@
           ]
         },
         "b": {
-          "numerator": 26,
+          "numerator": 20,
           "denominator": 250,
-          "rate": 0.104,
+          "rate": 0.08,
           "ci95": [
-            0.07196523249243102,
-            0.14802034070796105
+            0.052382328372331775,
+            0.12032964320384165
           ]
         },
         "only_a": 0,
-        "only_b": 6,
-        "p_value": 0.03125
+        "only_b": 0,
+        "p_value": 1.0
       }
     }
   ]

@@ -37,11 +37,11 @@ The intervals cover sampling error only. The cases come from a few templates, so
 ## Proposed stack: keyword extractor against Jev behind the router (Hypothesis 4)
 
 - A: `proposed` in `reports/eval_heldout.json` (commit 9efb497; extractor keyword-v1; policy v2.3; no ML model, no LLM)
-- B: `proposed` in `reports/eval_heldout_jev.json` (commit 2a7cdfb; extractor jev behind the router (keyword-v1 on trivial turns and as fallback); policy v2.3; no ML model, no LLM)
+- B: `proposed` in `reports/eval_heldout_jev.json` (commit 66609e1; extractor jev behind the router (keyword-v1 on trivial turns and as fallback); policy v2.3; no ML model, no LLM)
 
 | Metric | A | B | Only A | Only B | Exact p |
 | --- | --- | --- | --- | --- | --- |
 | Safe automated resolution (eligible cases) | 98.1 % (105 of 107), 95 % interval 93.4 to 99.5 % | 98.1 % (105 of 107), 95 % interval 93.4 to 99.5 % | 0 | 0 | 1.000 |
-| Unsafe outcomes (all cases) | 8.0 % (20 of 250), 95 % interval 5.2 to 12.0 % | 10.4 % (26 of 250), 95 % interval 7.2 to 14.8 % | 0 | 6 | 0.031 |
+| Unsafe outcomes (all cases) | 8.0 % (20 of 250), 95 % interval 5.2 to 12.0 % | 8.0 % (20 of 250), 95 % interval 5.2 to 12.0 % | 0 | 0 | 1.000 |
 
 "Only A" counts the cases where A has the outcome and B does not (a safe resolution in the first row, an unsafe outcome in the second); "Only B" is the reverse.

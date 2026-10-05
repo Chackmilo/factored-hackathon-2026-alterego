@@ -1,5 +1,5 @@
 """
-Feature contract v1.1 for the fraud risk transfer (docs/specs/fraud-risk-model-v1-ieee-cis.md, sections 4 and 10).
+Feature contract v1.2 for the fraud risk transfer (docs/specs/fraud-risk-model-v1-ieee-cis.md, sections 4 and 10).
 
 One builder computes the same features from a canonical frame, whichever source filled it (the IEEE-CIS competition
 through src/ml/ieee_cis_adapter.py, the bank through src/ml/bank_adapter.py). Every per-card aggregate uses the
@@ -15,7 +15,11 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-CONTRACT_VERSION = "1.1"
+CONTRACT_VERSION = "1.2"
+# 1.2 (TQ-043, 5-Oct): a card spread or a window sum that is only floating-point residue counts as zero. In 1.1 equal earlier
+# amounts left a variance near 1e-12, and dividing by its root gave z-scores of hundreds of millions.
+SPREAD_EPSILON = 1e-6  # a spread under this share of the mean (or of 1 USD) is residue, far below a one-cent difference
+SUM_EPSILON = 1e-6  # USD; amounts carry at most three decimals
 CANONICAL_COLUMNS = ["row_id", "uid", "customer_uid", "ts", "amount_usd", "amount_local", "card_kind", "card_age_days",
                      "address_distance_bucket", "consistency_matches"]
 CARD_AGGREGATES = ["days_since_prev_tx_card", "tx_count_card_1d", "tx_count_card_7d", "tx_count_card_30d", "tx_sum_card_7d",
@@ -87,7 +91,8 @@ def build_contract_features(frame: pd.DataFrame) -> pd.DataFrame:
         count, total = _window_stats(df, window)
         df[f"tx_count_card_{label}"] = (count - 1).clip(min=0).astype(int)
         if label == "7d":
-            df["tx_sum_card_7d"] = (total - amount).clip(min=0.0)
+            earlier = (total - amount).clip(min=0.0)
+            df["tx_sum_card_7d"] = np.where(earlier < SUM_EPSILON, 0.0, earlier)
     prior_n = g.cumcount().to_numpy().astype(float)
     prior_sum = g["amount_usd"].cumsum().to_numpy() - amount
     prior_sq = (df["amount_usd"] ** 2).groupby(df["uid"], sort=False).cumsum().to_numpy() - amount ** 2
@@ -95,6 +100,7 @@ def build_contract_features(frame: pd.DataFrame) -> pd.DataFrame:
         mean = np.where(prior_n > 0, prior_sum / np.maximum(prior_n, 1), np.nan)
         var = np.where(prior_n > 1, (prior_sq - prior_n * mean ** 2) / np.maximum(prior_n - 1, 1), np.nan)
         std = np.sqrt(np.clip(var, 0, None))
+        std = np.where(std <= SPREAD_EPSILON * np.maximum(np.abs(mean), 1.0), 0.0, std)  # NaN stays NaN: no spread known yet
         z = np.where((prior_n >= 3) & (std > 0), (amount - mean) / np.where(std > 0, std, 1.0), 0.0)
     df["amount_mean_card_hist"], df["amount_std_card_hist"], df["amount_zscore_card"] = mean, std, z
     df["days_since_prev_tx_card"] = (df["ts"] - g["ts"].shift(1)).dt.total_seconds() / 86400.0

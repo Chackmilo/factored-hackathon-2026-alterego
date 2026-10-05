@@ -29,7 +29,7 @@ def canonical(rows):
     return pd.DataFrame(out)
 
 
-def test_contract_is_v1_1_with_twenty_features_and_no_leak():
+def test_contract_is_v1_2_with_twenty_features_and_no_leak():
     assert CONTRACT_VERSION == "1.2"
     assert len(CONTRACT_V1) == 20
     assert not set(CONTRACT_V1) & LEAK_COLUMNS

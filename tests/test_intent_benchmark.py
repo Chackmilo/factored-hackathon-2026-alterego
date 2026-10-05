@@ -50,7 +50,7 @@ def test_the_keyword_reading_says_when_it_is_not_sure_of_itself():
     assert guessed.labels == {"disputa"} and not guessed.sure
     nothing = keyword_reading("Alguien usó mi cuenta para sacar plata, yo no fui.")
     assert nothing.labels == set() and not nothing.sure
-    assert keyword_reading("Perdí mi tarjeta de crédito esta mañana.").sure
+    assert keyword_reading("Perdí la tarjeta").sure
 
 
 def test_the_mix_calls_jev_only_when_the_keywords_are_not_sure():

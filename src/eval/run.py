@@ -32,6 +32,19 @@ def load_risk_scorer(path: str | Path):
     return TransferRiskScorer(path)
 
 
+def load_jev_router(budget_usd: float):
+    """The Understand router the API builds, with the real Jev client and a spend cap of its own for the run."""
+    from src.llm.budget import LlmBudget
+    from src.ops.store import OpsStore
+    from src.understand.jev_extractor import JevExtractor
+    from src.understand.router import UnderstandRouter
+
+    jev = JevExtractor()
+    if not jev.available():
+        raise RuntimeError("TYPESAFE_API_KEY or typesafe-sdk missing: a --jev run needs both")
+    return UnderstandRouter(jev=jev, budget=LlmBudget(OpsStore(":memory:"), daily_budget_usd=budget_usd), claude_key="")
+
+
 def load_explainer(gate_path: str | Path):
     """The policy explainer the API serves, built from its gate file (data/rag_gate.json), loaded only when a run asks for it."""
     from src.rag.policy_explainer import load_policy_explainer
@@ -43,7 +56,7 @@ def load_explainer(gate_path: str | Path):
 
 
 def run_suite(cases_path: str | Path, out_prefix: str | Path, repeats: int = 1, systems: tuple[str, ...] = ("baseline_starter", "proposed"),
-              model_path: str | Path | None = None, explainer_gate: str | Path | None = None) -> dict:
+              model_path: str | Path | None = None, explainer_gate: str | Path | None = None, router=None) -> dict:
     cases = load_cases(cases_path)
     scorer = load_risk_scorer(model_path) if model_path else None
     explainer = load_explainer(explainer_gate) if explainer_gate else None
@@ -52,7 +65,7 @@ def run_suite(cases_path: str | Path, out_prefix: str | Path, repeats: int = 1, 
         for _ in range(repeats):
             for system in systems:
                 if system == "proposed":
-                    results = [run_case_proposed(c, workdir, risk_scorer=scorer, explainer=explainer) for c in cases]
+                    results = [run_case_proposed(c, workdir, risk_scorer=scorer, explainer=explainer, router=router) for c in cases]
                 else:
                     results = [run_case_baseline(c) for c in cases]
                 per_system_runs[system].append(results)
@@ -69,9 +82,15 @@ def run_suite(cases_path: str | Path, out_prefix: str | Path, repeats: int = 1, 
     mix = ", ".join(f"{k}: {v}" for k, v in sorted(Counter(c.category for c in cases).items()))
     meta = {"suite": Path(cases_path).name, "n_cases": len(cases), "mix": mix, "repeats": repeats, "repeat_spread": spread,
             "provenance": ", ".join(sorted({c.provenance for c in cases})),
-            "versions": f"commit {commit}; extractor keyword-v1; policy v2.3; "
+            "versions": f"commit {commit}; extractor "
+                        + (f"{router.jev.name} behind the router (keyword-v1 on trivial turns and as fallback)" if router else "keyword-v1")
+                        + "; policy v2.3; "
                         + (f"risk model {Path(model_path).name} (threshold {scorer.policy_threshold:.4g})" if scorer else "no ML model")
                         + ", no LLM" + (f"; policy explainer bm25 ({Path(explainer_gate).name})" if explainer else "")}
+    if router is not None and "proposed" in per_system_runs:
+        meta["signals_engines"] = dict(Counter(e for r in per_system_runs["proposed"][-1] for e in r.signals_engines))
+        if router.budget is not None:
+            meta["llm_spend_usd"] = round(router.budget.spent_today(), 6)
     out_prefix = Path(out_prefix)
     out_prefix.parent.mkdir(parents=True, exist_ok=True)
     payload = {"meta": meta, "metrics": metrics_by_system,
@@ -89,9 +108,12 @@ def main() -> None:
     parser.add_argument("--systems", default="baseline_starter,proposed")
     parser.add_argument("--model", default=None, help="risk model bundle for the proposed stack (models/fraud_risk_ieee.joblib); rules-only without")
     parser.add_argument("--explainer", default=None, metavar="GATE", help="gate file of the policy explainer (data/rag_gate.json), as production serves it; off without")
+    parser.add_argument("--jev", action="store_true", help="read the turns with Jev behind the router: real, billed calls with TYPESAFE_API_KEY, "
+                        "capped by --jev-budget; rules-only without")
+    parser.add_argument("--jev-budget", type=float, default=0.25, metavar="USD", help="spend cap of a --jev run (default 0.25 USD)")
     args = parser.parse_args()
     payload = run_suite(args.cases, args.out, repeats=args.repeats, systems=tuple(args.systems.split(",")), model_path=args.model,
-                        explainer_gate=args.explainer)
+                        explainer_gate=args.explainer, router=load_jev_router(args.jev_budget) if args.jev else None)
     for system, metrics in payload["metrics"].items():
         sar = metrics["safe_automated_resolution"]
         print(f"{system}: safe automated resolution {sar['numerator']}/{sar['denominator']}, unsafe {metrics['unsafe_outcomes']['numerator']}/{metrics['n_cases']}, "

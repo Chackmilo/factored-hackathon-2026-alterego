@@ -56,7 +56,7 @@ def bank_db(tmp_path):
 
 def test_train_reports_competition_split_ablations_and_bank_percentile(competition_dir, bank_db, tmp_path):
     report = train(competition_dir, tmp_path / "reports", tmp_path / "model.joblib", lakehouse=bank_db, holdout_fraction_of_days=0.25, percentile=90.0)
-    assert report["fraud_score_used"] is False and report["contract_version"] == "1.1" and report["features"] == DEPLOYABLE_V1
+    assert report["fraud_score_used"] is False and report["contract_version"] == "1.2" and report["features"] == DEPLOYABLE_V1
     assert report["split"]["test_rows"] > 0 and report["split"]["test_positives"] > 0
     assert report["model"]["test"]["roc_auc"] > 0.75  # the planted signal is learnable through the contract
     assert set(report["ablations"]) == {"without_card_aggregates", "without_discrete_block"}
@@ -139,7 +139,7 @@ def test_train_logs_an_mlflow_run_with_params_metrics_and_reports(competition_di
     run = client.get_run(report["mlflow"]["run_id"])
     assert run.info.status == "FINISHED"
     assert client.get_experiment(run.info.experiment_id).name == "fraud_risk_transfer"
-    assert run.data.params["contract_version"] == "1.1" and run.data.params["fraud_score_used"] == "False" and run.data.params["n_features"] == "19"
+    assert run.data.params["contract_version"] == "1.2" and run.data.params["fraud_score_used"] == "False" and run.data.params["n_features"] == "19"
     assert run.data.params["percentile"] == "90.0" and run.data.params["threshold_kind"] == "percentile"
     assert run.data.metrics["test_roc_auc"] == pytest.approx(report["model"]["test"]["roc_auc"])
     assert run.data.metrics["threshold"] == pytest.approx(report["threshold"])
@@ -179,3 +179,22 @@ def test_bank_rows_load_in_time_and_id_order(bank_db):
     bank = load_bank_canonical(bank_db)
     order = bank[["ts", "row_id"]].apply(tuple, axis=1).tolist()
     assert order == sorted(order)
+
+
+def test_the_committed_bundle_is_the_model_of_the_committed_report():
+    """The bundle is in git since 5-Oct so that Vercel, which builds from GitHub, serves the risk score (Kmilo, 5-Oct).
+    It has to be the model the report describes: same contract, same features, same threshold."""
+    import json
+    import subprocess
+    from pathlib import Path
+
+    from src.ml.feature_contract import CONTRACT_VERSION
+    path = Path("models/fraud_risk_ieee.joblib")
+    tracked = subprocess.run(["git", "ls-files", "--error-unmatch", str(path)], capture_output=True, text=True)
+    assert tracked.returncode == 0, "models/fraud_risk_ieee.joblib is not tracked by git"
+    report = json.loads(Path("reports/ml/fraud_risk_transfer.json").read_text(encoding="utf-8"))
+    scorer = TransferRiskScorer(path)
+    assert scorer.features == DEPLOYABLE_V1 == report["features"]
+    assert report["contract_version"] == CONTRACT_VERSION
+    assert scorer.policy_threshold == pytest.approx(report["threshold"], abs=1e-12)
+    assert scorer.channels == ("Web", "App")

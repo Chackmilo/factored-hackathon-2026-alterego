@@ -27,6 +27,8 @@ DEFAULT_COMPARISONS = [
      "reports/eval_heldout.json", "proposed"),
     ("Proposed stack: rules only against rules plus the transferred risk model", "reports/eval_heldout.json", "proposed",
      "reports/eval_heldout_model.json", "proposed"),
+    ("Proposed stack: keyword extractor against Jev behind the router (Hypothesis 4)", "reports/eval_heldout.json", "proposed",
+     "reports/eval_heldout_jev.json", "proposed"),
 ]
 
 

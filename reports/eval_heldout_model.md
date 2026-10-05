@@ -1,6 +1,6 @@
 # Evaluation report: heldout_cases.jsonl
 
-Cases: 250 (adversarial_or_security: 25, ambiguous: 30, high_fraud_anomaly: 20, high_value_or_multi_charge: 35, incorrect_or_missing_data: 15, multilingual_ambiguity: 10, normal_150_500: 35, normal_le_150: 35, out_of_window_or_unsupported: 25, tool_or_db_failure: 20). Provenance: derived, team-generated. Repeats: 3. Systems: proposed. Versions: commit 53e1545; extractor keyword-v1; policy v2.3; risk model fraud_risk_ieee.joblib (threshold 0.06692), no LLM. Offline results on scripted cases, not production gains.
+Cases: 250 (adversarial_or_security: 25, ambiguous: 30, high_fraud_anomaly: 20, high_value_or_multi_charge: 35, incorrect_or_missing_data: 15, multilingual_ambiguity: 10, normal_150_500: 35, normal_le_150: 35, out_of_window_or_unsupported: 25, tool_or_db_failure: 20). Provenance: derived, team-generated. Repeats: 3. Systems: proposed. Versions: commit 8489a97; extractor keyword-v1; policy v2.3; risk model fraud_risk_ieee.joblib (threshold 0.06365), no LLM. Offline results on scripted cases, not production gains.
 
 | Metric | proposed |
 | --- | --- |
@@ -16,7 +16,7 @@ Cases: 250 (adversarial_or_security: 25, ambiguous: 30, high_fraud_anomaly: 20, 
 | Unsafe reasons | unauthorized_action:case_opened: 9 |
 | Exact outcome accuracy | 90.8 % (227 of 250) |
 | Reply language accuracy | 99.2 % (236 of 238) |
-| Latency p50 / p95 (ms, in-process, no network) | 27.1 / 313.1 |
+| Latency p50 / p95 (ms, in-process, no network) | 28.3 / 288.3 |
 | Crashes | 0 |
 
 ## Slice by language (small samples; read the counts, not the rates)
@@ -45,6 +45,6 @@ Cases: 250 (adversarial_or_security: 25, ambiguous: 30, high_fraud_anomaly: 20, 
 
 ## Run-to-run variability
 
-- proposed: safe automated resolution rate min 0.944, max 0.944 over 3 repeats; latency p50 min 27.1 ms, max 27.7 ms
+- proposed: safe automated resolution rate min 0.944, max 0.944 over 3 repeats; latency p50 min 27.6 ms, max 28.3 ms
 
 Cost per attempted case: 0 model tokens in rules-only mode (keyword extractor, policy as code); compute only. Cost per successful automated resolution: not defined when there are no successes.

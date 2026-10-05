@@ -1,8 +1,8 @@
 {
-  "run_at": "2026-10-05T14:44:21",
-  "commit": "53e1545",
+  "run_at": "2026-10-05T16:05:06",
+  "commit": "d289c60",
   "competition": "data/kaggle",
-  "contract_version": "1.1",
+  "contract_version": "1.2",
   "features": [
     "amount_usd",
     "log_amount_usd",
@@ -39,32 +39,32 @@
     "test_positives": 3513
   },
   "model": {
-    "cost_threshold": 0.0925,
+    "cost_threshold": 0.0932,
     "train": {
       "n": 487837,
       "positives": 17150,
-      "threshold": 0.0925,
-      "true_positives": 9267,
-      "false_positives": 34688,
-      "missed_fraud": 7883,
-      "recall": 0.5403498542274052,
-      "precision": 0.21082925719485837,
-      "cost": 113518.0,
-      "roc_auc": 0.8587597464461738,
-      "pr_auc": 0.338456344074527
+      "threshold": 0.0932,
+      "true_positives": 9210,
+      "false_positives": 34139,
+      "missed_fraud": 7940,
+      "recall": 0.5370262390670554,
+      "precision": 0.21246164848093382,
+      "cost": 113539.0,
+      "roc_auc": 0.8579397024413933,
+      "pr_auc": 0.3392055780844558
     },
     "test": {
       "n": 102703,
       "positives": 3513,
-      "threshold": 0.0925,
-      "true_positives": 1420,
-      "false_positives": 6644,
-      "missed_fraud": 2093,
-      "recall": 0.40421292342727017,
-      "precision": 0.17609126984126985,
-      "cost": 27574.0,
-      "roc_auc": 0.8169832776144326,
-      "pr_auc": 0.1649938802598434
+      "threshold": 0.0932,
+      "true_positives": 1407,
+      "false_positives": 6668,
+      "missed_fraud": 2106,
+      "recall": 0.4005123825789923,
+      "precision": 0.17424148606811146,
+      "cost": 27728.0,
+      "roc_auc": 0.8157063805208181,
+      "pr_auc": 0.16318195877886868
     }
   },
   "ablations": {
@@ -95,8 +95,8 @@
         "consistency_matches"
       ],
       "test": {
-        "roc_auc": 0.7536743896555553,
-        "pr_auc": 0.08931077924951228
+        "roc_auc": 0.7355282470619476,
+        "pr_auc": 0.08330833312375548
       }
     }
   },
@@ -110,27 +110,27 @@
     ],
     "charges_scored": 75366,
     "percentile": 98.0,
-    "threshold": 0.06692086092274296,
+    "threshold": 0.06365222452015667,
     "share_above_threshold": 0.020009022636202002,
     "is_fraud_positives": 73,
     "is_fraud_agreement": {
-      "roc_auc": 0.5071739827730534,
-      "pr_auc": 0.0010620427981510652
+      "roc_auc": 0.5131115173980589,
+      "pr_auc": 0.0010505921654749733
     },
     "score_quantiles": {
-      "50": 0.010153309483124828,
-      "90": 0.027086568481881408,
-      "95": 0.03836306724686335,
-      "98": 0.06692086092274296,
-      "99": 0.09487484132113128
+      "50": 0.00941041456587845,
+      "90": 0.020957915830089647,
+      "95": 0.034432983075742815,
+      "98": 0.06365222452015667,
+      "99": 0.0895083055522752
     }
   },
-  "threshold": 0.06692086092274296,
+  "threshold": 0.06365222452015667,
   "threshold_kind": "percentile",
   "mlflow": {
     "tracking_uri": "sqlite:///mlflow.db",
     "experiment": "fraud_risk_transfer",
-    "run_id": "760b95c7ad3744179959869a66408ae8"
+    "run_id": "17d87f9b220c44648ce62eb4258409e8"
   },
   "caveats": [
     "The competition holds card-not-present rows only: the score is served on Web and App charges, the rules baseline covers the rest.",

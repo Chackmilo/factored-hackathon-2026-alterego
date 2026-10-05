@@ -1,4 +1,4 @@
-"""Feature contract v1.1 (docs/specs/fraud-risk-model-v1-ieee-cis.md sections 4 and 10): one builder for both sources."""
+"""Feature contract v1.2 (docs/specs/fraud-risk-model-v1-ieee-cis.md sections 4 and 10): one builder for both sources."""
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -29,8 +29,8 @@ def canonical(rows):
     return pd.DataFrame(out)
 
 
-def test_contract_is_v1_1_with_twenty_features_and_no_leak():
-    assert CONTRACT_VERSION == "1.1"
+def test_contract_is_v1_2_with_twenty_features_and_no_leak():
+    assert CONTRACT_VERSION == "1.2"
     assert len(CONTRACT_V1) == 20
     assert not set(CONTRACT_V1) & LEAK_COLUMNS
     assert "card_not_present" not in CONTRACT_V1 and "email_domain_freq" not in CONTRACT_V1 and "cards_per_customer" not in CONTRACT_V1
@@ -83,3 +83,42 @@ def test_deployable_set_is_the_contract_minus_card_age():
     """Team decision of 29-Sep: train only on what the deployed app can compute from the serving copy at scoring time."""
     assert set(DEPLOYABLE_V1) == set(CONTRACT_V1) - {"card_age_days"}
     assert "card_age_days" in NOT_DEPLOYABLE and "independent" in NOT_DEPLOYABLE["card_age_days"]
+
+
+def _same_card(amounts, start="2026-06-01"):
+    """One card charged the given amounts, one per hour."""
+    n = len(amounts)
+    return pd.DataFrame({"row_id": [f"R{i}" for i in range(n)], "uid": "card", "customer_uid": "card",
+                         "ts": pd.Timestamp(start) + pd.to_timedelta(range(n), unit="h"), "amount_usd": amounts, "amount_local": amounts,
+                         "card_kind": "credit", "card_age_days": 10.0, "address_distance_bucket": 0.0, "consistency_matches": 1.0})
+
+
+def test_a_card_that_always_paid_the_same_amount_has_no_spread_and_a_zero_zscore():
+    """Contract 1.2 (TQ-043): equal earlier amounts leave a floating-point residue in the variance, never a real spread.
+    Dividing by it gave z-scores of hundreds of millions on the competition."""
+    feats = build_contract_features(_same_card([19.99] * 40 + [19.99, 250.0]))
+    assert feats["amount_std_card_hist"].iloc[3:].eq(0.0).all()
+    assert feats["amount_zscore_card"].eq(0.0).all()
+    large = build_contract_features(_same_card([31937.391] * 60 + [31937.391]))
+    assert large["amount_std_card_hist"].iloc[3:].eq(0.0).all() and large["amount_zscore_card"].eq(0.0).all()
+
+
+def test_a_real_spread_still_gives_a_zscore():
+    feats = build_contract_features(_same_card([10.0, 12.0, 11.0, 10.5, 60.0]))
+    assert feats["amount_zscore_card"].iloc[-1] > 10 and feats["amount_std_card_hist"].iloc[-1] > 0.5
+    cents = build_contract_features(_same_card([20.00, 20.01, 20.00, 20.01, 20.05]))  # a one-cent spread is real
+    assert cents["amount_std_card_hist"].iloc[-1] > 0.005 and cents["amount_zscore_card"].iloc[-1] > 5
+
+
+def test_the_seven_day_sum_of_a_card_without_earlier_charges_is_exactly_zero():
+    """3,000 cards with one charge each: the running sum minus the charge itself left about 1e-9 instead of 0 (TQ-043)."""
+    n = 3000
+    frame = pd.DataFrame({"row_id": [f"R{i}" for i in range(n)], "uid": [f"card-{i:05d}" for i in range(n)],
+                          "ts": pd.Timestamp("2026-06-01") + pd.to_timedelta(range(n), unit="m"),
+                          "amount_usd": [round(1234.56 + 0.07 * i, 2) for i in range(n)], "card_kind": "credit", "card_age_days": 10.0,
+                          "address_distance_bucket": 0.0, "consistency_matches": 1.0})
+    frame["customer_uid"], frame["amount_local"] = frame["uid"], frame["amount_usd"]
+    feats = build_contract_features(frame)
+    assert feats["tx_sum_card_7d"].eq(0.0).all()
+    two = build_contract_features(_same_card([1234.56, 0.1, 0.2, 0.3]))
+    assert two["tx_sum_card_7d"].iloc[-1] == pytest.approx(1234.86)

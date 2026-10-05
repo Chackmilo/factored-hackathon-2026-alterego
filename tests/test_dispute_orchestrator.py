@@ -812,3 +812,55 @@ def test_a_handoff_states_the_sibling_charges_and_the_reply_does_not(orchestrato
     assert "1 other undisputed charge(s) on the same product, merchant and process day: TRX-A-SIB3" in facts
     assert "1 distinct charge(s) disputed within 48 hours" in facts
     assert "Además" not in turn.reply and "40.00 USD" not in turn.reply and sibling_audit(ops_store, cid) == []
+
+
+# ------------------------------------------------------------ language of the conversation (TQ-042)
+@pytest.mark.parametrize("current, text, shift", [
+    ("es", "Olá, não reconheço uma cobrança de 120 dólares", "switch"),
+    ("pt", "No reconozco un cargo de mi tarjeta, quiero disputarlo", "switch"),
+    ("pt", "É a de 157.118,47 pesos", "keep"),   # "pesos" holds one weak Spanish marker: no doubt
+    ("es", "1", "keep"), ("es", "Sí", "keep"), ("pt", "Sim, pode bloquear", "keep"),
+    ("es", "No reconozco el cargo de mi tarjeta, não fui eu que fiz essa compra", "ask"),  # both languages, neither dominates
+    ("es", "Quiero disputar el cargo de ayer en mi tarjeta", "keep"),
+])
+def test_a_message_moves_the_language_only_on_clear_evidence(current, text, shift):
+    from src.understand.keyword_extractor import KeywordIntentExtractor
+    assert KeywordIntentExtractor.language_shift(text.lower(), current) == shift
+
+
+@pytest.mark.parametrize("text, language", [
+    ("português", "pt"), ("Em português, por favor", "pt"), ("Portugues", "pt"), ("español", "es"), ("en español por favor", "es"),
+    ("Espanhol", "es"), ("castellano", "es"),
+    ("No reconozco un cargo en español", None), ("Hola", None), ("1", None),
+])
+def test_a_message_that_only_names_a_language_is_a_language_choice(text, language):
+    from src.understand.keyword_extractor import KeywordIntentExtractor
+    assert KeywordIntentExtractor.language_choice(text) == language
+
+
+def test_a_mixed_message_is_handled_and_the_customer_is_asked_which_language(orchestrator, owner_session, ops_store):
+    cid = orchestrator.start_conversation(owner_session)["conversation_id"]
+    orchestrator.handle_message(owner_session, cid, "Hola")
+    turn = orchestrator.handle_message(owner_session, cid, "No reconozco el cargo de mi tarjeta de 120 dólares en Cine Premium, não fui eu que fiz essa compra")
+    assert turn.case_id and turn.language == "es"  # the turn is not held back by the doubt
+    assert turn.reply.endswith('Se preferir continuar em português, escreva "português".')
+    chosen = orchestrator.handle_message(owner_session, cid, "português")
+    assert chosen.language == "pt" and chosen.policy_outcome is None and chosen.reply.startswith("Pronto, continuamos em português")
+    assert ops_store.get_conversation(cid)["language"] == "pt"
+    assert [a["action"] for a in ops_store.list_audit(conversation_id=cid)].count("LANGUAGE_CHANGED") == 1
+
+
+def test_a_language_choice_keeps_a_pending_lock_question_pending(orchestrator, owner_session, ops_store):
+    cid = orchestrator.start_conversation(owner_session)["conversation_id"]
+    assert orchestrator.handle_message(owner_session, cid, "Perdí la tarjeta").state == "awaiting_lock_confirmation"
+    chosen = orchestrator.handle_message(owner_session, cid, "Em português, por favor")
+    assert chosen.state == "awaiting_lock_confirmation" and chosen.language == "pt"
+    assert [lock["status"] for lock in ops_store.list_locks(conversation_id=cid)] == ["offered"]  # asked, not applied
+    done = orchestrator.handle_message(owner_session, cid, "Sim")
+    assert done.lock_status == "locked" and done.language == "pt"
+
+
+def test_a_clear_first_message_gets_no_language_question(orchestrator, owner_session):
+    cid = orchestrator.start_conversation(owner_session)["conversation_id"]
+    turn = orchestrator.handle_message(owner_session, cid, "No reconozco un cargo de 120 dólares en Cine Premium")
+    assert "português" not in turn.reply and "español" not in turn.reply

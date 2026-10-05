@@ -2,15 +2,15 @@
 
 La auditoría del 4-oct sobre esta guía encontró que no falta ningún capítulo: falta evidencia. Tres de las cinco hipótesis no tenían medición comprometida y varias decisiones quedaron sin ejecutar. Este archivo es la lista única de esos pendientes, con su estado, cómo se cierra cada uno y quién lo destraba. Reemplaza las listas repartidas entre [00](00-resumen-ejecutivo.md), [README](README.md) sección 5, [07](07-despliegue.md) sección 10 y [08](08-iteraciones-y-decisiones.md).
 
-Estado al 5-oct, en la rama `analysis/crisp-pending` (creada desde `origin/main` en `3fe46f9`). Todo resultado es offline, sobre casos guionizados o datos de competencia, no una ganancia de producción (`AGENTS.md` sec. 4, regla 11).
+Estado al 5-oct. La primera parte entró a `main` con el PR #60; las decisiones de Kmilo del mismo día (secciones 2.10 a 2.12) están en la rama `feat/crisp-decisions`. Todo resultado es offline, sobre casos guionizados o datos de competencia, no una ganancia de producción (`AGENTS.md` sec. 4, regla 11).
 
 ## Resumen en una tabla
 
 | Estado | Cuántos | Cuáles |
 | --- | --- | --- |
-| Hecho en esta rama | 9 | Corrida held-out con el modelo (1), modelo de registro reproducible (2, falta decidir cómo llega a Vercel), E5 contra BM25 (3), comparación solo reglas contra reglas más modelo (5), intervalos y prueba pareada (6), explicador en el harness (8), fixture de llegadas tardías (10), brecha por país de la corrida ciega (11), tests que reproducen los dos bugs (12, falta decidir el arreglo) |
+| Hecho | 12 | Corrida held-out con el modelo (1), modelo de registro reproducible y en git (2), E5 contra BM25 (3), Jev contra el extractor (4), comparación solo reglas contra reglas más modelo (5), intervalos y prueba pareada (6), explicador en el harness (8), fixture de llegadas tardías (10), brecha por país de la corrida ciega (11), los dos bugs de conversación reproducidos y arreglados (12), residuo numérico arreglado con el contrato 1.2, licencia de IEEE-CIS alineada |
 | Siguiente, sin cuentas ni gasto | 1 | Correcciones a esta guía que dependen de otras fuentes (sección 4) |
-| Necesita una decisión del equipo | 8 | Gasto de Jev (4), arreglo de los dos bugs de conversación (TQ-041 y TQ-042), residuo numérico del contrato de features (TQ-043), licencia de IEEE-CIS, hipótesis 3, preguntas abiertas, respuestas de Claude |
+| Necesita una decisión del equipo | 6 | Hipótesis 3, preguntas abiertas, decisiones respondidas sin código, respuestas de Claude, ratificar la regla de E5, confianza de Jev con dos intenciones |
 | Necesita personas o acceso | 3 | Etiquetas humanas (7), utilidad del handoff (9), estado de producción |
 | Queda como limitación | 2 | Carga y concurrencia (13), familias C y D de la competencia (14) |
 
@@ -19,17 +19,17 @@ Estado al 5-oct, en la rama `analysis/crisp-pending` (creada desde `origin/main`
 | # | Pendiente | Estado | Cómo se cierra | Evidencia o bloqueo |
 | --- | --- | --- | --- | --- |
 | 1 | Held-out con el modelo de riesgo (H1, H2) | **Hecho** | `src.eval.run ... --model models/fraud_risk_ieee.joblib`, 3 repeticiones | [`reports/eval_heldout_model.md`](../../reports/eval_heldout_model.md); sección 2.2 |
-| 2 | Modelo de registro: 0,817 o 0,815 | **Hecho** el modelo; **pendiente** su llegada a Vercel | El entrenador lee sus filas en orden fijo y dos reentrenamientos dan el mismo reporte | Commits `0224320` y `4db45f3`; sección 2.1 |
+| 2 | Modelo de registro: 0,817 o 0,815 | **Hecho** | El entrenador lee sus filas en orden fijo y dos reentrenamientos dan el mismo reporte; el bundle (contrato 1.2) está en git desde el 5-oct y llega a producción con el primer despliegue que lo incluya | Commits `0224320` y `4db45f3`; secciones 2.1 y 2.11 |
 | 3 | E5 contra BM25 (H5, Tarea 4.2) | **Hecho** | Regla de decisión comprometida antes de medir (commit `8e9b9c7`); `src.eval.rag_benchmark --e5 models/e5-small` en el contenedor `dev` | [`reports/rag_evaluation_report.md`](../../reports/rag_evaluation_report.md); sección 2.6 |
-| 4 | Jev contra el extractor (H4), con calibración ES y PT | Necesita decisión | Llamadas reales y facturadas a Jev sobre los mensajes del held-out, dentro del tope de 2 USD por día | Falta el visto bueno del gasto y definir la etiqueta de intención (sección 3) |
-| 5 | Propuesto contra la versión solo reglas (H1) | **Hecho** para el modelo; falta Jev | Misma suite, reglas contra reglas más modelo, con prueba pareada | [`reports/eval_intervals.md`](../../reports/eval_intervals.md) |
+| 4 | Jev contra el extractor (H4), con calibración ES y PT | **Hecho** | `src.eval.run ... --jev`: llamadas reales a Jev detrás del router, con tope de gasto propio (aprobado por Kmilo el 5-oct) | [`reports/jev_evaluation_report.md`](../../reports/jev_evaluation_report.md); sección 2.10 |
+| 5 | Propuesto contra la versión solo reglas (H1) | **Hecho** | Misma suite: solo reglas contra reglas más modelo, y contra Jev, con prueba pareada | [`reports/eval_intervals.md`](../../reports/eval_intervals.md) |
 | 6 | Intervalos o pruebas sobre las tasas (hallazgo H09) | **Hecho** | `src.eval.intervals` lee los reportes comprometidos, sin regenerarlos | `reports/eval_intervals.md`; sección 2.3 |
 | 7 | Etiquetas humanas y kappa | Necesita personas | Dos personas etiquetan los 50 casos dobles (`data/eval/labeling/README.md`) | Las 4 planillas siguen en 0 de 300 filas; cerrada como limitación (TQ-018) |
 | 8 | Explicador de políticas de punta a punta | **Hecho** el modo; la suite no lo ejercita | `src.eval.run ... --explainer data/rag_gate.json` corre lo que sirve producción | [`reports/eval_heldout_explainer.md`](../../reports/eval_heldout_explainer.md); sección 2.7 |
 | 9 | Utilidad del handoff | Necesita personas | Una rúbrica y revisión humana; el código solo puede revisar que el paquete venga completo | El juez revisa la escalación y su razón, nada más |
 | 10 | Fixture de llegadas tardías (`AGENTS.md` sec. 7) | **Hecho** | Fixture etiquetado con un cargo procesado tarde y una fila reprocesada, y tres tests | [`data/fixtures/late_arrival_transactions.json`](../../data/fixtures/late_arrival_transactions.json); sección 2.8 |
 | 11 | Brecha por país de la corrida ciega | **Hecho** | Desglose por plantilla del reporte ciego | Sección 2.4 |
-| 12 | Tests de los dos bugs leídos del código (idioma fijo tras `new`; segunda pregunta de reglas tras un saludo) | **Hecho** el test; **pendiente** el arreglo | Dos tests marcados como fallo esperado estricto; el arreglo espera TQ-041 y TQ-042 | `tests/test_policy_rag.py`; sección 2.9 |
+| 12 | Los dos bugs leídos del código (idioma fijo tras `new`; segunda pregunta de reglas tras un saludo) | **Hecho** | Reproducidos con tests y arreglados el 5-oct (TQ-041 y TQ-042, respondidas por Kmilo) | `tests/test_policy_rag.py`, `tests/test_dispute_orchestrator.py`; secciones 2.9 y 2.12 |
 | 13 | Carga, concurrencia y costo de cómputo | Limitación | Se declara; no hay prueba de carga | `README.md`, "Limitations" |
 | 14 | Familias C y D de la competencia (de 0,817 hacia 0,917) | Trabajo futuro | Seguimiento de TQ-026 | Sin código en `src/` |
 
@@ -149,19 +149,48 @@ Los dos estaban marcados como inferidos de la lectura del código ([06](06-evalu
 - **Preguntas de reglas tras un saludo (TQ-041).** La primera llega al explicador. La segunda va al flujo de disputa y recibe "No encontramos un cargo que coincida con su descripción". La tercera termina en un handoff con `POL-ESC-AMBIG`: un humano recibe a un cliente que no disputó nada. Es peor de lo que la guía describía, y el explicador está encendido en producción.
 - **Idioma fijo (TQ-042).** Un cliente que saluda en español y luego escribe la disputa en portugués recibe la confirmación del caso en español. El caso sí se abre.
 
+### 2.10 Jev contra el extractor: no lo supera
+
+Kmilo aprobó el gasto el 5-oct. El harness corrió la suite held-out con Jev (`jev-1.13.0`) detrás del router, como lo arma la API: 300 llamadas reales por repetición, 0,035 USD en las tres repeticiones, y Jev solo ve el mensaje enmascarado.
+
+| Medida | Extractor de palabras clave | Jev detrás del router |
+| --- | --- | --- |
+| Resolución segura automatizada | 98,1 % (105 de 107) | 98,1 % (105 de 107) |
+| Resultados inseguros | 8,0 % (20 de 250) | 10,4 % (26 de 250) |
+| Recall de escalamiento | 79,6 % (78 de 98) | 73,5 % (72 de 98) |
+| Resultado exacto | 88,4 % (221 de 250) | 85,2 % (213 de 250) |
+| Latencia p50, misma máquina | 24,8 ms | 447,4 ms |
+
+La hipótesis 4 no se sostiene en esta suite. Ninguna resolución segura se gana ni se pierde, y 6 casos pasan a inseguros sin que ninguno deje de serlo (prueba exacta de McNemar, p 0,031). Lectura:
+
+- **Por qué empeora.** Los 6 casos piden humano y terminan en una aclaración que nadie recibe. En tres, el primer mensaje cuenta en una sola frase una tarjeta robada y un cargo no reconocido: Jev reparte su respuesta entre las dos intenciones y su confianza cae bajo el 0,70 que pide `POL-CLARIFY` (0,42, 0,68 y 0,64). En los otros tres la diferencia aparece en un turno posterior.
+- **La intención del primer mensaje no los separa.** Sobre 225 primeros mensajes, los dos motores distinguen disputa de fuera de alcance en todos (134 de 134 en español, 91 de 91 en portugués): la suite sale de pocas plantillas.
+- **Calibración.** Jev peca de poca confianza, no de error: los 8 mensajes bajo 0,70 están bien leídos (2 de 2 en español, 6 de 6 en portugués) y los 8 son frases de tarjeta perdida o robada.
+- **No es determinista.** En el split de desarrollo su resolución segura osciló entre 7 y 8 de 9 en tres repeticiones.
+
+### 2.11 Contrato 1.2 y modelo en git
+
+- **Residuo numérico (TQ-043, "arreglarlo").** El contrato 1.2 trata como cero una dispersión por tarjeta o una suma de 7 días que solo es residuo de punto flotante. Kmilo preguntó si bastaba una bandera `is_error`: no, porque el valor absurdo seguiría en la feature y la bandera sumaría una vigésima; poner el residuo en cero es la regla que el contrato ya tenía para una dispersión exactamente cero. Tras el arreglo ninguna dispersión queda entre 0 y 0,001, y los 22 z-scores sobre 1.000 que quedan en la competencia son reales: tarjetas cuyos cargos previos difieren por centavos.
+- **Modelo reentrenado.** ROC AUC de holdout 0,816 y umbral 0,0637 (contrato 1.1: 0,817 y 0,0669); dos reentrenamientos dan el mismo reporte. En el held-out con el modelo, las cifras de la sección 2.2 no cambian: 101 de 107, 9 de 250 y los mismos casos. Las cifras del EDA de la sección 2.5 son del contrato 1.1; `reports/ml/risk_feature_eda.md` ya trae las del 1.2 (holdout: 3.513 fraudes observados contra 3.315 esperados).
+- **Modelo en producción ("sí").** `models/fraud_risk_ieee.joblib` (1,3 MB) está en git, fuera de la regla que ignora los demás `.joblib`, y un test lo mantiene igual al reporte. Producción lo sirve desde el primer despliegue que incluya ese commit; un merge desde la cuenta de Kmilo queda bloqueado en Vercel Hobby, así que hace falta un merge de la cuenta dueña.
+- **Licencia de IEEE-CIS ("sí, si explicamos por qué").** TQ-026, la fila de `docs/PLAN.md` y la spec del modelo ya dicen lo mismo que TQ-032: uso aprobado, con la condición de explicar por qué se usan datos externos. La explicación está en el README y en la sección 1 de la spec: la etiqueta del banco no tiene señal aprendible. El repo guarda el modelo entrenado, nunca los archivos de la competencia.
+
+### 2.12 Los dos bugs de conversación, arreglados
+
+- **TQ-041.** Un mensaje con `policy_question` ya no cuenta como disputa previa: tras un saludo, tres preguntas de reglas seguidas llegan las tres al explicador y ninguna termina en un humano. Una pregunta de reglas después de una disputa real sigue en el flujo de disputa.
+- **TQ-042 ("en caso de duda, preguntar al cliente").** El primer mensaje fija el idioma. Uno posterior lo cambia solo con evidencia clara: dos marcas o más del otro idioma y al menos el doble que las del actual (una sola no basta: "pesos" contiene una marca de español). Si el mensaje mezcla los dos sin que uno domine, el turno se atiende igual y la respuesta ofrece el otro idioma, escrita en ese idioma. Un mensaje que solo nombra un idioma ("português", "en español por favor") lo cambia sin responder nada pendiente, y deja `LANGUAGE_CHANGED` en la auditoría. Jev no interviene.
+- **Sin efecto en la suite.** Con los dos arreglos, las corridas solo reglas y con explicador dan el mismo resultado en los 250 casos del held-out, y ninguna respuesta de la suite lleva la pregunta de idioma.
+
 ## 3. Decisiones que necesitan al equipo
 
 | Tema | Qué hay que decidir | Recomendación de esta guía |
 | --- | --- | --- |
-| Gasto de Jev (H4) | Si se autorizan llamadas facturadas para medir Jev contra el extractor, y qué etiqueta de intención se usa | Medir sobre los 250 primeros mensajes del held-out, con la intención esperada derivada de la etiqueta de diseño |
-| Bugs de conversación (sección 2.9) | TQ-041: si un mensaje que respondió el explicador deja de contar como disputa previa. TQ-042: si cada respuesta sigue el idioma del mensaje | Sí a las dos, cada una con su test; mientras tanto, declararlas como límite |
-| Residuo numérico (sección 2.5) | TQ-043: si se trata una desviación menor a un épsilon como cero, con contrato 1.2 y modelo nuevo | Sí, después de la entrega |
-| Licencia de IEEE-CIS | TQ-032 y `README.md` dicen aprobada; TQ-026, una fila de `docs/PLAN.md` y la spec del modelo, pendiente | Alinear las cuatro fuentes con la respuesta de TQ-032, si Kmilo confirma la aprobación |
 | Hipótesis 3 | La fila de `docs/PLAN.md` sigue en Propuesta y TQ-023 no tiene respuesta | Reportar el resultado negativo con el pipeline (opción a de TQ-023) |
-| Preguntas abiertas | TQ-002, TQ-004, TQ-016, TQ-023, TQ-025 y TQ-040 no tienen respuesta en `origin/main`; TQ-038 y TQ-039 dependen del PR #59; TQ-041 a TQ-043 nacen en esta rama | Responderlas en el archivo; TQ-002 y TQ-004 ya están implementadas como se recomendó |
+| Preguntas abiertas | TQ-002, TQ-004, TQ-016, TQ-023, TQ-025 y TQ-040 no tienen respuesta; TQ-038 y TQ-039 dependen del PR #59. TQ-041 a TQ-043 las respondió Kmilo el 5-oct | Responderlas en el archivo; TQ-002 y TQ-004 ya están implementadas como se recomendó |
 | Respondidas sin código | TQ-028 (reintentos), TQ-029 (pregunta para reportes de pérdida) y TQ-031 (palabras completas) | Declararlas como límite o implementarlas con su test |
 | Respuestas de Claude | Faltan las tareas 3 a 7 y una key | Declarar como trabajo futuro |
-| Cómo llega el modelo a Vercel | El `.joblib` pesa 1,3 MB y está en `.gitignore` | Decidir si se versiona el bundle o se construye en el build |
+| Regla de E5 contra BM25 | Se usó la regla que proponía el roadmap, sin ratificar | Ratificarla; el resultado no cambia lo que sirve Vercel |
+| Confianza de Jev con dos intenciones (sección 2.10) | Un mensaje con tarjeta robada y cargo no reconocido baja de 0,70 y recibe una aclaración | Decidirlo en la fila "Lectura de las señales de Jev" de `docs/PLAN.md` antes de poner una key de Jev en producción |
 
 ## 4. Correcciones pendientes a esta guía
 
@@ -192,11 +221,12 @@ uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out reports/eval_h
 uv run python -m src.eval.intervals --out reports/eval_intervals
 uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out reports/eval_heldout_explainer --repeats 3 --systems proposed --explainer data/rag_gate.json
 uv run python -m src.eval.rag_benchmark --out reports/rag_benchmark_e5 --e5 models/e5-small   # en el contenedor dev
+uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out reports/eval_heldout_jev --repeats 3 --systems proposed --jev   # llamadas reales y facturadas a Jev
 ```
 
 ## Fuentes
 
-- Reportes: [`reports/rag_evaluation_report.md`](../../reports/rag_evaluation_report.md), [`reports/rag_benchmark_e5.md`](../../reports/rag_benchmark_e5.md), [`reports/ml/fraud_risk_transfer.md`](../../reports/ml/fraud_risk_transfer.md), [`reports/ml/risk_feature_eda.md`](../../reports/ml/risk_feature_eda.md), [`reports/eval_heldout_model.md`](../../reports/eval_heldout_model.md), [`reports/eval_intervals.md`](../../reports/eval_intervals.md), [`reports/eval_heldout.md`](../../reports/eval_heldout.md), [`reports/eval_heldout_blind.md`](../../reports/eval_heldout_blind.md) y sus `.json`.
+- Reportes: [`reports/jev_evaluation_report.md`](../../reports/jev_evaluation_report.md), [`reports/eval_heldout_jev.md`](../../reports/eval_heldout_jev.md), [`reports/rag_evaluation_report.md`](../../reports/rag_evaluation_report.md), [`reports/rag_benchmark_e5.md`](../../reports/rag_benchmark_e5.md), [`reports/ml/fraud_risk_transfer.md`](../../reports/ml/fraud_risk_transfer.md), [`reports/ml/risk_feature_eda.md`](../../reports/ml/risk_feature_eda.md), [`reports/eval_heldout_model.md`](../../reports/eval_heldout_model.md), [`reports/eval_intervals.md`](../../reports/eval_intervals.md), [`reports/eval_heldout.md`](../../reports/eval_heldout.md), [`reports/eval_heldout_blind.md`](../../reports/eval_heldout_blind.md) y sus `.json`.
 - Código: `src/ml/risk_feature_eda.py`, `src/ml/ieee_cis_adapter.py`, `src/ml/bank_adapter.py`, `src/ml/feature_contract.py`, `src/eval/intervals.py`; tests `tests/test_risk_feature_eda.py`, `tests/test_eval_intervals.py` y `tests/test_fraud_risk_transfer.py`.
 - [`data/fixtures/team_questions.json`](../../data/fixtures/team_questions.json) en `origin/main` (40 preguntas al 5-oct); [`docs/HANDOFF.md`](../HANDOFF.md) secs. 3 y 7; cuerpo del PR #45 (`gh pr view`).
 - [`data/eval/heldout_cases.jsonl`](../../data/eval/heldout_cases.jsonl) para los desgloses por caso, canal y plantilla.

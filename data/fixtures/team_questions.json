@@ -398,7 +398,7 @@
       "recommendation": "Accept the IEEE-CIS transfer with the percentile threshold",
       "source": "28-Sep, team proposal in chat",
       "status": "answered",
-      "answer": "Accept the IEEE-CIS transfer. POL-ESC-ML-RISK escalates to HITL by the percentile threshold computed on the serving window; the fixed 0.70 threshold is not used. The model of record uses only the homologated (deployable) variables. Follow-up process: cherry-pick, among the roughly 400 competition variables left out, the ones the agent can consume so the fraud score improves after the interview with the customer (candidates in reports/ml/ieee_cis_feature_importance.md). The mentors' answer on the competition data licence stays pending.",
+      "answer": "Accept the IEEE-CIS transfer. POL-ESC-ML-RISK escalates to HITL by the percentile threshold computed on the serving window; the fixed 0.70 threshold is not used. The model of record uses only the homologated (deployable) variables. Follow-up process: cherry-pick, among the roughly 400 competition variables left out, the ones the agent can consume so the fraud score improves after the interview with the customer (candidates in reports/ml/ieee_cis_feature_importance.md). The mentors' answer on the competition data licence stays pending. Update of 5-Oct (Kmilo): the use is approved, on the condition that the submission explains why the external data is used; the reason is in section 1 of docs/specs/fraud-risk-model-v1-ieee-cis.md and in the README (the bank label has no learnable signal).",
       "answered_by": "Kmilo (chat, 29-Sep)",
       "answered_at": "2026-09-29T20:30:00"
     },
@@ -497,7 +497,7 @@
       ],
       "recommendation": "Send it today; without an answer by 2-Oct, present the risk model as experimental and demo without it",
       "source": "30-Sep, audit v3 (AUD-01)",
-      "answer": "Approved by the mentors. Per Daniel: \"aprobado, pero están en la cuenta de Kmilo\"; that part is left to Kmilo. Until the risk model file (models/fraud_risk_ieee.joblib) is provided, the app and the harness run without the scorer, so POL-ESC-ML-RISK never fires.",
+      "answer": "Approved by the mentors. Per Daniel: \"aprobado, pero están en la cuenta de Kmilo\"; that part is left to Kmilo. Until the risk model file (models/fraud_risk_ieee.joblib) is provided, the app and the harness run without the scorer, so POL-ESC-ML-RISK never fires. Update of 5-Oct (Kmilo): the bundle is tracked in git so that the Vercel build carries it; production serves the score from the first deployment of that commit.",
       "answered_at": "2026-10-02T06:30:00",
       "answered_by": "Daniel (chat, 2-Oct)",
       "status": "answered"
@@ -634,7 +634,11 @@
         "Turn the explainer off until it is fixed (remove data/rag_gate.json)"
       ],
       "recommendation": "An earlier message with policy_question set never counts as a dispute, and a rules question never adds a clarification attempt",
-      "source": "5-Oct, CRISP-DM audit; docs/crisp-dm/09-plan-de-pendientes.md"
+      "source": "5-Oct, CRISP-DM audit; docs/crisp-dm/09-plan-de-pendientes.md",
+      "status": "answered",
+      "answer": "Fix it. A message with policy_question set never counts as an earlier dispute, so rules questions after a greeting keep reaching the explainer. In code since 5-Oct, with tests/test_policy_rag.py.",
+      "answered_by": "Kmilo (chat, 5-Oct)",
+      "answered_at": "2026-10-05T12:00:00"
     },
     {
       "question_id": "TQ-042",
@@ -647,7 +651,11 @@
         "Follow the language picker of the chat instead of detecting it"
       ],
       "recommendation": "Follow the language of each message, keeping the conversation language for option, yes and no replies",
-      "source": "5-Oct, CRISP-DM audit; docs/crisp-dm/09-plan-de-pendientes.md"
+      "source": "5-Oct, CRISP-DM audit; docs/crisp-dm/09-plan-de-pendientes.md",
+      "status": "answered",
+      "answer": "Fix it: follow the customer. A later message moves the conversation language only on clear evidence (two markers of the other language and at least twice the current one's). When the language of a message is unclear the customer is asked, without Jev: the turn is handled and the reply offers the other language; a message that only names a language switches it. In code since 5-Oct.",
+      "answered_by": "Kmilo (chat, 5-Oct)",
+      "answered_at": "2026-10-05T12:00:00"
     },
     {
       "question_id": "TQ-043",
@@ -660,7 +668,11 @@
         "Keep contract 1.1 and state the residue as a limit"
       ],
       "recommendation": "Fix it after the submission as contract 1.2, retrain and re-measure",
-      "source": "5-Oct, EDA of the risk features; src/ml/feature_contract.py"
+      "source": "5-Oct, EDA of the risk features; src/ml/feature_contract.py",
+      "status": "answered",
+      "answer": "Fix it now. Contract 1.2 counts a card spread or a seven-day sum that is only floating-point residue as zero, and the model was retrained (holdout ROC AUC 0.816, threshold 0.0637). Kmilo asked whether an is_error flag would be enough: it would not, because the absurd value would stay in the feature and the flag would add a twentieth one; zeroing the residue is the rule the contract already had for a spread of exactly zero.",
+      "answered_by": "Kmilo (chat, 5-Oct)",
+      "answered_at": "2026-10-05T12:00:00"
     }
   ]
 }

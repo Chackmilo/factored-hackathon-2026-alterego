@@ -60,7 +60,7 @@ def test_the_entrypoint_loads_the_way_the_vercel_runtime_imports_it():
 
 def test_the_function_bundle_keeps_every_file_the_api_reads():
     for path in ("src/api/app.py", "data/rag_gate.json", "data/policy_corpus.json", "data/fixtures/team_questions.json",
-                 "frontend/dist/index.html", "src/llm/prompts/reply_v1.md"):
+                 "frontend/dist/index.html", "src/llm/prompts/reply_v1.md", "models/fraud_risk_ieee.joblib"):
         assert not _excluded(path), path
 
 

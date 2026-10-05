@@ -1,6 +1,8 @@
 # Fraud risk model v1: transfer from the IEEE-CIS Fraud Detection competition
 
-Status: proposal of 28 September, pending the mentors' answer to TQ-026. It replaces the training
+Status: accepted on 29 September (TQ-026). The data use is approved (TQ-032, confirmed by Kmilo on 5 October) on the
+condition that the submission explains why external data is used: section 1 is that explanation. Contract 1.2 since
+5 October (section 12). It replaces the training
 recipe of brief decision 3 (`docs/TEAM_BRIEF_COMPLEMENTED.md`), not its feature discipline. The
 policy clause `POL-ESC-ML-RISK` and the `RiskScorer` interface stay as they are.
 
@@ -181,10 +183,12 @@ built it, so the aggregations are comparable to ours.
   after accepting the competition rules; the files land in `data/kaggle/` (git-ignored, next to the
   other raw data) and never enter a commit, a log or a prompt. The competition data is anonymized
   and public, and the same discipline applies as to the bank data (rule 10).
-- The trained bundle is `models/fraud_risk_ieee.joblib` (git-ignored), with the JSON report in
+- The trained bundle is `models/fraud_risk_ieee.joblib` (tracked in git since 5 October, so the Vercel build carries it;
+  the competition files themselves never enter the repo), with the JSON report in
   `reports/ml/` as today, plus the ablation and adversarial validation tables.
 - Licence: the competition rules restrict the data to competition and non-commercial use; a
-  hackathon submission fits, and TQ-026 asks the mentors to confirm.
+  hackathon submission fits. The mentors approved the use (TQ-032); Kmilo confirmed it on 5 October with the condition
+  that the submission explains why the data is used.
 
 ## 8. Code plan (spec-driven, tests first; done on 29 September, commits 0f33f14 to 756fe10)
 
@@ -196,10 +200,11 @@ built it, so the aggregations are comparable to ours.
 | `src/rules/dispute_policy.py` | threshold read from the input, default 0.70 kept | existing clause tests unchanged |
 | `docs/technical-discuss-points.md` | section 7 | none |
 
-## 9. Open question
+## 9. Open question (closed)
 
-TQ-026 (HITL console): confirm the IEEE-CIS transfer as the model of record, the competition data
-licence for the submission, and the percentile threshold for `POL-ESC-ML-RISK`.
+TQ-026 (HITL console) asked to confirm the IEEE-CIS transfer as the model of record, the competition data
+licence for the submission, and the percentile threshold for `POL-ESC-ML-RISK`. The transfer and the threshold were
+accepted on 29 September; the data use was approved (TQ-032) and confirmed on 5 October.
 
 ## 10. Results of notebook 05 (29 September): contract v1.1
 
@@ -289,3 +294,27 @@ features from the gateway rows and the profile; card age stays null, and the add
 fill from the columns the gateway returns (extending its query with `transaction_country` and
 `transaction_city` is the one gateway change still open). The gateway should pass the customer's last 90 days
 of charges so the 30-day aggregates are complete.
+
+## 12. Contract 1.2 and the reproducible retrain (5 October)
+
+Two changes, both found while auditing the model for the CRISP-DM guide (`docs/crisp-dm/09-plan-de-pendientes.md`):
+
+- **Fixed row order.** 33,932 competition rows share their timestamp with another row, and the engine broke those ties
+  differently on each load, so three trainings gave three thresholds (0.0669, 0.0694, 0.0748). The loaders now order by
+  timestamp and id, and two retrains write the same report.
+- **Contract 1.2 (TQ-043).** In 1.1, a card whose earlier amounts were all equal had a variance that was floating-point
+  residue instead of zero, and `amount_zscore_card` divided by its root: values up to 528 million on the competition.
+  `tx_sum_card_7d` carried the same kind of residue (a median of 3.0e-09 instead of 0). In 1.2 a spread under one
+  millionth of the card's mean amount, or a seven-day sum under one millionth of a dollar, is zero. The features are
+  the same 19. The 22 z-scores above 1,000 that remain on the competition are real: cards whose earlier amounts
+  differ by cents.
+
+| Measure | Contract 1.1, fixed order | Contract 1.2 |
+| --- | --- | --- |
+| Holdout ROC AUC / PR AUC | 0.817 / 0.165 | 0.816 / 0.163 |
+| Threshold (percentile 98 of the bank window) | 0.0669 | 0.0637 |
+| Agreement with `is_fraud` (73 flags), ROC AUC | 0.507 | 0.513 |
+| Held-out suite: safe resolutions / unsafe outcomes | 101 of 107 / 9 of 250 | 101 of 107 / 9 of 250 |
+
+The bundle in `models/fraud_risk_ieee.joblib` is the contract 1.2 model of `reports/ml/fraud_risk_transfer.md`; a test
+keeps the two in step. The feature EDA is `reports/ml/risk_feature_eda.md`.

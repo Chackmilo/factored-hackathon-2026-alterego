@@ -88,7 +88,7 @@ def test_the_transfer_scorer_scores_only_the_channels_its_threshold_was_calibrat
 
     path = tmp_path / "bundle.joblib"
     joblib.dump({"model": _Model(), "features": DEPLOYABLE_V1, "ranker": _Ranker(), "medians": {f: 0.0 for f in DEPLOYABLE_V1},
-                 "threshold": 0.07, "threshold_kind": "percentile", "contract_version": "1.1",
+                 "threshold": 0.07, "threshold_kind": "percentile", "contract_version": "1.2",
                  "report": {"bank_calibration": {"channels": ["Web", "App"]}}}, path)
     scorer = TransferRiskScorer(path)
     assert scorer.channels == ("Web", "App")

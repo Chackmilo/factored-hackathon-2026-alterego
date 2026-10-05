@@ -181,6 +181,66 @@
         "only_b": 0,
         "p_value": 0.0009765625
       }
+    },
+    {
+      "title": "Proposed stack: keyword extractor against Jev behind the router (Hypothesis 4)",
+      "a": {
+        "report": "reports/eval_heldout.json",
+        "system": "proposed",
+        "versions": "commit 9efb497; extractor keyword-v1; policy v2.3; no ML model, no LLM"
+      },
+      "b": {
+        "report": "reports/eval_heldout_jev.json",
+        "system": "proposed",
+        "versions": "commit 2a7cdfb; extractor jev behind the router (keyword-v1 on trivial turns and as fallback); policy v2.3; no ML model, no LLM"
+      },
+      "n_cases": 250,
+      "safe_automated_resolution": {
+        "a": {
+          "numerator": 105,
+          "denominator": 107,
+          "rate": 0.9813084112149533,
+          "ci95": [
+            0.9343961469302772,
+            0.9948590351638246
+          ]
+        },
+        "b": {
+          "numerator": 105,
+          "denominator": 107,
+          "rate": 0.9813084112149533,
+          "ci95": [
+            0.9343961469302772,
+            0.9948590351638246
+          ]
+        },
+        "only_a": 0,
+        "only_b": 0,
+        "p_value": 1.0
+      },
+      "unsafe_outcomes": {
+        "a": {
+          "numerator": 20,
+          "denominator": 250,
+          "rate": 0.08,
+          "ci95": [
+            0.052382328372331775,
+            0.12032964320384165
+          ]
+        },
+        "b": {
+          "numerator": 26,
+          "denominator": 250,
+          "rate": 0.104,
+          "ci95": [
+            0.07196523249243102,
+            0.14802034070796105
+          ]
+        },
+        "only_a": 0,
+        "only_b": 6,
+        "p_value": 0.03125
+      }
     }
   ]
 }

@@ -424,3 +424,28 @@ def test_a_policy_question_after_a_greeting_is_answered_and_keeps_the_listed_cha
     picked = rag_orchestrator.handle_message(owner_session, cid, str(option))
     assert picked.case_id
     assert [c["transaction_id"] for c in ops_store.list_cases(owner_session.customer_id)] == [greeting.candidates[option - 1]["transaction_id"]]
+
+
+# Two behaviors read from the code on 4-Oct and reproduced on 5-Oct. Each test states the behavior the customer needs; it is an
+# expected failure until the team decides the fix (TQ-041, TQ-042), and strict, so the fix has to remove the mark.
+@pytest.mark.xfail(strict=True, reason="TQ-041: an answered rules question that names 'un cargo' counts as an earlier dispute, "
+                                       "so the next rules question takes the dispute flow and a third one reaches a human")
+def test_rules_questions_after_a_greeting_keep_reaching_the_explainer_and_never_a_human(rag_orchestrator, owner_session, ops_store):
+    cid = start(rag_orchestrator, owner_session)
+    rag_orchestrator.handle_message(owner_session, cid, "Hola")
+    first = rag_orchestrator.handle_message(owner_session, cid, "¿Cuántos días tengo para disputar un cargo?")
+    assert first.policy_outcome == "POLICY_EXPLANATION"
+    second = rag_orchestrator.handle_message(owner_session, cid, "¿Qué tipo de movimientos puedo disputar?")
+    third = rag_orchestrator.handle_message(owner_session, cid, "¿Y cuánto tarda la respuesta?")
+    assert [h for h in ops_store.list_handoffs() if h["conversation_id"] == cid] == []
+    assert second.policy_outcome == "POLICY_EXPLANATION" and third.policy_outcome == "POLICY_EXPLANATION"
+
+
+@pytest.mark.xfail(strict=True, reason="TQ-042: the conversation language is fixed by the first message, so a customer who greets in "
+                                       "Spanish and then writes in Portuguese is answered in Spanish")
+def test_a_customer_who_switches_to_portuguese_after_the_first_message_is_answered_in_portuguese(rag_orchestrator, owner_session):
+    cid = start(rag_orchestrator, owner_session)
+    assert rag_orchestrator.handle_message(owner_session, cid, "Hola").language == "es"
+    turn = rag_orchestrator.handle_message(owner_session, cid, "Olá, não reconheço uma cobrança de 120 dólares no Cine Premium")
+    assert turn.case_id  # the dispute itself is understood and the case opens
+    assert turn.language == "pt"

@@ -26,6 +26,7 @@ uv run python -m src.auth.seed_personas --email-pattern 'you+{label}@gmail.com' 
 uv run python -m src.eval.run data/eval/dev_cases.jsonl --out reports/eval_dev --repeats 3   # evaluation, baseline vs proposed: reports/eval_dev.json and .md
 uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out reports/eval_heldout --repeats 3   # frozen held-out suite
 uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out reports/eval_heldout_model --repeats 3 --systems proposed --model models/fraud_risk_ieee.joblib   # the held-out with the transferred risk model the API serves (B1); without --model the run is rules-only
+uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out reports/eval_heldout_explainer --repeats 3 --systems proposed --explainer data/rag_gate.json   # the held-out with the policy explainer on, as production serves it
 uv run python -m src.eval.intervals --out reports/eval_intervals   # Wilson 95 % intervals and exact paired tests, read from the committed report JSONs (regenerates no report)
 uv run python -m src.eval.heldout                     # rebuild the held-out suite from the lakehouse sample; must reproduce data/eval/heldout_cases.sha256
 uv run python -m src.eval.rag_benchmark --out reports/rag_benchmark   # policy explainer on the policy question bank (Task 1.2); add --e5 models/e5-small to measure E5 beside BM25, --write-gate data/rag_gate.json to turn the explainer on

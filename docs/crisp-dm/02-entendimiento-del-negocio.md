@@ -72,7 +72,7 @@ Romper cualquiera de las 12 reglas de `AGENTS.md` sec. 4 descalifica el trabajo.
 | 9 | La cadena de pensamiento no es auditoría | Explicaciones con ids de cláusula; cada acción queda en `ops.audit_log` |
 | 10 | Sin credenciales ni registros privados | Los modelos externos ven solo el mensaje enmascarado; las llaves de AWS viven en un `.env` fuera de git |
 | 11 | Honestidad sobre lo que falta | Secciones de límites en `README.md` y en esta guía |
-| 12 | Datos estáticos: probar la actualización con un fixture | Las escrituras se prueban sobre fixtures del equipo (`tests/conftest.py`). No hay un fixture de llegadas tardías como el que propone `AGENTS.md` sec. 7 (búsqueda del 4-oct en `src/`, `tests/` y `data/fixtures/`) |
+| 12 | Datos estáticos: probar la actualización con un fixture | Las escrituras se prueban sobre fixtures del equipo (`tests/conftest.py`). El fixture de llegadas tardías que propone `AGENTS.md` sec. 7 existe desde el 5-oct (`data/fixtures/late_arrival_transactions.json`) |
 
 ## 3. Por qué ganó el intake de disputas
 

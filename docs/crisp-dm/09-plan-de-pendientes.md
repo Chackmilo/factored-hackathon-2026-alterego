@@ -8,9 +8,9 @@ Estado al 5-oct, en la rama `analysis/crisp-pending` (creada desde `origin/main`
 
 | Estado | Cuántos | Cuáles |
 | --- | --- | --- |
-| Hecho en esta rama | 6 | Corrida held-out con el modelo (1), modelo de registro reproducible (2, falta decidir cómo llega a Vercel), E5 contra BM25 (3), comparación solo reglas contra reglas más modelo (5), intervalos y prueba pareada (6), brecha por país de la corrida ciega (11) |
-| Siguiente, sin cuentas ni gasto | 4 | Explicador en el harness (8), fixture de llegadas tardías (10), tests de los dos bugs leídos del código (12), correcciones a esta guía |
-| Necesita una decisión del equipo | 6 | Gasto de Jev (4), residuo numérico del contrato de features (nuevo), licencia de IEEE-CIS, hipótesis 3, preguntas abiertas, respuestas de Claude |
+| Hecho en esta rama | 9 | Corrida held-out con el modelo (1), modelo de registro reproducible (2, falta decidir cómo llega a Vercel), E5 contra BM25 (3), comparación solo reglas contra reglas más modelo (5), intervalos y prueba pareada (6), explicador en el harness (8), fixture de llegadas tardías (10), brecha por país de la corrida ciega (11), tests que reproducen los dos bugs (12, falta decidir el arreglo) |
+| Siguiente, sin cuentas ni gasto | 1 | Correcciones a esta guía que dependen de otras fuentes (sección 4) |
+| Necesita una decisión del equipo | 8 | Gasto de Jev (4), arreglo de los dos bugs de conversación (TQ-041 y TQ-042), residuo numérico del contrato de features (TQ-043), licencia de IEEE-CIS, hipótesis 3, preguntas abiertas, respuestas de Claude |
 | Necesita personas o acceso | 3 | Etiquetas humanas (7), utilidad del handoff (9), estado de producción |
 | Queda como limitación | 2 | Carga y concurrencia (13), familias C y D de la competencia (14) |
 
@@ -25,11 +25,11 @@ Estado al 5-oct, en la rama `analysis/crisp-pending` (creada desde `origin/main`
 | 5 | Propuesto contra la versión solo reglas (H1) | **Hecho** para el modelo; falta Jev | Misma suite, reglas contra reglas más modelo, con prueba pareada | [`reports/eval_intervals.md`](../../reports/eval_intervals.md) |
 | 6 | Intervalos o pruebas sobre las tasas (hallazgo H09) | **Hecho** | `src.eval.intervals` lee los reportes comprometidos, sin regenerarlos | `reports/eval_intervals.md`; sección 2.3 |
 | 7 | Etiquetas humanas y kappa | Necesita personas | Dos personas etiquetan los 50 casos dobles (`data/eval/labeling/README.md`) | Las 4 planillas siguen en 0 de 300 filas; cerrada como limitación (TQ-018) |
-| 8 | Explicador de políticas de punta a punta | Siguiente | Un modo del harness con el explicador encendido, y comparar caso por caso con la corrida sin él | El harness corre sin explicador; producción lo tiene encendido |
+| 8 | Explicador de políticas de punta a punta | **Hecho** el modo; la suite no lo ejercita | `src.eval.run ... --explainer data/rag_gate.json` corre lo que sirve producción | [`reports/eval_heldout_explainer.md`](../../reports/eval_heldout_explainer.md); sección 2.7 |
 | 9 | Utilidad del handoff | Necesita personas | Una rúbrica y revisión humana; el código solo puede revisar que el paquete venga completo | El juez revisa la escalación y su razón, nada más |
-| 10 | Fixture de llegadas tardías (`AGENTS.md` sec. 7) | Siguiente | Un fixture etiquetado y un test: silver se queda con el `process_date` más reciente | No hay ninguno en `tests/`, `src/` ni `data/fixtures/` |
+| 10 | Fixture de llegadas tardías (`AGENTS.md` sec. 7) | **Hecho** | Fixture etiquetado con un cargo procesado tarde y una fila reprocesada, y tres tests | [`data/fixtures/late_arrival_transactions.json`](../../data/fixtures/late_arrival_transactions.json); sección 2.8 |
 | 11 | Brecha por país de la corrida ciega | **Hecho** | Desglose por plantilla del reporte ciego | Sección 2.4 |
-| 12 | Tests de los dos bugs leídos del código (idioma fijo tras `new`; segunda pregunta de reglas tras un saludo) | Siguiente | Un test que reproduzca cada uno. El arreglo espera la decisión del equipo | Ningún test los demuestra |
+| 12 | Tests de los dos bugs leídos del código (idioma fijo tras `new`; segunda pregunta de reglas tras un saludo) | **Hecho** el test; **pendiente** el arreglo | Dos tests marcados como fallo esperado estricto; el arreglo espera TQ-041 y TQ-042 | `tests/test_policy_rag.py`; sección 2.9 |
 | 13 | Carga, concurrencia y costo de cómputo | Limitación | Se declara; no hay prueba de carga | `README.md`, "Limitations" |
 | 14 | Familias C y D de la competencia (de 0,817 hacia 0,917) | Trabajo futuro | Seguimiento de TQ-026 | Sin código en `src/` |
 
@@ -129,15 +129,36 @@ La regla se comprometió antes de medir y es la que el roadmap proponía desde e
 
 E5 gana por 3 preguntas en español y por 1 en portugués: la regla pedía 2 en cada idioma, y además E5 no cabe en el bundle. La hipótesis 5 se cumple en dirección y no por el margen fijado; con 23 preguntas, una ventaja de 4 no se distingue del azar. El hallazgo útil es otro: recuperar mejor no dio mejores respuestas, porque la compuerta de E5 dejó pasar una sola respuesta en test. Lo que limita al explicador es la compuerta, no el recuperador. Límites: la corrida usó una CPU ARM64 y el archivo int8 está hecho para x86 con AVX-512 VNNI; el banco lo redactó un LLM.
 
+### 2.7 El explicador encendido no cambia ningún caso del held-out
+
+El harness ahora corre el stack propuesto con el explicador que sirve producción (`--explainer data/rag_gate.json`). Con él encendido, los 250 casos del held-out dan el mismo resultado, uno por uno, que la corrida solo reglas: 105 de 107 resoluciones seguras y 20 de 250 inseguros. La razón es que ninguna conversación de la suite hace una pregunta de reglas, así que ningún turno llega al explicador. Dos lecturas: las cifras solo reglas valen para lo que corre en producción, y la suite no mide al explicador. En el split de desarrollo, DEV-019 sí llega al explicador y recibe la cláusula correcta (`POL-WIN-60`) sin abrir caso; su etiqueta se escribió con el explicador apagado, así que el resultado exacto baja a 18 de 19 sin ningún inseguro.
+
+### 2.8 Las llegadas tardías tienen su fixture
+
+`data/fixtures/late_arrival_transactions.json` (`team-generated`) trae los dos casos que el dataset declara y no muestra:
+
+- **Un cargo procesado tarde.** Evento del 15 de abril, día de proceso 20 de abril. Gold cuenta 58 días y lo deja en ventana; desde el evento serían 63. La política lo resuelve si recibe `process_date`, como hace el orquestador, y se abstiene con `POL-WIN-60` si recibe la marca cruda: para una fila tardía, fecha(`transaction_date` - 6 h) ya no es `process_date`.
+- **Una fila reprocesada.** El mismo cargo llega el 10 de junio como `Pending` y el 12 como `Approved`. Silver se queda con la del 12 y la del 10 va a `quarantine_duplicate_transactions`.
+
+Los tres tests están en `tests/test_ingestion.py`. La cuarentena pasó a ser una función (`build_quarantine_duplicate_transactions`) para poder probarla.
+
+### 2.9 Los dos bugs de conversación se reproducen
+
+Los dos estaban marcados como inferidos de la lectura del código ([06](06-evaluacion.md) sección 10; [07](07-despliegue.md) sección 9). Ahora cada uno tiene un test que lo reproduce, marcado como fallo esperado estricto hasta que el equipo decida el arreglo:
+
+- **Preguntas de reglas tras un saludo (TQ-041).** La primera llega al explicador. La segunda va al flujo de disputa y recibe "No encontramos un cargo que coincida con su descripción". La tercera termina en un handoff con `POL-ESC-AMBIG`: un humano recibe a un cliente que no disputó nada. Es peor de lo que la guía describía, y el explicador está encendido en producción.
+- **Idioma fijo (TQ-042).** Un cliente que saluda en español y luego escribe la disputa en portugués recibe la confirmación del caso en español. El caso sí se abre.
+
 ## 3. Decisiones que necesitan al equipo
 
 | Tema | Qué hay que decidir | Recomendación de esta guía |
 | --- | --- | --- |
 | Gasto de Jev (H4) | Si se autorizan llamadas facturadas para medir Jev contra el extractor, y qué etiqueta de intención se usa | Medir sobre los 250 primeros mensajes del held-out, con la intención esperada derivada de la etiqueta de diseño |
-| Residuo numérico (sección 2.5) | Si se trata una desviación menor a un épsilon como cero, con contrato 1.2 y modelo nuevo | Sí, después de la entrega; registrar como pregunta del equipo (la siguiente libre es TQ-041) |
+| Bugs de conversación (sección 2.9) | TQ-041: si un mensaje que respondió el explicador deja de contar como disputa previa. TQ-042: si cada respuesta sigue el idioma del mensaje | Sí a las dos, cada una con su test; mientras tanto, declararlas como límite |
+| Residuo numérico (sección 2.5) | TQ-043: si se trata una desviación menor a un épsilon como cero, con contrato 1.2 y modelo nuevo | Sí, después de la entrega |
 | Licencia de IEEE-CIS | TQ-032 y `README.md` dicen aprobada; TQ-026, una fila de `docs/PLAN.md` y la spec del modelo, pendiente | Alinear las cuatro fuentes con la respuesta de TQ-032, si Kmilo confirma la aprobación |
 | Hipótesis 3 | La fila de `docs/PLAN.md` sigue en Propuesta y TQ-023 no tiene respuesta | Reportar el resultado negativo con el pipeline (opción a de TQ-023) |
-| Preguntas abiertas | TQ-002, TQ-004, TQ-016, TQ-023, TQ-025 y TQ-040 no tienen respuesta en `origin/main`; TQ-038 y TQ-039 dependen del PR #59 | Responderlas en el archivo; TQ-002 y TQ-004 ya están implementadas como se recomendó |
+| Preguntas abiertas | TQ-002, TQ-004, TQ-016, TQ-023, TQ-025 y TQ-040 no tienen respuesta en `origin/main`; TQ-038 y TQ-039 dependen del PR #59; TQ-041 a TQ-043 nacen en esta rama | Responderlas en el archivo; TQ-002 y TQ-004 ya están implementadas como se recomendó |
 | Respondidas sin código | TQ-028 (reintentos), TQ-029 (pregunta para reportes de pérdida) y TQ-031 (palabras completas) | Declararlas como límite o implementarlas con su test |
 | Respuestas de Claude | Faltan las tareas 3 a 7 y una key | Declarar como trabajo futuro |
 | Cómo llega el modelo a Vercel | El `.joblib` pesa 1,3 MB y está en `.gitignore` | Decidir si se versiona el bundle o se construye en el build |
@@ -169,6 +190,8 @@ uv run python -m src.ml.fraud_risk_transfer --competition data/kaggle --lakehous
 uv run python -m src.ml.risk_feature_eda --competition data/kaggle --lakehouse data/lakehouse_full.duckdb --model models/fraud_risk_ieee.joblib --out reports/ml
 uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out reports/eval_heldout_model --repeats 3 --systems proposed --model models/fraud_risk_ieee.joblib
 uv run python -m src.eval.intervals --out reports/eval_intervals
+uv run python -m src.eval.run data/eval/heldout_cases.jsonl --out reports/eval_heldout_explainer --repeats 3 --systems proposed --explainer data/rag_gate.json
+uv run python -m src.eval.rag_benchmark --out reports/rag_benchmark_e5 --e5 models/e5-small   # en el contenedor dev
 ```
 
 ## Fuentes

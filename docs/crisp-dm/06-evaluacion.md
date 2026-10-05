@@ -193,7 +193,7 @@ Benchmark aparte, sobre 60 preguntas `team-generated, LLM-drafted`: 30 de desarr
 | Abstención indebida (se esperaba respuesta) | 33,3 % (6 de 18) | 61,1 % (11 de 18) |
 | Cita equivocada (de las respuestas dadas) | 21,4 % (3 de 14) | 27,3 % (3 de 11) |
 
-En test, la acción correcta es 40,0 % (6 de 15) en ES y 33,3 % (5 de 15) en PT. Por qué falla, las desviaciones declaradas del banco y la comparación pendiente con E5 están en [05-modelado.md](05-modelado.md), sección 3. El explicador está encendido en producción (`data/rag_gate.json`, PR #28), pero ninguna corrida de punta a punta lo incluye (README, "Limitations").
+En test, la acción correcta es 40,0 % (6 de 15) en ES y 33,3 % (5 de 15) en PT. Por qué falla, las desviaciones declaradas del banco y la comparación con E5 (medida el 5-oct; BM25 se queda) están en [05-modelado.md](05-modelado.md), sección 3. El explicador está encendido en producción (`data/rag_gate.json`, PR #28), pero ninguna corrida de punta a punta lo incluye (README, "Limitations").
 
 Las métricas offline del modelo de riesgo (ROC AUC de test 0,497 sobre la etiqueta del banco; 0,817 en el holdout de IEEE-CIS) están en [05-modelado.md](05-modelado.md), sección 2.
 
@@ -209,7 +209,7 @@ Las métricas offline del modelo de riesgo (ROC AUC de test 0,497 sobre la etiqu
 1. **No son ganancias de producción.** Corren offline, en proceso, con un banco DuckDB por caso, ops store en memoria, sin red ni Postgres y, salvo los 12 ataques, sin token (regla 11).
 2. **No miden lo desplegado.** Producción corre solo reglas más el explicador BM25, sin archivo de modelo y sin key de Jev ni de LLM: toda respuesta es plantilla (README, "Limitations"; commit `a18f045`). Dos comportamientos que la suite no ve, inferidos del código: una segunda pregunta de política tras un saludo puede ir al flujo de disputa, porque `_disputed_earlier` cuenta la primera si nombra un "cargo"; y el idioma queda fijo al salir del estado `new` (`src/orchestrator/dispute_orchestrator.py:171`). Inferido: ninguna conversación de la suite cambia de idioma.
 3. **No prueban generalización.** La cifra posterior reutiliza los casos que guiaron los arreglos (sección 5).
-4. **No miden los componentes aprendidos.** El "propuesto" es la versión solo reglas, que el plan llama baseline principal (README, "Results"), así que la hipótesis 1 solo se probó contra el pipeline inicial. Las hipótesis 3, 4 y 5 no se confirman: el modelo tiene cifras en un PR, Jev no tiene medición y E5 no se comparó (`docs/PLAN.md` sec. 1).
+4. **No miden los componentes aprendidos.** El "propuesto" es la versión solo reglas, que el plan llama baseline principal (README, "Results"), así que la hipótesis 1 solo se probó contra el pipeline inicial. Desde el 5-oct hay reporte con el modelo (sección 7) y medición de E5 contra BM25 ([09-plan-de-pendientes.md](09-plan-de-pendientes.md), secciones 2.2 y 2.6); la hipótesis 3 sigue sin soporte en los datos del banco y Jev sigue sin medición (`docs/PLAN.md` sec. 1).
 5. **No juzgan el contexto del handoff**, que el enunciado pide útil (`AGENTS.md` sec. 5): el juez solo revisa la escalación y su razón.
 6. **Cero fallas en una muestra chica no es riesgo cero**, como 0 inseguros en 25 casos adversariales (`AGENTS.md` sec. 5).
 7. **No hay prueba de carga ni de concurrencia, ni costo medido** más allá de los 0 tokens del modo solo reglas (README, "Limitations").

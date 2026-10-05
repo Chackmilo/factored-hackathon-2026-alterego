@@ -90,7 +90,7 @@ La guía las declara donde aparecen y usa la cifra indicada. "Quién decide" es 
 Preguntas abiertas sin respuesta registrada en el repo (la lista completa, con su estado al 5-oct, está en [09](09-plan-de-pendientes.md)):
 
 - **TQ-023:** cómo presentar la hipótesis 3 con una etiqueta sin señal. **TQ-025:** si existe un vínculo entre quejas y marcas de fraude. **TQ-002:** fallar o poner en cuarentena una fila sin tasa (el código falla). **TQ-004:** ratificar que un `amount_usd` nulo escala a humano (el código lo hace). **TQ-016:** si `tests/test_data_integrity.py` debe saltarse o fallar sin lakehouse. Desde el 4-oct, también **TQ-040** (cómo llega al agente un cargo sin comercio); TQ-038 y TQ-039 dependen del PR #59 ([`data/fixtures/team_questions.json`](../../data/fixtures/team_questions.json)).
-- **Hipótesis 5:** E5 contra BM25 sigue sin medir; la Tarea 4.2 está pendiente (`docs/RAG_IMPLEMENTATION_ROADMAP.md` sec. 6).
+- **Hipótesis 5:** medida el 5-oct; BM25 se queda (`reports/rag_evaluation_report.md`). La regla de decisión es la propuesta del roadmap, que el equipo no ha ratificado.
 - **Modelo de registro:** resuelto el 5-oct. Con las filas en orden fijo el reentrenamiento reproduce 0,817 y el umbral 0,0669 ([09](09-plan-de-pendientes.md), sección 2.1). Falta decidir cómo llegaría a Vercel.
 - **Estado de producción que el repo no registra:** si se aplicó la migración 0005, si el registro público está apagado, si se rotaron las claves del 2-oct y si se borraron los casos de prueba de las personas ([07](07-despliegue.md), secciones 5, 8 y 9).
 

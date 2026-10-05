@@ -8,8 +8,8 @@ Estado al 5-oct, en la rama `analysis/crisp-pending` (creada desde `origin/main`
 
 | Estado | Cuántos | Cuáles |
 | --- | --- | --- |
-| Hecho en esta rama | 5 | Corrida held-out con el modelo (1), modelo de registro reproducible (2, falta decidir cómo llega a Vercel), comparación solo reglas contra reglas más modelo (5), intervalos y prueba pareada (6), brecha por país de la corrida ciega (11) |
-| Siguiente, sin cuentas ni gasto | 5 | E5 contra BM25 (3), explicador en el harness (8), fixture de llegadas tardías (10), tests de los dos bugs leídos del código (12), correcciones a esta guía |
+| Hecho en esta rama | 6 | Corrida held-out con el modelo (1), modelo de registro reproducible (2, falta decidir cómo llega a Vercel), E5 contra BM25 (3), comparación solo reglas contra reglas más modelo (5), intervalos y prueba pareada (6), brecha por país de la corrida ciega (11) |
+| Siguiente, sin cuentas ni gasto | 4 | Explicador en el harness (8), fixture de llegadas tardías (10), tests de los dos bugs leídos del código (12), correcciones a esta guía |
 | Necesita una decisión del equipo | 6 | Gasto de Jev (4), residuo numérico del contrato de features (nuevo), licencia de IEEE-CIS, hipótesis 3, preguntas abiertas, respuestas de Claude |
 | Necesita personas o acceso | 3 | Etiquetas humanas (7), utilidad del handoff (9), estado de producción |
 | Queda como limitación | 2 | Carga y concurrencia (13), familias C y D de la competencia (14) |
@@ -20,7 +20,7 @@ Estado al 5-oct, en la rama `analysis/crisp-pending` (creada desde `origin/main`
 | --- | --- | --- | --- | --- |
 | 1 | Held-out con el modelo de riesgo (H1, H2) | **Hecho** | `src.eval.run ... --model models/fraud_risk_ieee.joblib`, 3 repeticiones | [`reports/eval_heldout_model.md`](../../reports/eval_heldout_model.md); sección 2.2 |
 | 2 | Modelo de registro: 0,817 o 0,815 | **Hecho** el modelo; **pendiente** su llegada a Vercel | El entrenador lee sus filas en orden fijo y dos reentrenamientos dan el mismo reporte | Commits `0224320` y `4db45f3`; sección 2.1 |
-| 3 | E5 contra BM25 (H5, Tarea 4.2) | Siguiente | `src.rag.onnx_retriever download` y `src.eval.rag_benchmark --e5 models/e5-small` en el contenedor `dev` (`onnxruntime` no tiene rueda para macOS 13) | `reports/rag_benchmark.md` no mide E5 |
+| 3 | E5 contra BM25 (H5, Tarea 4.2) | **Hecho** | Regla de decisión comprometida antes de medir (commit `8e9b9c7`); `src.eval.rag_benchmark --e5 models/e5-small` en el contenedor `dev` | [`reports/rag_evaluation_report.md`](../../reports/rag_evaluation_report.md); sección 2.6 |
 | 4 | Jev contra el extractor (H4), con calibración ES y PT | Necesita decisión | Llamadas reales y facturadas a Jev sobre los mensajes del held-out, dentro del tope de 2 USD por día | Falta el visto bueno del gasto y definir la etiqueta de intención (sección 3) |
 | 5 | Propuesto contra la versión solo reglas (H1) | **Hecho** para el modelo; falta Jev | Misma suite, reglas contra reglas más modelo, con prueba pareada | [`reports/eval_intervals.md`](../../reports/eval_intervals.md) |
 | 6 | Intervalos o pruebas sobre las tasas (hallazgo H09) | **Hecho** | `src.eval.intervals` lee los reportes comprometidos, sin regenerarlos | `reports/eval_intervals.md`; sección 2.3 |
@@ -115,6 +115,20 @@ Lo que muestran las features (valores crudos, antes de los rangos por fuente):
 
 **Hallazgo nuevo: residuo numérico en dos features del contrato.** `amount_zscore_card` va de -66.959.892 a 528.064.394 en la competencia: cuando los cargos previos de una tarjeta son iguales, la varianza no da cero exacto sino un residuo de punto flotante, y dividir por él dispara el valor (308 filas pasan de 1.000 en valor absoluto, 667 de 50; 2.355 tienen una desviación entre 0 y 0,001). En el banco el máximo es 609,83. `tx_sum_card_7d` tiene el mismo origen: su mediana es 3,0e-09 en vez de 0. El modelo lee rangos, así que el efecto se limita a esas filas, pero su rango es ruido. Arreglarlo cambia el contrato (versión 1.2) y el modelo, así que queda como decisión (sección 3).
 
+### 2.6 E5 contra BM25: BM25 se queda
+
+La regla se comprometió antes de medir y es la que el roadmap proponía desde el 30-sep (Tarea 4.2), sin ratificar por el equipo: E5 se adopta solo si en test supera a BM25 en recall@3 por 2 preguntas o más en español y en portugués, sin más citas equivocadas, y si cabe en el bundle.
+
+| Medida (test, 30 preguntas) | BM25 | E5 |
+| --- | --- | --- |
+| Recall@3 en español | 7 de 11 | 10 de 11 |
+| Recall@3 en portugués | 9 de 12 | 10 de 12 |
+| Recall@3 total | 69,6 % (16 de 23) | 87,0 % (20 de 23) |
+| Acción correcta | 36,7 % (11 de 30) | 33,3 % (10 de 30) |
+| Citas equivocadas | 3 de 11 | 0 de 1 |
+
+E5 gana por 3 preguntas en español y por 1 en portugués: la regla pedía 2 en cada idioma, y además E5 no cabe en el bundle. La hipótesis 5 se cumple en dirección y no por el margen fijado; con 23 preguntas, una ventaja de 4 no se distingue del azar. El hallazgo útil es otro: recuperar mejor no dio mejores respuestas, porque la compuerta de E5 dejó pasar una sola respuesta en test. Lo que limita al explicador es la compuerta, no el recuperador. Límites: la corrida usó una CPU ARM64 y el archivo int8 está hecho para x86 con AVX-512 VNNI; el banco lo redactó un LLM.
+
 ## 3. Decisiones que necesitan al equipo
 
 | Tema | Qué hay que decidir | Recomendación de esta guía |
@@ -159,7 +173,7 @@ uv run python -m src.eval.intervals --out reports/eval_intervals
 
 ## Fuentes
 
-- Reportes: [`reports/ml/fraud_risk_transfer.md`](../../reports/ml/fraud_risk_transfer.md), [`reports/ml/risk_feature_eda.md`](../../reports/ml/risk_feature_eda.md), [`reports/eval_heldout_model.md`](../../reports/eval_heldout_model.md), [`reports/eval_intervals.md`](../../reports/eval_intervals.md), [`reports/eval_heldout.md`](../../reports/eval_heldout.md), [`reports/eval_heldout_blind.md`](../../reports/eval_heldout_blind.md) y sus `.json`.
+- Reportes: [`reports/rag_evaluation_report.md`](../../reports/rag_evaluation_report.md), [`reports/rag_benchmark_e5.md`](../../reports/rag_benchmark_e5.md), [`reports/ml/fraud_risk_transfer.md`](../../reports/ml/fraud_risk_transfer.md), [`reports/ml/risk_feature_eda.md`](../../reports/ml/risk_feature_eda.md), [`reports/eval_heldout_model.md`](../../reports/eval_heldout_model.md), [`reports/eval_intervals.md`](../../reports/eval_intervals.md), [`reports/eval_heldout.md`](../../reports/eval_heldout.md), [`reports/eval_heldout_blind.md`](../../reports/eval_heldout_blind.md) y sus `.json`.
 - Código: `src/ml/risk_feature_eda.py`, `src/ml/ieee_cis_adapter.py`, `src/ml/bank_adapter.py`, `src/ml/feature_contract.py`, `src/eval/intervals.py`; tests `tests/test_risk_feature_eda.py`, `tests/test_eval_intervals.py` y `tests/test_fraud_risk_transfer.py`.
 - [`data/fixtures/team_questions.json`](../../data/fixtures/team_questions.json) en `origin/main` (40 preguntas al 5-oct); [`docs/HANDOFF.md`](../HANDOFF.md) secs. 3 y 7; cuerpo del PR #45 (`gh pr view`).
 - [`data/eval/heldout_cases.jsonl`](../../data/eval/heldout_cases.jsonl) para los desgloses por caso, canal y plantilla.

@@ -1,0 +1,1110 @@
+{
+  "model": {
+    "path": "models/fraud_risk_ieee.joblib",
+    "trained_at": "2026-10-05T14:44:21",
+    "commit": "53e1545",
+    "contract_version": "1.1",
+    "threshold": 0.06692086092274296,
+    "threshold_kind": "percentile"
+  },
+  "sources": {
+    "competition": {
+      "rows": 590540,
+      "positives": 20663,
+      "days": 182,
+      "holdout_from": "2018-04-27",
+      "train_rows": 487837,
+      "holdout_rows": 102703
+    },
+    "bank": {
+      "rows": 75366,
+      "is_fraud_flags": 73,
+      "anchor": "2026-06-17",
+      "window_days": 60,
+      "channels": [
+        "Web",
+        "App"
+      ]
+    }
+  },
+  "features": [
+    "amount_usd",
+    "log_amount_usd",
+    "amount_has_cents",
+    "hour_sin",
+    "hour_cos",
+    "day_of_week",
+    "card_kind_credit",
+    "card_kind_debit",
+    "days_since_prev_tx_card",
+    "tx_count_card_1d",
+    "tx_count_card_7d",
+    "tx_count_card_30d",
+    "tx_sum_card_7d",
+    "amount_mean_card_hist",
+    "amount_std_card_hist",
+    "amount_zscore_card",
+    "ratio_to_historical_avg",
+    "address_distance_bucket",
+    "consistency_matches"
+  ],
+  "charts": {
+    "amount_usd": "01_amount_usd.png",
+    "log_amount_usd": "02_log_amount_usd.png",
+    "amount_has_cents": "03_amount_has_cents.png",
+    "hour_sin": "04_hour_sin.png",
+    "hour_cos": "05_hour_cos.png",
+    "day_of_week": "06_day_of_week.png",
+    "card_kind_credit": "07_card_kind_credit.png",
+    "card_kind_debit": "08_card_kind_debit.png",
+    "days_since_prev_tx_card": "09_days_since_prev_tx_card.png",
+    "tx_count_card_1d": "10_tx_count_card_1d.png",
+    "tx_count_card_7d": "11_tx_count_card_7d.png",
+    "tx_count_card_30d": "12_tx_count_card_30d.png",
+    "tx_sum_card_7d": "13_tx_sum_card_7d.png",
+    "amount_mean_card_hist": "14_amount_mean_card_hist.png",
+    "amount_std_card_hist": "15_amount_std_card_hist.png",
+    "amount_zscore_card": "16_amount_zscore_card.png",
+    "ratio_to_historical_avg": "17_ratio_to_historical_avg.png",
+    "address_distance_bucket": "18_address_distance_bucket.png",
+    "consistency_matches": "19_consistency_matches.png"
+  },
+  "stats": {
+    "competition": [
+      {
+        "feature": "amount_usd",
+        "phrase": "Amount in USD",
+        "n": 590540,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 20902,
+        "min": 0.251,
+        "max": 31937.391,
+        "mean": 135.02717637247264,
+        "median": 68.769,
+        "std": 239.16252201373405,
+        "mean_label_1": 149.2447785897498,
+        "mean_label_0": 134.51166457849678
+      },
+      {
+        "feature": "log_amount_usd",
+        "phrase": "Amount in USD (log scale)",
+        "n": 590540,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 20902,
+        "min": 0.2239432314847741,
+        "max": 10.37156404479566,
+        "mean": 4.382959765336735,
+        "median": 4.245189772611798,
+        "std": 0.9371828342162002,
+        "mean_label_1": 4.374155394120288,
+        "mean_label_0": 4.38327900040403
+      },
+      {
+        "feature": "amount_has_cents",
+        "phrase": "Amount with cents",
+        "n": 590540,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 2,
+        "min": 0.0,
+        "max": 1.0,
+        "mean": 0.48240254682155315,
+        "median": 0.0,
+        "std": 0.49969065676607555,
+        "mean_label_1": 0.46963170885157046,
+        "mean_label_0": 0.48286560082263363
+      },
+      {
+        "feature": "hour_sin",
+        "phrase": "Time of day (processing clock)",
+        "n": 590540,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 1291,
+        "min": -1.0,
+        "max": 1.0,
+        "mean": -0.3408382739246989,
+        "median": -0.544639035015027,
+        "std": 0.6208398873561672,
+        "mean_label_1": -0.23125739157475686,
+        "mean_label_0": -0.34481153442125667
+      },
+      {
+        "feature": "hour_cos",
+        "phrase": "Time of day (processing clock)",
+        "n": 590540,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 1308,
+        "min": -1.0,
+        "max": 1.0,
+        "mean": 0.2642523479189161,
+        "median": 0.45009844103743507,
+        "std": 0.65464431588204,
+        "mean_label_1": 0.28041247276110737,
+        "mean_label_0": 0.2636664027770448
+      },
+      {
+        "feature": "day_of_week",
+        "phrase": "Day of the week",
+        "n": 590540,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 7,
+        "min": 0.0,
+        "max": 6.0,
+        "mean": 3.095731025840756,
+        "median": 3.0,
+        "std": 1.9528239221966286,
+        "mean_label_1": 3.1700624304312055,
+        "mean_label_0": 3.093035865634163
+      },
+      {
+        "feature": "card_kind_credit",
+        "phrase": "Product is a credit card",
+        "n": 590540,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 2,
+        "min": 0.0,
+        "max": 1.0,
+        "mean": 0.25228773664781384,
+        "median": 0.0,
+        "std": 0.43432586155974406,
+        "mean_label_1": 0.48153704689541693,
+        "mean_label_0": 0.24397545435243043
+      },
+      {
+        "feature": "card_kind_debit",
+        "phrase": "Product is a debit card",
+        "n": 590540,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 2,
+        "min": 0.0,
+        "max": 1.0,
+        "mean": 0.7449757848748603,
+        "median": 1.0,
+        "std": 0.4358751960626725,
+        "mean_label_1": 0.5165755214634855,
+        "mean_label_0": 0.7532572818345011
+      },
+      {
+        "feature": "days_since_prev_tx_card",
+        "phrase": "Days since the card's previous charge",
+        "n": 590540,
+        "nulls": 218030,
+        "null_share": 0.36920445693771803,
+        "distinct": 237436,
+        "min": 0.0,
+        "max": 179.84358796296297,
+        "mean": 10.043904823428802,
+        "median": 1.921730324074074,
+        "std": 18.227227282586902,
+        "mean_label_1": 3.314789072204477,
+        "mean_label_0": 10.318597142862687
+      },
+      {
+        "feature": "tx_count_card_1d",
+        "phrase": "Charges of the card in the last day",
+        "n": 590540,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 881,
+        "min": 0.0,
+        "max": 880.0,
+        "mean": 1.9695532902089612,
+        "median": 0.0,
+        "std": 21.458551909637425,
+        "mean_label_1": 2.3368823500943714,
+        "mean_label_0": 1.9562344154966773
+      },
+      {
+        "feature": "tx_count_card_7d",
+        "phrase": "Charges of the card in the last 7 days",
+        "n": 590540,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 976,
+        "min": 0.0,
+        "max": 975.0,
+        "mean": 2.8619449994919903,
+        "median": 0.0,
+        "std": 27.97140920242507,
+        "mean_label_1": 3.5540821758699126,
+        "mean_label_0": 2.8368490042588137
+      },
+      {
+        "feature": "tx_count_card_30d",
+        "phrase": "Charges of the card in the last 30 days",
+        "n": 590540,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 1405,
+        "min": 0.0,
+        "max": 1404.0,
+        "mean": 4.491038710332916,
+        "median": 1.0,
+        "std": 40.32056940750507,
+        "mean_label_1": 5.038668150800949,
+        "mean_label_0": 4.471182377951734
+      },
+      {
+        "feature": "tx_sum_card_7d",
+        "phrase": "Amount charged to the card in the last 7 days",
+        "n": 590540,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 83369,
+        "min": 0.0,
+        "max": 103440.0,
+        "mean": 299.22925624755504,
+        "median": 2.9802293965985882e-09,
+        "std": 3004.536475455717,
+        "mean_label_1": 378.07627546857594,
+        "mean_label_0": 296.3703657182584
+      },
+      {
+        "feature": "amount_mean_card_hist",
+        "phrase": "The card's usual charge amount",
+        "n": 590540,
+        "nulls": 218030,
+        "null_share": 0.36920445693771803,
+        "distinct": 143498,
+        "min": 0.4075,
+        "max": 21765.724000000002,
+        "mean": 126.1550371134713,
+        "median": 78.96798155737704,
+        "std": 195.4092709178041,
+        "mean_label_1": 133.60497693633747,
+        "mean_label_0": 125.85091970410532
+      },
+      {
+        "feature": "amount_std_card_hist",
+        "phrase": "How much the card's amounts vary",
+        "n": 590540,
+        "nulls": 310620,
+        "null_share": 0.5259931588038067,
+        "distinct": 198724,
+        "min": 0.0,
+        "max": 21577.364135014283,
+        "mean": 63.55932125242059,
+        "median": 31.637553238020267,
+        "std": 138.36652454746735,
+        "mean_label_1": 60.41837534197075,
+        "mean_label_0": 63.69407281129181
+      },
+      {
+        "feature": "amount_zscore_card",
+        "phrase": "Amount versus the card's usual amounts",
+        "n": 590540,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 198617,
+        "min": -66959892.31011036,
+        "max": 528064393.57493705,
+        "mean": 15792.847800684041,
+        "median": 0.0,
+        "std": 1864321.2382199767,
+        "mean_label_1": 29653.335745292025,
+        "mean_label_0": 15290.284506500502
+      },
+      {
+        "feature": "ratio_to_historical_avg",
+        "phrase": "Amount versus the customer's average",
+        "n": 590540,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 228067,
+        "min": 0.005041108406406829,
+        "max": 203.99666666666664,
+        "mean": 1.1414706367765195,
+        "median": 1.0,
+        "std": 1.589612292372049,
+        "mean_label_1": 1.1685424568464968,
+        "mean_label_0": 1.1404890477351897
+      },
+      {
+        "feature": "address_distance_bucket",
+        "phrase": "Charge location versus the customer's city and country",
+        "n": 590540,
+        "nulls": 352271,
+        "null_share": 0.596523520845328,
+        "distinct": 3,
+        "min": 0.0,
+        "max": 2.0,
+        "mean": 1.0910063835412915,
+        "median": 1.0,
+        "std": 0.49912466220590374,
+        "mean_label_1": 1.1913774973711881,
+        "mean_label_0": 1.0889625461428436
+      },
+      {
+        "feature": "consistency_matches",
+        "phrase": "Consistency of country, city and currency with the customer's profile",
+        "n": 590540,
+        "nulls": 154875,
+        "null_share": 0.26225996545534597,
+        "distinct": 23,
+        "min": 0.0,
+        "max": 1.0,
+        "mean": 0.6044635732019962,
+        "median": 0.625,
+        "std": 0.292237921206369,
+        "mean_label_1": 0.5600615560689685,
+        "mean_label_0": 0.6053899829736304
+      }
+    ],
+    "bank": [
+      {
+        "feature": "amount_usd",
+        "phrase": "Amount in USD",
+        "n": 75366,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 61575,
+        "min": 4.94,
+        "max": 10091.92,
+        "mean": 1680.9454171642385,
+        "median": 467.81,
+        "std": 2335.768941633172
+      },
+      {
+        "feature": "log_amount_usd",
+        "phrase": "Amount in USD (log scale)",
+        "n": 75366,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 61575,
+        "min": 1.7817091333745536,
+        "max": 9.219589466921901,
+        "mean": 6.469322723632099,
+        "median": 6.1501975690933195,
+        "std": 1.4732834156467223
+      },
+      {
+        "feature": "amount_has_cents",
+        "phrase": "Amount with cents",
+        "n": 75366,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 2,
+        "min": 0.0,
+        "max": 1.0,
+        "mean": 0.989424939627949,
+        "median": 1.0,
+        "std": 0.1022906022283201
+      },
+      {
+        "feature": "hour_sin",
+        "phrase": "Time of day (processing clock)",
+        "n": 75366,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 1291,
+        "min": -1.0,
+        "max": 1.0,
+        "mean": -0.004785923436144531,
+        "median": -0.008726535498374524,
+        "std": 0.7064195998088484
+      },
+      {
+        "feature": "hour_cos",
+        "phrase": "Time of day (processing clock)",
+        "n": 75366,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 1308,
+        "min": -1.0,
+        "max": 1.0,
+        "mean": -0.0005855187328258815,
+        "median": -1.8369701987210297e-16,
+        "std": 0.7077862456708383
+      },
+      {
+        "feature": "day_of_week",
+        "phrase": "Day of the week",
+        "n": 75366,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 7,
+        "min": 0.0,
+        "max": 6.0,
+        "mean": 2.6521641058302152,
+        "median": 2.0,
+        "std": 1.9189594543845039
+      },
+      {
+        "feature": "card_kind_credit",
+        "phrase": "Product is a credit card",
+        "n": 75366,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 2,
+        "min": 0.0,
+        "max": 1.0,
+        "mean": 0.25256747074277525,
+        "median": 0.0,
+        "std": 0.43448779994809844
+      },
+      {
+        "feature": "card_kind_debit",
+        "phrase": "Product is a debit card",
+        "n": 75366,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 2,
+        "min": 0.0,
+        "max": 1.0,
+        "mean": 0.09836000318445984,
+        "median": 0.0,
+        "std": 0.29780276980248427
+      },
+      {
+        "feature": "days_since_prev_tx_card",
+        "phrase": "Days since the card's previous charge",
+        "n": 75366,
+        "nulls": 36893,
+        "null_share": 0.48951781970649894,
+        "distinct": 38355,
+        "min": 0.0017013888888888888,
+        "max": 90.73733796296297,
+        "mean": 27.75289039493546,
+        "median": 24.214791666666667,
+        "std": 19.870948099586915
+      },
+      {
+        "feature": "tx_count_card_1d",
+        "phrase": "Charges of the card in the last day",
+        "n": 75366,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 3,
+        "min": 0.0,
+        "max": 2.0,
+        "mean": 0.01210094737680121,
+        "median": 0.0,
+        "std": 0.11006315539472902
+      },
+      {
+        "feature": "tx_count_card_7d",
+        "phrase": "Charges of the card in the last 7 days",
+        "n": 75366,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 4,
+        "min": 0.0,
+        "max": 3.0,
+        "mean": 0.08440145423665844,
+        "median": 0.0,
+        "std": 0.2901812643605777
+      },
+      {
+        "feature": "tx_count_card_30d",
+        "phrase": "Charges of the card in the last 30 days",
+        "n": 75366,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 6,
+        "min": 0.0,
+        "max": 5.0,
+        "mean": 0.36450123397818646,
+        "median": 0.0,
+        "std": 0.6053761508102353
+      },
+      {
+        "feature": "tx_sum_card_7d",
+        "phrase": "Amount charged to the card in the last 7 days",
+        "n": 75366,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 6492,
+        "min": 0.0,
+        "max": 22458.470000035762,
+        "mean": 142.68040217661328,
+        "median": 6.705249688820913e-10,
+        "std": 843.724396489141
+      },
+      {
+        "feature": "amount_mean_card_hist",
+        "phrase": "The card's usual charge amount",
+        "n": 75366,
+        "nulls": 36893,
+        "null_share": 0.48951781970649894,
+        "distinct": 37543,
+        "min": 5.079999999999984,
+        "max": 9997.41,
+        "mean": 1661.4786692402095,
+        "median": 593.09,
+        "std": 2131.7950924324673
+      },
+      {
+        "feature": "amount_std_card_hist",
+        "phrase": "How much the card's amounts vary",
+        "n": 75366,
+        "nulls": 62401,
+        "null_share": 0.8279728259427328,
+        "distinct": 12953,
+        "min": 0.0494974745355914,
+        "max": 7015.347797507975,
+        "mean": 1350.324863056356,
+        "median": 633.2919042984727,
+        "std": 1608.47901943353
+      },
+      {
+        "feature": "amount_zscore_card",
+        "phrase": "Amount versus the card's usual amounts",
+        "n": 75366,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 3302,
+        "min": -22.872486161517607,
+        "max": 609.8312401467588,
+        "mean": 0.05236222662780389,
+        "median": 0.0,
+        "std": 2.596644621383785
+      },
+      {
+        "feature": "ratio_to_historical_avg",
+        "phrase": "Amount versus the customer's average",
+        "n": 75366,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 62741,
+        "min": 0.0005441000895433291,
+        "max": 1361.5800653592992,
+        "mean": 2.9495034084677285,
+        "median": 1.0,
+        "std": 13.572403810352851
+      },
+      {
+        "feature": "address_distance_bucket",
+        "phrase": "Charge location versus the customer's city and country",
+        "n": 75366,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 3,
+        "min": 0.0,
+        "max": 2.0,
+        "mean": 0.09424674256295942,
+        "median": 0.0,
+        "std": 0.4203344194606383
+      },
+      {
+        "feature": "consistency_matches",
+        "phrase": "Consistency of country, city and currency with the customer's profile",
+        "n": 75366,
+        "nulls": 0,
+        "null_share": 0.0,
+        "distinct": 6,
+        "min": 0.25,
+        "max": 1.0,
+        "mean": 0.8311274314677706,
+        "median": 0.75,
+        "std": 0.1713134564890587
+      }
+    ]
+  },
+  "observed_vs_predicted": {
+    "train": [
+      {
+        "bin": 1,
+        "n": 48784,
+        "score_min": 0.0012547763130994983,
+        "score_max": 0.004618074897115269,
+        "mean_predicted": 0.0036490814601183694,
+        "positives": 71,
+        "observed_rate": 0.0014553952115447689
+      },
+      {
+        "bin": 2,
+        "n": 48784,
+        "score_min": 0.004618074897115269,
+        "score_max": 0.006417974270372078,
+        "mean_predicted": 0.0055000017189773655,
+        "positives": 124,
+        "observed_rate": 0.0025418169891767792
+      },
+      {
+        "bin": 3,
+        "n": 48784,
+        "score_min": 0.00641800211501402,
+        "score_max": 0.008819535187757566,
+        "mean_predicted": 0.007593135765776861,
+        "positives": 205,
+        "observed_rate": 0.004202197441784191
+      },
+      {
+        "bin": 4,
+        "n": 48784,
+        "score_min": 0.008819550219033268,
+        "score_max": 0.011472613426344931,
+        "mean_predicted": 0.010034545974516028,
+        "positives": 373,
+        "observed_rate": 0.007645949491636602
+      },
+      {
+        "bin": 5,
+        "n": 48784,
+        "score_min": 0.011472722644342988,
+        "score_max": 0.016081281058690645,
+        "mean_predicted": 0.013637991595432584,
+        "positives": 516,
+        "observed_rate": 0.010577238438832404
+      },
+      {
+        "bin": 6,
+        "n": 48784,
+        "score_min": 0.016081312396358217,
+        "score_max": 0.02123693477356307,
+        "mean_predicted": 0.01860255867761666,
+        "positives": 723,
+        "observed_rate": 0.014820432928829124
+      },
+      {
+        "bin": 7,
+        "n": 48784,
+        "score_min": 0.02123703145866117,
+        "score_max": 0.030626473363459764,
+        "mean_predicted": 0.0253315476019278,
+        "positives": 1038,
+        "observed_rate": 0.021277468022302393
+      },
+      {
+        "bin": 8,
+        "n": 48783,
+        "score_min": 0.030626473363459764,
+        "score_max": 0.04905006379646067,
+        "mean_predicted": 0.03911973815301636,
+        "positives": 1599,
+        "observed_rate": 0.032777811942684955
+      },
+      {
+        "bin": 9,
+        "n": 48783,
+        "score_min": 0.049050318445548934,
+        "score_max": 0.08535231515433568,
+        "mean_predicted": 0.06461072422797678,
+        "positives": 2829,
+        "observed_rate": 0.05799151343705799
+      },
+      {
+        "bin": 10,
+        "n": 48783,
+        "score_min": 0.08535409018806026,
+        "score_max": 0.9633284814244342,
+        "mean_predicted": 0.16309124773489406,
+        "positives": 9672,
+        "observed_rate": 0.19826578931185043
+      }
+    ],
+    "holdout": [
+      {
+        "bin": 1,
+        "n": 10271,
+        "score_min": 0.0012781325823219797,
+        "score_max": 0.004358298916277544,
+        "mean_predicted": 0.0034490852128379016,
+        "positives": 34,
+        "observed_rate": 0.003310291110894752
+      },
+      {
+        "bin": 2,
+        "n": 10271,
+        "score_min": 0.004358349744612231,
+        "score_max": 0.0060114155564289125,
+        "mean_predicted": 0.005149167131110255,
+        "positives": 50,
+        "observed_rate": 0.004868075163080518
+      },
+      {
+        "bin": 3,
+        "n": 10271,
+        "score_min": 0.0060115730581023,
+        "score_max": 0.008214080152602395,
+        "mean_predicted": 0.007049512156253241,
+        "positives": 62,
+        "observed_rate": 0.0060364132022198425
+      },
+      {
+        "bin": 4,
+        "n": 10270,
+        "score_min": 0.008214147912464071,
+        "score_max": 0.010524189626471853,
+        "mean_predicted": 0.009345463129329271,
+        "positives": 72,
+        "observed_rate": 0.007010710808179162
+      },
+      {
+        "bin": 5,
+        "n": 10270,
+        "score_min": 0.010524317785770648,
+        "score_max": 0.014325151217342071,
+        "mean_predicted": 0.012278419778338566,
+        "positives": 136,
+        "observed_rate": 0.013242453748782863
+      },
+      {
+        "bin": 6,
+        "n": 10270,
+        "score_min": 0.014325418933080055,
+        "score_max": 0.019921084844551268,
+        "mean_predicted": 0.017010631053148522,
+        "positives": 163,
+        "observed_rate": 0.015871470301850047
+      },
+      {
+        "bin": 7,
+        "n": 10270,
+        "score_min": 0.019921151830969493,
+        "score_max": 0.02885821246609071,
+        "mean_predicted": 0.023778574025205817,
+        "positives": 261,
+        "observed_rate": 0.025413826679649466
+      },
+      {
+        "bin": 8,
+        "n": 10270,
+        "score_min": 0.028858423365757294,
+        "score_max": 0.04590317759826256,
+        "mean_predicted": 0.03656315980229356,
+        "positives": 459,
+        "observed_rate": 0.04469328140214216
+      },
+      {
+        "bin": 9,
+        "n": 10270,
+        "score_min": 0.04590323140304507,
+        "score_max": 0.07871475254779116,
+        "mean_predicted": 0.06015749186787319,
+        "positives": 663,
+        "observed_rate": 0.06455696202531645
+      },
+      {
+        "bin": 10,
+        "n": 10270,
+        "score_min": 0.07871777518059397,
+        "score_max": 0.8592009494335936,
+        "mean_predicted": 0.1463819670118654,
+        "positives": 1613,
+        "observed_rate": 0.15705939629990262
+      }
+    ],
+    "holdout_daily": [
+      {
+        "day": "2018-04-27",
+        "n": 2718,
+        "observed": 79,
+        "expected": 88.02473444625078
+      },
+      {
+        "day": "2018-04-28",
+        "n": 3060,
+        "observed": 86,
+        "expected": 99.62857803636864
+      },
+      {
+        "day": "2018-04-29",
+        "n": 2289,
+        "observed": 66,
+        "expected": 66.4370414900501
+      },
+      {
+        "day": "2018-04-30",
+        "n": 2209,
+        "observed": 69,
+        "expected": 69.94250822196155
+      },
+      {
+        "day": "2018-05-01",
+        "n": 3101,
+        "observed": 99,
+        "expected": 82.46192123310207
+      },
+      {
+        "day": "2018-05-02",
+        "n": 3896,
+        "observed": 120,
+        "expected": 95.59817835077727
+      },
+      {
+        "day": "2018-05-03",
+        "n": 3105,
+        "observed": 126,
+        "expected": 86.03459593575154
+      },
+      {
+        "day": "2018-05-04",
+        "n": 3783,
+        "observed": 94,
+        "expected": 109.94629327588696
+      },
+      {
+        "day": "2018-05-05",
+        "n": 3352,
+        "observed": 119,
+        "expected": 107.15439258167153
+      },
+      {
+        "day": "2018-05-06",
+        "n": 2575,
+        "observed": 54,
+        "expected": 81.72178050754052
+      },
+      {
+        "day": "2018-05-07",
+        "n": 2259,
+        "observed": 69,
+        "expected": 74.70203450441578
+      },
+      {
+        "day": "2018-05-08",
+        "n": 3048,
+        "observed": 81,
+        "expected": 82.15092637898886
+      },
+      {
+        "day": "2018-05-09",
+        "n": 2845,
+        "observed": 89,
+        "expected": 82.24849867764318
+      },
+      {
+        "day": "2018-05-10",
+        "n": 2878,
+        "observed": 85,
+        "expected": 91.29024779688886
+      },
+      {
+        "day": "2018-05-11",
+        "n": 2854,
+        "observed": 68,
+        "expected": 110.30167301978187
+      },
+      {
+        "day": "2018-05-12",
+        "n": 3233,
+        "observed": 114,
+        "expected": 111.45719136732464
+      },
+      {
+        "day": "2018-05-13",
+        "n": 2880,
+        "observed": 136,
+        "expected": 111.25210172682887
+      },
+      {
+        "day": "2018-05-14",
+        "n": 2988,
+        "observed": 77,
+        "expected": 100.6537704671809
+      },
+      {
+        "day": "2018-05-15",
+        "n": 3038,
+        "observed": 73,
+        "expected": 100.5511736930712
+      },
+      {
+        "day": "2018-05-16",
+        "n": 2931,
+        "observed": 94,
+        "expected": 83.75165798772063
+      },
+      {
+        "day": "2018-05-17",
+        "n": 3020,
+        "observed": 119,
+        "expected": 100.64933471941106
+      },
+      {
+        "day": "2018-05-18",
+        "n": 2948,
+        "observed": 116,
+        "expected": 105.77395105839467
+      },
+      {
+        "day": "2018-05-19",
+        "n": 3191,
+        "observed": 146,
+        "expected": 112.02110867074376
+      },
+      {
+        "day": "2018-05-20",
+        "n": 2409,
+        "observed": 101,
+        "expected": 86.2664967941223
+      },
+      {
+        "day": "2018-05-21",
+        "n": 2795,
+        "observed": 68,
+        "expected": 93.85358552064488
+      },
+      {
+        "day": "2018-05-22",
+        "n": 3160,
+        "observed": 81,
+        "expected": 97.96790640098563
+      },
+      {
+        "day": "2018-05-23",
+        "n": 2866,
+        "observed": 142,
+        "expected": 96.66640506635589
+      },
+      {
+        "day": "2018-05-24",
+        "n": 2837,
+        "observed": 87,
+        "expected": 95.11506756351507
+      },
+      {
+        "day": "2018-05-25",
+        "n": 2683,
+        "observed": 108,
+        "expected": 93.36671260828372
+      },
+      {
+        "day": "2018-05-26",
+        "n": 3032,
+        "observed": 145,
+        "expected": 106.50728645291036
+      },
+      {
+        "day": "2018-05-27",
+        "n": 2364,
+        "observed": 109,
+        "expected": 76.93953366068618
+      },
+      {
+        "day": "2018-05-28",
+        "n": 2068,
+        "observed": 88,
+        "expected": 73.55920373407368
+      },
+      {
+        "day": "2018-05-29",
+        "n": 2177,
+        "observed": 66,
+        "expected": 65.16943064962271
+      },
+      {
+        "day": "2018-05-30",
+        "n": 2618,
+        "observed": 98,
+        "expected": 78.18652040730439
+      },
+      {
+        "day": "2018-05-31",
+        "n": 2739,
+        "observed": 122,
+        "expected": 89.4745337891867
+      },
+      {
+        "day": "2018-06-01",
+        "n": 2754,
+        "observed": 119,
+        "expected": 91.5381198670398
+      }
+    ],
+    "holdout_observed": 3513,
+    "holdout_expected": 3298.364496662486,
+    "train_observed": 17150,
+    "train_expected": 17131.238407143657
+  },
+  "bank_flags_by_score_decile": [
+    {
+      "bin": 1,
+      "n": 7537,
+      "score_min": 0.0013699108588640548,
+      "score_max": 0.005355474848891351,
+      "mean_predicted": 0.004320041068646206,
+      "positives": 11,
+      "observed_rate": 0.0014594666312856574
+    },
+    {
+      "bin": 2,
+      "n": 7537,
+      "score_min": 0.005356495344991145,
+      "score_max": 0.00666423564556461,
+      "mean_predicted": 0.006011141645276854,
+      "positives": 7,
+      "observed_rate": 0.0009287514926363275
+    },
+    {
+      "bin": 3,
+      "n": 7537,
+      "score_min": 0.006664328309608842,
+      "score_max": 0.007870522290254858,
+      "mean_predicted": 0.007260178596497657,
+      "positives": 4,
+      "observed_rate": 0.0005307151386493299
+    },
+    {
+      "bin": 4,
+      "n": 7537,
+      "score_min": 0.007870673416776287,
+      "score_max": 0.009018871049025726,
+      "mean_predicted": 0.008440810160804313,
+      "positives": 8,
+      "observed_rate": 0.0010614302772986599
+    },
+    {
+      "bin": 5,
+      "n": 7537,
+      "score_min": 0.009018885538415088,
+      "score_max": 0.010153599097639293,
+      "mean_predicted": 0.009558788041649658,
+      "positives": 5,
+      "observed_rate": 0.0006633939233116624
+    },
+    {
+      "bin": 6,
+      "n": 7537,
+      "score_min": 0.010153658979268402,
+      "score_max": 0.011678295562181605,
+      "mean_predicted": 0.010863735771506379,
+      "positives": 5,
+      "observed_rate": 0.0006633939233116624
+    },
+    {
+      "bin": 7,
+      "n": 7536,
+      "score_min": 0.011678501123714723,
+      "score_max": 0.014295098172821272,
+      "mean_predicted": 0.012853797385246462,
+      "positives": 9,
+      "observed_rate": 0.0011942675159235668
+    },
+    {
+      "bin": 8,
+      "n": 7536,
+      "score_min": 0.014295323479686888,
+      "score_max": 0.019186998124956455,
+      "mean_predicted": 0.016576550924975005,
+      "positives": 7,
+      "observed_rate": 0.0009288747346072187
+    },
+    {
+      "bin": 9,
+      "n": 7536,
+      "score_min": 0.019187458980468062,
+      "score_max": 0.02708688142846816,
+      "mean_predicted": 0.02259686195592032,
+      "positives": 8,
+      "observed_rate": 0.0010615711252653928
+    },
+    {
+      "bin": 10,
+      "n": 7536,
+      "score_min": 0.02709518944123436,
+      "score_max": 0.6904697937591315,
+      "mean_predicted": 0.05324623213524139,
+      "positives": 9,
+      "observed_rate": 0.0011942675159235668
+    }
+  ]
+}

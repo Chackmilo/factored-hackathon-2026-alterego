@@ -199,7 +199,7 @@ def plot_observed_vs_predicted(train_bins: list[dict[str, Any]], test_bins: list
     points = [b[k] for bins in (train_bins, test_bins) for b in bins for k in ("mean_predicted", "observed_rate") if b[k] > 0]
     lo, hi = min(points) * 0.7, max(points) * 1.4
     ax_c.plot([lo, hi], [lo, hi], color=MUTED, linewidth=1)
-    ax_c.annotate("observed = predicted", xy=(lo * 1.6, lo * 1.6), xytext=(8, -4), textcoords="offset points", ha="left", va="top", fontsize=8.5,
+    ax_c.annotate("observed = predicted", xy=(hi * 0.3, hi * 0.3), xytext=(10, -10), textcoords="offset points", ha="left", va="top", fontsize=8.5,
                   color=INK_SECONDARY)
     for bins, color, name in ((train_bins, COMPETITION_COLOR, "Train"), (test_bins, BANK_COLOR, "Holdout (last 20 % of the days)")):
         ax_c.plot([b["mean_predicted"] for b in bins], [max(b["observed_rate"], lo) for b in bins], color=color, linewidth=2, marker="o",

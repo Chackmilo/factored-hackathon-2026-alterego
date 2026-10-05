@@ -1,4 +1,4 @@
-# Fraud risk transfer report (2026-09-30T00:52:00, commit f7c0eb5)
+# Fraud risk transfer report (2026-10-05T14:44:21, commit 53e1545)
 
 Contract v1.1, 19 deployable features, fraud_score used: no. sklearn.HistGradientBoostingClassifier on per-source percentile ranks (LightGBM stand-in, TQ-022).
 
@@ -14,7 +14,7 @@ Contract v1.1, 19 deployable features, fraud_score used: no. sklearn.HistGradien
 | Ablation | Dropped | ROC AUC | PR AUC |
 | --- | --- | --- | --- |
 | without_card_aggregates | days_since_prev_tx_card, tx_count_card_1d, tx_count_card_7d, tx_count_card_30d, tx_sum_card_7d, amount_mean_card_hist, amount_std_card_hist, amount_zscore_card, ratio_to_historical_avg | 0.785 | 0.145 |
-| without_discrete_block | amount_has_cents, day_of_week, card_kind_credit, card_kind_debit, address_distance_bucket, consistency_matches | 0.755 | 0.090 |
+| without_discrete_block | amount_has_cents, day_of_week, card_kind_credit, card_kind_debit, address_distance_bucket, consistency_matches | 0.754 | 0.089 |
 
 ## Bank calibration
 

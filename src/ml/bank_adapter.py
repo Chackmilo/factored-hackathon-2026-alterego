@@ -68,7 +68,8 @@ def load_bank_canonical(lakehouse: str | Path, channels: tuple[str, ...] = ("Web
             FROM silver_transactions t
             LEFT JOIN silver_products p ON p.product_id = t.product_id
             LEFT JOIN gold_customers c ON c.customer_id = t.customer_id
-            WHERE t.process_date >= ?""", [since]).df()
+            WHERE t.process_date >= ?
+            ORDER BY ts, row_id""", [since]).df()
     finally:
         con.close()
     df["card_kind"] = df["product_type"].map(CARD_KIND).where(df["product_type"].isin(CARD_KIND), "account")

@@ -44,7 +44,10 @@ def competition_to_canonical(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def load_competition(path: str | Path, limit: int | None = None) -> pd.DataFrame:
-    """train_transaction.csv (or the folder holding it) read through DuckDB with the needed columns only."""
+    """train_transaction.csv (or the folder holding it) read through DuckDB with the needed columns only.
+
+    Rows that share a timestamp are ordered by id: the engine breaks ties differently on each run, and the row order
+    reaches the per-card aggregates and the model fit."""
     p = Path(path)
     csv = p / "train_transaction.csv" if p.is_dir() else p
     if not csv.exists():
@@ -52,7 +55,7 @@ def load_competition(path: str | Path, limit: int | None = None) -> pd.DataFrame
     con = duckdb.connect()
     cols = ", ".join(COMPETITION_COLUMNS)
     lim = f" LIMIT {int(limit)}" if limit else ""
-    df = con.execute(f"SELECT {cols} FROM read_csv_auto('{csv}', sample_size=50000) ORDER BY TransactionDT{lim}").df()
+    df = con.execute(f"SELECT {cols} FROM read_csv_auto('{csv}', sample_size=50000) ORDER BY TransactionDT, TransactionID{lim}").df()
     con.close()
     return competition_to_canonical(df)
 

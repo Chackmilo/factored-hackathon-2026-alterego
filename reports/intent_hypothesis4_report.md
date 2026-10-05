@@ -30,6 +30,63 @@ Calibration is reported apart for Spanish and Portuguese, for each of Jev's thre
 
 For the mix the report gives the messages read right and the share of messages that needed a Jev call.
 
-## Result
+## Result (5-Oct)
 
-Pending: the measurement follows in the next commit.
+Source: `reports/intent_benchmark.md` and `.json` (commit 5a17f65; Jev `jev-1.13.0`, 140 real calls, 0.010 USD). One run: the test split was read once.
+
+**Hypothesis 4 is supported on this bank.** Both rules hold.
+
+| Test split, messages read right | Spanish | Portuguese | All |
+| --- | --- | --- | --- |
+| Keyword extractor | 44.0 % (22 of 50) | 54.0 % (27 of 50) | 49.0 % (49 of 100) |
+| Jev | 92.0 % (46 of 50) | 92.0 % (46 of 50) | 92.0 % (92 of 100) |
+| Mix chosen on development (`gate`) | 80.0 % (40 of 50) | 82.0 % (41 of 50) | 81.0 % (81 of 100) |
+
+1. **Met.** Jev reads 92 of 100 right against 49. On the paired messages, 44 are read right only by Jev and 1 only by the keywords: exact McNemar p under 0.0001.
+2. **Met.** Jev is ahead in Spanish (46 against 22) and in Portuguese (46 against 27).
+
+By label on the test split (found, missed, wrongly named):
+
+| Label | Messages that carry it | Keyword extractor | Jev |
+| --- | --- | --- | --- |
+| Charge dispute | 62 | 43, 19, 2 | 59, 3, 0 |
+| Card lost or stolen | 24 | 6, 18, 1 | 23, 1, 0 |
+| Question about the rules | 8 | 7, 1, 0 | 7, 1, 0 |
+| Request of another channel | 26 | 11, 15, 2 | 23, 3, 0 |
+
+The keyword extractor misses what is not said in its words: 18 of the 24 lost or stolen cards ("se me perdió la billetera con todo y tarjeta", "levaram minha carteira"), 19 of the 62 disputes and 15 of the 26 other requests. Jev named the category of the other request right in all 23 it found. The question about the rules is the same for both, since Jev is not asked it.
+
+### Calibration, by language
+
+| Jev's answer | Spanish (50) | Portuguese (50) |
+| --- | --- | --- |
+| Disputes a charge | Brier 0.032, ECE 0.072 | Brier 0.033, ECE 0.087 |
+| Card lost or stolen | Brier 0.003, ECE 0.037 | Brier 0.009, ECE 0.046 |
+| Asks for something else | Brier 0.025, ECE 0.116 | Brier 0.022, ECE 0.115 |
+
+The two languages are close on every answer. The card answer is the best calibrated; the "asks for something else" answer is the least, at about 0.12 in both languages.
+
+**Jev's misses are doubts, not confident errors.** In all 8 test messages Jev reads wrong, the answer it gets wrong sits between 0.40 and 0.48, just under the 0.50 that makes a topic: "Perdí la tarjeta en el estadio y ya me gastaron 150 dólares" (dispute 0.48), "Se me bloqueó el PIN por meter mal la clave tres veces" (other request 0.43), "Sumiu meu cartão, o que eu faço?" (card 0.40). The policy already treats that band as doubt and asks the customer.
+
+### The mix of keywords and Jev
+
+The mix that calls Jev only when the keywords are not sure of themselves reads 81 of 100 right with Jev on 58 of the 100 messages: it saves 42 % of the calls and loses 11 messages against Jev alone. On the development split it had looked as good as Jev (38 of 40 against 37).
+
+The reason is in the 42 messages where the keywords were sure and Jev was not called: the keywords read 28 of them right, and Jev would have read 39. A keyword reading that found a dispute phrase is sure of the dispute, and blind to what else the message says: of its 14 errors, 6 miss a dispute, 4 miss the card and the rest miss or misname another request.
+
+So a mix by "how sure the keywords are" is not the structure to use. The structure the results support is a split by kind of information, which the router already has:
+
+- **Jev reads the meaning** (which topics the message carries), one yes or no per statement.
+- **The keyword extractor reads the exact data**: amounts, dates, the yes or no to the lock question and the option number, always from the raw text.
+- **The keyword extractor takes the turns that need no reading** (a bare yes, an option number, the lock answer) and every turn when Jev has no key, no budget or fails.
+- **Jev's doubt band asks the customer** instead of deciding.
+
+Cost is not the constraint that would justify the gate: 140 calls cost one cent.
+
+### Limits
+
+- One author wrote the messages and the labels, the same day and without a second reader. Labels on the edge are debatable: "Cancelei a assinatura faz meses e continuam debitando todo mês" is labeled a dispute, and "No reconozco la cuota que me están cobrando del préstamo" is labeled a loan request by the team's rule that a loan installment is not a card charge.
+- The messages were written to vary the wording, which is where a keyword list is weakest. On the template messages of the held-out suite both engines read 225 of 225 right. Real customer messages sit somewhere between the two banks, and the bank has none.
+- 100 test messages, 50 per language: the intervals are wide (Jev 92 %, Wilson 95 % interval 85.0 to 95.9 %; keywords 49 %, 39.4 to 58.7 %).
+- This measures the reading of one message, not the outcome of a conversation. End to end on the held-out suite Jev and the keywords are equally safe (`reports/jev_evaluation_report.md`).
+- Production has no Jev key: it runs the keyword extractor. Turning Jev on there is a decision of its own (a key in Vercel and the daily cap).

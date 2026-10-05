@@ -132,7 +132,7 @@
       "b": {
         "report": "reports/eval_heldout_model.json",
         "system": "proposed",
-        "versions": "commit 53e1545; extractor keyword-v1; policy v2.3; risk model fraud_risk_ieee.joblib (threshold 0.06692), no LLM"
+        "versions": "commit 8489a97; extractor keyword-v1; policy v2.3; risk model fraud_risk_ieee.joblib (threshold 0.06365), no LLM"
       },
       "n_cases": 250,
       "safe_automated_resolution": {

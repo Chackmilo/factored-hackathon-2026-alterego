@@ -27,7 +27,7 @@ The intervals cover sampling error only. The cases come from a few templates, so
 ## Proposed stack: rules only against rules plus the transferred risk model
 
 - A: `proposed` in `reports/eval_heldout.json` (commit 9efb497; extractor keyword-v1; policy v2.3; no ML model, no LLM)
-- B: `proposed` in `reports/eval_heldout_model.json` (commit 53e1545; extractor keyword-v1; policy v2.3; risk model fraud_risk_ieee.joblib (threshold 0.06692), no LLM)
+- B: `proposed` in `reports/eval_heldout_model.json` (commit 8489a97; extractor keyword-v1; policy v2.3; risk model fraud_risk_ieee.joblib (threshold 0.06365), no LLM)
 
 | Metric | A | B | Only A | Only B | Exact p |
 | --- | --- | --- | --- | --- | --- |

@@ -82,4 +82,4 @@ On the 19 development cases Jev gave 8 of 9 safe resolutions and 1 of 19 unsafe 
 - 250 scripted conversations from a few templates; 8 out-of-scope first messages. A suite with free-form messages could rank the engines differently.
 - All Portuguese is team-generated. Jev's documentation names English as its main language.
 - No threshold was tuned. The 0.70 confidence floor is the spec's.
-- Production has no Jev key, so it runs the keyword extractor.
+- Since 5-Oct production runs Jev in the second mode, one question per statement (`main` at `58ab501`; `TYPESAFE_API_KEY` in Vercel Production, 2 USD daily cap), and the keyword extractor takes trivial turns and any Jev failure. No run measures Jev there together with the risk model and the policy explainer.

@@ -199,7 +199,7 @@ Reglas de preparación:
 - **Ubicación calculada al servir.** Antes, al servir, las dos features de ubicación tomaban siempre la mediana de entrenamiento (AUD-27). Desde el PR #45 ambos gateways devuelven país y ciudad del cargo, moneda del producto y ciudad del cliente, y el fixture de evaluación también los conserva (`CLAUDE.md`, "Gotchas").
 - **Solo Web y App.** Los cargos de otros canales no se califican (`src/ml/transfer_scorer.py`).
 
-Producción no tiene el archivo del modelo, porque está fuera de git y Vercel construye desde GitHub, así que ahí `POL-ESC-ML-RISK` nunca se dispara (commit `a18f045`; `README.md`, "Limitations"). El modelo está en [Modelado](05-modelado.md), sección 2.3.
+Hasta el 5-oct producción no tenía el archivo del modelo, porque estaba fuera de git y Vercel construye desde GitHub, así que ahí `POL-ESC-ML-RISK` nunca se disparaba (commit `a18f045`). Ese día el bundle entró a git, y producción lo sirve desde el despliegue de `58ab501` (`README.md`, "Limitations"). El modelo está en [Modelado](05-modelado.md), sección 2.3.
 
 ## 9. Privacidad: PII enmascarada antes de cualquier modelo
 

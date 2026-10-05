@@ -1,15 +1,15 @@
 # CRISP-DM 6. Despliegue
 
-AlterEgo está desplegado en <https://alterego-silk.vercel.app>. Una función de Python en Vercel sirve la API y el front de React. Supabase Auth emite la identidad y Supabase Postgres guarda dos cosas: una copia de solo lectura de los datos del banco y lo que el sistema escribe. Producción corre la política como código en modo solo reglas, más el explicador de políticas con BM25. Esta fase cuenta cómo está armado, qué controles tiene, qué no corre y qué riesgos quedan para la ventana del jurado. Cómo usarlo está en [01-guia-de-uso.md](01-guia-de-uso.md).
+AlterEgo está desplegado en <https://alterego-silk.vercel.app>. Una función de Python en Vercel sirve la API y el front de React. Supabase Auth emite la identidad y Supabase Postgres guarda dos cosas: una copia de solo lectura de los datos del banco y lo que el sistema escribe. Desde el 5-oct producción corre la política como código con el modelo de riesgo, Jev y el explicador de políticas con BM25. Esta fase cuenta cómo está armado, qué controles tiene, qué no corre y qué riesgos quedan para la ventana del jurado. Cómo usarlo está en [01-guia-de-uso.md](01-guia-de-uso.md).
 
 ## Resumen en una tabla
 
 | Tema | Respuesta corta | Fuente |
 | --- | --- | --- |
 | URL | `/health` responde `healthy`, app "AlterEgo dispute intake", versión 0.1.0, `env` production | Auditoría del 4-oct, no comprometida en el repo; prueba de humo del 4-oct en `docs/HANDOFF.md` sec. 7.3; `src/api/app.py`, `src/core/config.py` |
-| Código servido | `d25891e` (merge del PR #53). `main` está en `c71cc09`, que solo cambia `CLAUDE.md` y cuyo despliegue quedó bloqueado | Estados de despliegue de GitHub (`gh api`, 4-oct); `git show --stat c71cc09` |
+| Código servido | `58ab501` (merge del PR #63), desplegado el 5-oct. Vercel Hobby había bloqueado los merges de #56 a #63, hechos por otra cuenta | Estados de despliegue de GitHub (`gh api`, 5-oct) |
 | Plataforma | Vercel Hobby y un solo proyecto Supabase Free, que también es producción | [`docs/HANDOFF.md`](../HANDOFF.md) secs. 1 y 4; `README.md`, "Limitations" |
-| Qué decide | Solo reglas: sin modelo de riesgo, sin Jev y sin Claude. El explicador BM25 sí está encendido | [`README.md`](../../README.md), "Limitations"; commit `a18f045` |
+| Qué decide | La política, con las señales del modelo de riesgo, Jev (tope de 2 USD al día, extractor de respaldo) y el explicador BM25. Sin Claude: toda respuesta es plantilla. Ninguna corrida mide esta combinación junta | [`README.md`](../../README.md), "Limitations" |
 | Riesgo mayor | La pausa del plan Free, sin el canario planeado para mitigarla, y el estado compartido de las personas de demo | Secciones 8 y 9 |
 
 ## 1. Arquitectura de producción
@@ -45,9 +45,9 @@ Variables de Vercel en producción, solo por nombre: `APP_ENV=production`, `SUPA
 Cada mensaje recorre Understand, Decide, Act, Verify y Escalate en `DisputeOrchestrator.handle_message` ([`src/orchestrator/dispute_orchestrator.py`](../../src/orchestrator/dispute_orchestrator.py)). La lógica de cada etapa está en [05-modelado.md](05-modelado.md); aquí va solo cómo corre desplegada.
 
 1. **Guarda.** La conversación debe ser del cliente del token; si no, 404 y una fila `CONVERSATION_ACCESS_DENIED` en la auditoría. `PIIMasker` enmascara el texto antes de guardarlo.
-2. **Understand.** Sin `TYPESAFE_API_KEY` en producción, `UnderstandRouter` siempre elige el extractor ES/PT de palabras clave y lo registra como `ENGINE_ROUTED`.
+2. **Understand.** Con `TYPESAFE_API_KEY` en producción (desde el 5-oct), `UnderstandRouter` manda los turnos no triviales a Jev mientras alcance el tope diario, y los demás, o cualquier falla de Jev, al extractor ES/PT de palabras clave; cada decisión queda como `ENGINE_ROUTED`.
 3. **Explicador.** Una pregunta de reglas sin cargo propio va al explicador BM25 en estado `new`, o en una aclaración si ningún mensaje anterior disputó algo (un saludo). Nunca toma un turno legal, de angustia, de tarjeta robada o fuera de alcance. No lee el banco ni abre caso; deja `POLICY_EXPLAINED`.
-4. **Decide.** El gateway lee el perfil y hasta 25 transacciones del cliente del token; el orquestador identifica el cargo, suma la memoria de casos de `ops` y llama a `DisputePolicyEngine.evaluate`. Sin modelo, el riesgo vale 0,0 y el handoff dice que no se calificó ("not scored").
+4. **Decide.** El gateway lee el perfil y hasta 25 transacciones del cliente del token; el orquestador identifica el cargo, suma la memoria de casos de `ops` y llama a `DisputePolicyEngine.evaluate`. El modelo califica los cargos Web y App; en otro canal, o sin el archivo del modelo, el riesgo vale 0,0 y el handoff dice que no se calificó ("not scored").
 5. **Act y Verify.** Abre el caso en `ops.dispute_cases`, crea un handoff, ofrece el bloqueo (que se aplica solo tras el sí del cliente) o pide aclaración. Antes de responder relee lo escrito; si la lectura no coincide, el turno pasa a humano con `ACTION_VERIFICATION_FAILED` y el cliente oye que su solicitud quedó pendiente.
 6. **Escalate.** El handoff es un `StructuredHandoffPacket` ([`src/domain/handoff.py`](../../src/domain/handoff.py)). Si el banco no responde (`SystemOfRecordUnavailableError`, `TimeoutError`, `ConnectionError`), el turno va a humano con `SYSTEM_OF_RECORD_UNAVAILABLE` y no confirma nada.
 
@@ -110,15 +110,16 @@ La matriz SEC-01 a SEC-10 está en [`docs/SECURITY_AUDIT_PLAN.md`](../SECURITY_A
 | Componente | En producción | Por qué | Fuente |
 | --- | --- | --- | --- |
 | Política v2.3 como código | Sí | Es el núcleo del stack | `src/rules/dispute_policy.py` |
-| Extractor ES/PT de palabras clave | Sí, único motor de Understand | No hay `TYPESAFE_API_KEY` para Jev en Vercel | `docs/HANDOFF.md` sec. 4 |
-| Modelo de riesgo IEEE-CIS | No en el commit servido el 4-oct: `POL-ESC-ML-RISK` nunca se dispara y el handoff dice "riesgo no calificado". Sí desde el primer despliegue que incluya el bundle | Hasta el 5-oct `models/*.joblib` estaba en `.gitignore` y Vercel construye desde GitHub; ese día el bundle entró a git (decisión de Kmilo) | Commit `a18f045`; `docs/HANDOFF.md` sec. 7.3 |
+| Jev (`jev-1.13.0`) | Sí, desde el 5-oct, en los turnos no triviales | `TYPESAFE_API_KEY` en Vercel Production; tope de 2 USD al día, con una fila por llamada en `ops.llm_usage` | `src/understand/router.py`; `src/llm/budget.py` |
+| Extractor ES/PT de palabras clave | Sí: turnos triviales, montos y fechas, y respaldo si Jev falla o se agota el tope | Es el respaldo del router | `src/understand/router.py` |
+| Modelo de riesgo IEEE-CIS | Sí, desde el despliegue de `58ab501` (5-oct): `POL-ESC-ML-RISK` puede dispararse en cargos Web y App; en otro canal el handoff dice "riesgo no calificado" | Hasta el 5-oct `models/*.joblib` estaba en `.gitignore` y Vercel construye desde GitHub; ese día el bundle entró a git (decisión de Kmilo) | Commit `a18f045`; `tests/test_vercel_config.py` |
 | Respuestas redactadas por Claude | No: toda respuesta es una plantilla | Tareas 1 y 2 de 7 en `main`, sin llamada ni key | PR #36; `README.md` |
 | Explicador de políticas BM25 | Sí | `data/rag_gate.json` está commiteado y `vercel.json` no lo excluye | `data/rag_gate.json`; [`vercel.json`](../../vercel.json) |
 | Embeddings E5 | No | Con E5 el bundle llegaría a unos 609 MB, sobre el límite de 500 MB | `docs/SUPABASE_VERCEL.md` sec. 6.3; TQ-022 |
 | Baseline del starter | No | Su cola en memoria no sirve en funciones sin estado; rutas en 404 | `AGENTS.md` sec. 9 |
 | Canario contra la pausa | No | Decidido, nunca construido | `AGENTS.md` sec. 8 |
 
-La evaluación de punta a punta deja fuera al explicador, que corre en producción. En su benchmark acierta el 36,7 % de las acciones (11 de 30) y cita una cláusula equivocada en el 27,3 % de sus respuestas (3 de 11) ([`reports/rag_benchmark.md`](../../reports/rag_benchmark.md)). Con el modelo, el held-out pasaría de 20 a 9 inseguros de 250, pero esa cifra solo está en el cuerpo del PR #45, offline y sobre casos guionizados (regla 11). Detalle en [06-evaluacion.md](06-evaluacion.md), secciones 7 y 8.
+La evaluación de punta a punta deja fuera al explicador, que corre en producción. En su benchmark acierta el 36,7 % de las acciones (11 de 30) y cita una cláusula equivocada en el 27,3 % de sus respuestas (3 de 11) ([`reports/rag_benchmark.md`](../../reports/rag_benchmark.md)). Con el modelo, el held-out pasa de 20 a 9 inseguros de 250 ([`reports/eval_heldout_model.md`](../../reports/eval_heldout_model.md), offline y sobre casos guionizados, regla 11); ninguna corrida mide el modelo, Jev y el explicador juntos. Detalle en [06-evaluacion.md](06-evaluacion.md), secciones 7 y 8.
 
 ## 7. Proceso de despliegue
 
@@ -143,14 +144,14 @@ La evaluación de punta a punta deja fuera al explicador, que corre en producci�
 - **`/health` no prueba la base.** Devuelve estado, nombre, versión y entorno sin consultar Postgres ni Auth (`src/api/app.py`), así que puede salir verde con la base pausada (inferido).
 - **Migración 0005.** Fija el `search_path` que marcó el advisor de Supabase. Al 3-oct faltaba aplicarla en producción (`docs/HANDOFF.md` sec. 7.1, punto 13), y el repo no registra que se aplicara después.
 - **Límites de Auth.** 150 pedidos de token cada 5 minutos por IP; un token dura 1 hora y borrar el usuario no lo revoca (`docs/SUPABASE_VERCEL.md` sec. 3.5).
-- **Gasto y logs.** Sin keys de LLM, el tope diario de 2 USD de `ops.llm_usage` no se usa (`src/llm/budget.py`). En Hobby solo la cuenta dueña ve los logs, según el diseño, "por verificar en los términos vigentes" (`docs/SUPABASE_VERCEL.md` sec. 6.9).
+- **Gasto y logs.** Desde el 5-oct cada llamada a Jev deja una fila en `ops.llm_usage`, y el tope diario de 2 USD manda los turnos al extractor cuando se agota (`src/llm/budget.py`). En Hobby solo la cuenta dueña ve los logs, según el diseño, "por verificar en los términos vigentes" (`docs/SUPABASE_VERCEL.md` sec. 6.9).
 
 ## 9. Estado de la demo al 4-oct
 
 Las personas de demo comparten estado: lo que deja una prueba lo encuentra el siguiente usuario. Qué persiste y cómo se resetea está en [01-guia-de-uso.md](01-guia-de-uso.md#15-cuidado-las-personas-comparten-estado). Hallazgos de la auditoría del 4-oct, que no está comprometida en el repo; donde existe, se cita además una fuente del repo:
 
 - **`cliente-hasta-150` ya no muestra `POL-AUT-150`.** La prueba de humo del 3-oct abrió un caso real sobre el cargo de su escenario (113,65 USD del 3 de junio) (`docs/HANDOFF.md` sec. 3, A2). La auditoría registra sobre ese cargo el caso `CASE-ECB3AEEF4C1B`, de una prueba del 4-oct. `ops.v_customer_policy_facts` cuenta los casos de `ops` sin límite superior de fecha y `business_today()` está fijo en 2026-06-17 (`0003_bank.sql`), así que ese caso rompe para siempre la condición de cero quejas en 90 días. Un nuevo intento recibe `DUPLICATE_CASE_PREVENTED`.
-- **Dos bugs de producto, leídos del código, reproducidos y arreglados el 5-oct** (TQ-041 y TQ-042; el arreglo llega a producción con el primer despliegue que lo incluya). El primero era peor de lo descrito aquí: la tercera pregunta de reglas terminaba en un handoff. Así se comportaban: Una segunda pregunta de reglas después de un saludo puede ir al flujo de disputa: `_disputed_earlier` lee la primera pregunta como disputa previa, porque la palabra "cargo" vuelve disputa la intención (inferido del código y del PR #46). El idioma de la conversación queda fijo al salir del estado `new` (`dispute_orchestrator.py:171`).
+- **Dos bugs de producto, leídos del código, reproducidos y arreglados el 5-oct** (TQ-041 y TQ-042; el arreglo está en producción desde el despliegue de `58ab501`). El primero era peor de lo descrito aquí: la tercera pregunta de reglas terminaba en un handoff. Así se comportaban: Una segunda pregunta de reglas después de un saludo puede ir al flujo de disputa: `_disputed_earlier` lee la primera pregunta como disputa previa, porque la palabra "cargo" vuelve disputa la intención (inferido del código y del PR #46). El idioma de la conversación queda fijo al salir del estado `new` (`dispute_orchestrator.py:171`).
 - **Correo de entrega.** [`docs/deliverables/SUBMISSION_EMAIL.md`](../deliverables/SUBMISSION_EMAIL.md) trae dos cifras mal atribuidas. Pone "Automation attempted: 52.4%, 123/230": el reporte da 52,4 % como 131 de 250, y 123 de 230 son los casos en alcance que piden humano, abstención o aclaración por diseño (`README.md`, "Results"). Y presenta 25,0 / 85,1 ms como latencia en "native hardware", cuando viene del reporte del 3-oct, ya reemplazado. Detalle en [06-evaluacion.md](06-evaluacion.md), sección 3.
 
 ## 10. Riesgos y próximos pasos
@@ -164,9 +165,9 @@ Cada fila resume una sección anterior, donde están sus fuentes.
 | 3 | Historial que enlaza el PDF con llaves de AWS: el repo no se puede publicar tal cual | Repo público nuevo desde una copia sin historial (recomendación de la auditoría del 4-oct; el PR #49 había elegido mantener el historial) | Sección 5 |
 | 4 | Claves expuestas en un chat el 2-oct: acceso a la base de producción | Rotar secret key, clave de la base, key de Anthropic y claves de personas | SEC-08 |
 | 5 | Sin RLS: la Data API es la única barrera | Confirmar en el dashboard; RLS por cliente | SEC-07 |
-| 6 | Sin modelo de riesgo: en el held-out, los 20 casos de alto riesgo abren caso sin humano | Decidir cómo llega el bundle a Vercel | Sección 6; [`reports/eval_heldout.md`](../../reports/eval_heldout.md) |
+| 6 | Modelo, Jev y explicador corren juntos y ninguna corrida los mide juntos | Correr el held-out con `--model`, `--explainer` y `--jev` (llamadas reales a Jev) | Sección 6; [`reports/eval_heldout_model.md`](../../reports/eval_heldout_model.md) |
 | 7 | Explicador con 27,3 % de citas erradas: puede confundir al cliente | Apagarlo borrando `data/rag_gate.json`, o un retriever mejor | Sección 6 |
-| 8 | Bugs de enrutamiento e idioma | Test propio y arreglo | Sección 9 |
+| 8 | Bugs de enrutamiento e idioma | Ninguno: arreglados el 5-oct con test propio (TQ-041 y TQ-042), en producción desde `58ab501` | Sección 9 |
 | 9 | Escritura sin idempotencia ni reintentos; concurrencia no probada | Implementar TQ-028 | Sección 3 |
 | 10 | Solo la cuenta dueña despliega | Merges finales desde la web con esa cuenta | Sección 7 |
 | 11 | Licencia de IEEE-CIS: `README.md` y TQ-032 dicen aprobada; TQ-026, su fila en `docs/PLAN.md` y el spec del modelo (sec. 7), pendiente | Alinear las fuentes | Esas fuentes |

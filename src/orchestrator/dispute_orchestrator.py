@@ -37,7 +37,6 @@ from src.tools.gateway import (
     SystemOfRecordUnavailableError,
     UnauthorizedAccessError,
 )
-from src.tools.risk_zone import RiskZoneValidator, RiskZoneVerdict, cross_check
 from src.understand.keyword_extractor import KeywordIntentExtractor, UnderstandResult
 from src.understand.router import UnderstandRouter
 from src.understand.topics import OUT_OF_SCOPE_TOPICS
@@ -101,10 +100,6 @@ TEXT = {
         "es": " Si también desconoce otro de los cargos que mencionó, escríbanos para abrir su caso.",
         "pt": " Se também não reconhece outra das cobranças que mencionou, escreva para nós para abrir o caso.",
     },
-    "sibling_charges": {
-        "es": " Además, {merchant} registra ese mismo día con la misma tarjeta o cuenta: {charges}. Si hay otro cargo que no reconoce, escríbanos indicando el monto para abrir su caso.",
-        "pt": " Além disso, {merchant} registra nesse mesmo dia no mesmo cartão ou conta: {charges}. Se houver outra cobrança que você não reconhece, escreva para nós indicando o valor para abrir o caso.",
-    },
     "case_exists": {
         "es": "Ese cargo ya tiene un caso de disputa abierto y en revisión, así que no abrimos otro. Número de caso: {case_id}.",
         "pt": "Essa cobrança já tem um caso de contestação aberto e em análise, portanto não abrimos outro. Número do caso: {case_id}.",
@@ -162,7 +157,7 @@ class DisputeOrchestrator:
     def __init__(self, gateway: BankingToolGateway, ops: OpsStore, extractor: KeywordIntentExtractor | None = None,
                  risk_scorer: Callable[[dict[str, Any], list[dict[str, Any]], dict[str, Any]], tuple[float, list[dict[str, Any]]]] | None = None,
                  today: date = date(2026, 6, 17), router: UnderstandRouter | None = None,
-                 explainer: PolicyExplainer | None = None, zone_validator: RiskZoneValidator | None = None):
+                 explainer: PolicyExplainer | None = None):
         self.gateway = gateway
         self.ops = ops
         self.today = today
@@ -170,7 +165,6 @@ class DisputeOrchestrator:
         self.router = router  # the smart agent of TQ-008: picks Jev, Claude or the offline path per turn
         self.risk_scorer = risk_scorer  # (matched, history, profile) -> (ml_risk_score, risk_top_features); src.ml.fraud_risk.RiskScorer
         self.explainer = explainer  # the policy explainer (roadmap Task 5.1); None until its gate is calibrated (Task 4.1)
-        self.zone_validator = zone_validator  # the check beside the risk score (src/tools/risk_zone.py); None records no zone verdict
 
     # ------------------------------------------------------------------ public
     def start_conversation(self, session: VerifiedSession, language: str = "es") -> dict[str, Any]:
@@ -304,7 +298,6 @@ class DisputeOrchestrator:
                                            fact=f"The system of record did not answer ({type(exc).__name__})", text="system_unavailable")
 
         candidates, matched, named = self._identify_charge(conv, rows, u)
-        siblings = self._sibling_charges(session.customer_id, matched, rows, named) if matched else []
         memory = self.ops.case_memory(session.customer_id)
         recent = self.ops.recent_disputed_transaction_ids(session.customer_id)
         if matched:
@@ -312,7 +305,6 @@ class DisputeOrchestrator:
         recent = recent | {r["transaction_id"] for r in named}  # charges named at once count like charges disputed one by one
         ml_score, top_features = (self.risk_scorer(matched, rows, profile) if (self.risk_scorer and matched) else (0.0, []))
         scored = ml_score is not None  # None: the charge is outside the channels the model's threshold was calibrated on
-        zone = self.zone_validator(matched, rows, profile) if (self.zone_validator and matched) else None
 
         policy_input = DisputePolicyInput(
             customer_id=session.customer_id,
@@ -350,12 +342,6 @@ class DisputeOrchestrator:
                             clarification_reason=decision.clarification_reason, cited_clauses=list(decision.cited_clauses),
                             secondary_clauses=list(decision.secondary_clauses), signals=signals,
                             candidates=[self._public_candidate(c) for c in candidates[:5]])
-        if zone is not None:  # beside the score and outside the decision and the reply: a record for the human agent (TQ-038)
-            model_flags = self.risk_scorer is not None and scored and policy_input.ml_risk_score > policy_input.ml_risk_threshold
-            self.ops.audit(conversation_id=cid, customer_id=session.customer_id, actor="system", action="RISK_ZONE_VALIDATED",
-                           details={"transaction_id": matched["transaction_id"], **zone.as_dict(),
-                                    "ml_scored": self.risk_scorer is not None and scored, "ml_above_threshold": model_flags,
-                                    "cross_check": cross_check(zone.in_risk_zone, model_flags)})
 
         if decision.policy_outcome == OUTCOME_CLARIFICATION:
             self.ops.update_conversation(cid, state=STATE_AWAITING_CLARIFICATION, candidate_ids=[c["transaction_id"] for c in candidates[:5]],
@@ -387,8 +373,7 @@ class DisputeOrchestrator:
                            details={"reason": decision.escalation_reason, "clauses": decision.cited_clauses,
                                     "data_quality_flag": decision.data_quality_flag})
         elif decision.policy_outcome == OUTCOME_ESCALATION:
-            handoff_id = self._create_handoff(session, conv, decision, policy_input, profile, matched, masked, named=named, zone=zone,
-                                              siblings=siblings)
+            handoff_id = self._create_handoff(session, conv, decision, policy_input, profile, matched, masked, named=named)
             result.handoff_id = handoff_id
             result.reply += TEXT["handoff_ref"][language].format(handoff_id=handoff_id)
             result.actions.append({"action": "CREATE_HANDOFF", "handoff_id": handoff_id, "verified": True})
@@ -409,7 +394,7 @@ class DisputeOrchestrator:
                 self.ops.audit(conversation_id=cid, customer_id=session.customer_id, actor="system", action="OPEN_DISPUTE_FAILED",
                                details={"error": str(exc)}, verified=False)
                 handoff_id = self._create_handoff(session, conv, decision, policy_input, profile, matched, masked,
-                                                  reason_override="ACTION_VERIFICATION_FAILED", zone=zone, siblings=siblings)
+                                                  reason_override="ACTION_VERIFICATION_FAILED")
                 result.handoff_id = handoff_id
                 result.reply = TEXT["case_pending"][language] + TEXT["handoff_ref"][language].format(handoff_id=handoff_id)
                 result.policy_outcome = OUTCOME_ESCALATION
@@ -420,12 +405,6 @@ class DisputeOrchestrator:
                 result.reply += TEXT["case_ref"][language].format(case_id=case_id)
                 if conv["state"] == STATE_AWAITING_CLARIFICATION and self._pending_clarification_details(conv).get("several_charges_named"):
                     result.reply += TEXT["other_charges"][language]  # the customer picked one of the several charges they named
-                if siblings:
-                    charges = "; ".join(f"{float(r['amount']):,.2f} {r['currency']}" for r in siblings)
-                    result.reply += TEXT["sibling_charges"][language].format(merchant=matched["merchant_name_raw"], charges=charges)
-                    self.ops.audit(conversation_id=cid, customer_id=session.customer_id, actor="system", action="SIBLING_CHARGES_LISTED",
-                                   details={"transaction_id": matched["transaction_id"],
-                                            "sibling_ids": [r["transaction_id"] for r in siblings]})
                 result.actions.append({"action": "OPEN_DISPUTE", "case_id": case_id, "verified": True})
 
         if decision.card_lock_recommended:
@@ -512,28 +491,11 @@ class DisputeOrchestrator:
         process_day = date.fromisoformat(str(row["process_date"])[:10])
         return abs((process_day - hint).days) <= max(tolerance_days, 1)
 
-    @staticmethod
-    def _known_merchant(row: dict[str, Any]) -> str | None:
-        """The row's merchant in lower case, or None when the bank recorded none (gold writes Not Applicable or Unknown Merchant)."""
-        raw = str(row.get("merchant_name_raw") or "").lower()
-        return None if len(raw) < 3 or raw in ("unknown", "unknown merchant", "not applicable") else raw
-
     def _merchant_in_message(self, row: dict[str, Any], u: UnderstandResult) -> bool:
-        merchant = self._known_merchant(row)
-        return merchant is not None and merchant in u.message_lower
-
-    def _sibling_charges(self, customer_id: str, matched: dict[str, Any], rows: list[dict[str, Any]],
-                         named: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """The customer's other disputable charges on the product, merchant and bank process day of the matched one, with no
-        open case and not named in the message. They are told, never counted: POL-ESC-MULTI counts disputed charges (TQ-039)."""
-        merchant = self._known_merchant(matched)
-        if merchant is None:
-            return []
-        told = {matched["transaction_id"]} | {r["transaction_id"] for r in named}
-        return [r for r in rows
-                if r["transaction_id"] not in told and r.get("product_id") == matched.get("product_id")
-                and self._known_merchant(r) == merchant and str(r["process_date"])[:10] == str(matched["process_date"])[:10]
-                and self._disputable(r) and self._open_case_for(customer_id, r["transaction_id"]) is None]
+        raw = str(row.get("merchant_name_raw") or "")
+        if len(raw) < 3 or raw.lower() in ("unknown", "unknown merchant", "not applicable"):  # gold writes a label where the bank recorded no merchant
+            return False
+        return raw.lower() in u.message_lower
 
     # --------------------------------------------------------------------- act
     def _open_case(self, session: VerifiedSession, conv: dict[str, Any], decision: DisputePolicyDecision, matched: dict[str, Any]) -> str:
@@ -719,8 +681,7 @@ class DisputeOrchestrator:
     # ---------------------------------------------------------------- escalate
     def _create_handoff(self, session: VerifiedSession, conv: dict[str, Any], decision: DisputePolicyDecision, policy_input: DisputePolicyInput,
                         profile: dict[str, Any], matched: dict[str, Any] | None, masked: str, reason_override: str | None = None,
-                        named: list[dict[str, Any]] | None = None, zone: RiskZoneVerdict | None = None,
-                        siblings: list[dict[str, Any]] | None = None) -> str:
+                        named: list[dict[str, Any]] | None = None) -> str:
         now = datetime.utcnow().replace(microsecond=0).isoformat()
         reason = reason_override or decision.escalation_reason or "UNSPECIFIED"
         facts = ["Customer authenticated via a valid session token"]
@@ -747,14 +708,9 @@ class DisputeOrchestrator:
             facts.append(f"ML risk score: not scored, the model scores {' and '.join(self.risk_scorer.channels)} charges only")
         else:
             facts.append(f"ML risk score: {policy_input.ml_risk_score:.2f} (escalation threshold {policy_input.ml_risk_threshold:.2f})")
-        if zone is not None:
-            facts.append(zone.fact())
         facts.append(f"{policy_input.recent_disputed_charges_count} distinct charge(s) disputed within 48 hours")
         if named:
             facts.append(f"Charges named in the customer's message: {', '.join(r['transaction_id'] for r in named)}")
-        if siblings:
-            facts.append(f"{len(siblings)} other undisputed charge(s) on the same product, merchant and process day: "
-                         f"{', '.join(r['transaction_id'] for r in siblings)}")
         questions = self._questions_for(reason, decision)
         packet = StructuredHandoffPacket(
             handoff_id="", customer_id=session.customer_id, customer_name=str(profile.get("full_name") or session.name),

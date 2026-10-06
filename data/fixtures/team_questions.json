@@ -595,7 +595,11 @@
         "The preventive card lock offer for a charge in a risk zone, with the customer's confirmation"
       ],
       "recommendation": "Advisory only: a verified fact for the human agent",
-      "source": "3-Oct, Kmilo (chat); src/tools/risk_zone.py"
+      "source": "3-Oct, Kmilo (chat); src/tools/risk_zone.py",
+      "status": "answered",
+      "answer": "Withdrawn. Kmilo decided on 4-Oct (chat) to remove the risk zone validator entirely before the submission, to avoid conflicts; the revert of #56 removes it. No risk zone verdict is computed, audited or written to a handoff. Earlier that day he had settled that such a verdict could only be advisory: \"esto no es un sistema proactivo de ejecución de bloqueos automáticos, esto es simplemente un chat de disputas\". The code, its tests and the measured figures are in the history (commits 7b7be77 and 4546482).",
+      "answered_by": "Kmilo (chat, 4-Oct)",
+      "answered_at": "2026-10-04T19:10:00"
     },
     {
       "question_id": "TQ-039",
@@ -608,7 +612,11 @@
         "Keep only the handoff fact and remove the note from the customer reply"
       ],
       "recommendation": "Tell only: the customer and the specialist see them, POL-ESC-MULTI keeps counting disputed charges",
-      "source": "3-Oct, session with Kmilo (sibling charges hook)"
+      "source": "3-Oct, session with Kmilo (sibling charges hook)",
+      "status": "answered",
+      "answer": "Withdrawn. Kmilo decided on 4-Oct (chat) to take the sibling charges change out of main before the submission; the revert of #57 removes it. The dispute turn tells no sibling charges and the handoff lists none; POL-ESC-MULTI counts disputed charges as spec v2.3 says. The code, its tests and the analysis are in the history (commits bb4842d and d3e3c65).",
+      "answered_by": "Kmilo (chat, 4-Oct)",
+      "answered_at": "2026-10-04T19:10:00"
     },
     {
       "question_id": "TQ-040",

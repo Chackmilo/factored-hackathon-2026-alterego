@@ -274,65 +274,13 @@ Sections 5 and 6 leave `POL-ESC-ML-RISK` without a trainable target: `is_fraud` 
 | TQ-026 risk model | Accept the IEEE-CIS transfer. `POL-ESC-ML-RISK` escalates to HITL by the percentile threshold of the serving window, not the fixed 0.70. Model of record on the homologated variables only. Follow-up: cherry-pick, among the roughly 400 competition variables left out, the ones the agent can consume so the score improves after the interview with the customer (section 7.3) | Already wired (commit 756fe10). `docs/PLAN.md` row moved to Decidida. The competition data licence stays a question for the mentors |
 | TQ-020 Supabase project | Created by Daniel: `https://lrddokaihdwrdtwfiale.supabase.co` | JWKS verified on 29-Sep: one ES256 P-256 key, as `SessionVerifier` expects. Pending: personas with `app_metadata.customer_id` and `app_role`, front login through `supabase-js`, `SUPABASE_URL` in each environment |
 
-## 9. Proposal: a risk zone validator beside the risk score (3 October)
+## 9. Withdrawn: a risk zone validator beside the risk score (3 and 4 October)
 
-Kmilo asked (3-Oct, chat) for a layer that works as a parallel validator of whether a transaction is in a risk zone, next to the model's high-probability flag. What was built, what the data supports and what stays open:
+Proposed on 3-Oct: a deterministic check beside the learned risk score that named where a charge was made against the customer's country and city on file (`HOME`, `DOMESTIC_OTHER_CITY`, `ABROAD`, `UNKNOWN`) and recorded it in the audit log and the handoff, changing no outcome. It reached `main` with #56 on 4-Oct, and Kmilo decided the same day (chat) to remove it entirely before the submission, to avoid conflicts; the revert of #56 removes the code, its tests and its wiring notes. Earlier that day he had settled that such a verdict could only be evidence, never a trigger: this is a dispute chat, not a proactive executor of automatic locks. TQ-038 is closed as withdrawn. The definition and the figures measured on the 60-day window are in the history of this file and in commits `7b7be77` and `4546482`.
 
-1. Definition. `src/tools/risk_zone.py` reads the identified charge with no model: where it was made against the customer's country and city on file. Zones: `HOME` (the customer's city, or their country when a city is missing on either side), `DOMESTIC_OTHER_CITY`, `ABROAD` and `UNKNOWN` (no country on the charge or on the profile). The risk zone is `ABROAD`. Zones are relative to the customer because the data holds a country and a city per charge and nothing finer (28 cities, coordinates 81% null), and no label can rank places: `is_fraud` carries no learnable signal (section 5), so a fraud rate per city is noise. A map of risk zones inside a city needs an external source, cited and labeled (rule 4); none is used.
-2. Parallel, with code of its own. The validator takes what the scorer takes (the charge, the customer's rows, the profile) and shares no code with it. A test pins its zones to `address_distance_bucket`, the feature the model computes on its own: 0 disagreements on the 251,398 charges of the window. It reads every channel, the 70% the model does not score included.
-3. What it does today. Every turn that identifies a charge writes the audit row `RISK_ZONE_VALIDATED` (the zone, the places, the customer's earlier charges in that place among the rows read, and the cross-check with the model: `BOTH`, `MODEL_ONLY`, `ZONE_ONLY` or `NEITHER`), and a handoff carries the line "Risk zone check: ..." among its verified facts. It changes no outcome and never reaches the customer (TQ-009 keeps risk explanations with the human agent). `get_orchestrator` wires it in the API; the evaluation harness builds its orchestrator without it, so the held-out results do not move.
-4. Measured on the 60 days to 2026-06-17 (`data/lakehouse_full.duckdb`, derived from the organizer's data, with the served bundle):
+## 10. Withdrawn: sibling charges of a disputed charge (3 and 4 October)
 
-| Measure | Value |
-| --- | --- |
-| Charges in the window, all channels | 251,398: 95.1% `HOME`, 0.3% `DOMESTIC_OTHER_CITY`, 4.6% `ABROAD`, alike on every channel (4.5% to 4.9% abroad) |
-| Web and App charges, the ones the model scores | 75,366: 1,508 above the threshold (2.0%), 3,441 abroad |
-| Cross-check on those | both flag 180, only the model 1,328, only the zone 3,261, neither 70,597 |
-| Abroad and above the threshold | 5.23% of the abroad charges against 1.85% of the rest: the model already weighs the place, and 94.8% of the abroad charges stay under its threshold |
-| Channels the model does not score | 176,032 charges (70.0%), 8,120 of them abroad (4.61%), which no risk check read before |
-| Abroad and at or under 500 USD | 2.46% of the window: what an escalation rule would move from intake to a human |
-
-5. Open, TQ-038: what a charge in a risk zone should trigger. Advisory as today, a new mandatory escalation clause, or the preventive lock offer with the customer's confirmation (a new reason code in the `ops.card_locks` CHECK and a migration). The last two change policy v2.3 (spec, traceability matrix, policy corpus) and the outcomes of the frozen held-out suite. A hold of the payment at authorization time is not on the list: the dispute flow acts after the charge, and a second workflow breaks rule 1.
-
-## 10. Sibling charges: the other charges of one card at one merchant on one process day (3 October)
-
-Kmilo asked on 3-Oct how the system could react when a point of sale repeats charges on a card in one night. Stopping a payment is outside the workflow (two real actions: open a case, and the card lock the customer confirms; rules 1 and 8), so the part that fits is what the dispute turn tells once the customer disputes one of those charges. In code on branch `feat/sibling-charges`; the open point is TQ-039.
-
-### 10.1 What the data allows
-
-Measured on `data/lakehouse.duckdb` (the June 2026 sample, 11,703 rows) on 3-Oct:
-
-| Question | Result |
-| --- | --- |
-| Is there a terminal or point-of-sale id? | No. `gold_transactions` holds `merchant_name`, `merchant_category`, `transaction_city` and `transaction_country`, nothing finer |
-| How many merchants are there? | 25 names; "Unknown Merchant" covers 9,113 rows (77.9 %) |
-| Does a card repeat a merchant on one process day? | Purchases per card, merchant name and process day: 2,722 groups hold one purchase, 1 holds two |
-| Does a card hold a burst on one process day? | Transactions per card and process day: 11,567 groups hold one, 68 hold two, none holds three |
-| Is there a label to check a burst against? | No: `is_fraud` carries no signal (section 5) |
-
-So the behavior cannot be measured on the supplied data. It is shown on team-generated fixtures only (rule 12), and the tests label their rows that way.
-
-### 10.2 Definition
-
-A sibling of the identified charge is another charge of the same customer that shares its `product_id`, its merchant name and its bank process day (`process_date`, so a night that crosses midnight stays in one day), is disputable (`POL-DISP-TYPE` and `POL-WIN-60` as the gateway row tells them), has no open case, and was not named in the customer's message. A charge with no merchant on record has no siblings: two "Unknown Merchant" rows are not one merchant. The siblings come from the 25 most recent charges the gateway already read for the session's customer, so no other customer's data is involved and no new bank read is made.
-
-### 10.3 What the turn does with them
-
-| Outcome of the turn | Customer | Human agent |
-| --- | --- | --- |
-| Case opened and verified | After the case number, the reply names the merchant, lists the siblings' amounts and invites the customer to write the amount of any other charge they do not recognize | Audit row `SIBLING_CHARGES_LISTED` with the transaction ids |
-| Escalation | Nothing added to the reply | One verified fact in the handoff packet: how many siblings and their ids |
-| Clarification or abstention | Nothing | Nothing |
-
-They are told, never counted. `POL-ESC-MULTI` counts distinct disputed charges in 48 hours (spec v2.3), and a charge the customer has not disowned is not disputed, so `recent_disputed_charges_count` is unchanged and no clause, threshold or order moves (spec assumption S20). When the customer then disputes a sibling, the existing flow opens its case, and the third disputed charge reaches `POL-ESC-MULTI` with the lock offer as before.
-
-### 10.4 Effect on the evaluation
-
-Both suites were run before and after the change from the same base commit of `main` (rules-only, one repeat, no risk model in the checkout): every metric of both systems is identical. On the development split no reply changes. On the held-out suite the replies of four cases of the category `high_value_or_multi_charge` (HO-153, HO-154, HO-157, HO-159) gain the note in the two turns that open a case before the third charge escalates; their outcomes are the same. The check was repeated with the branch stacked on the risk zone validator of section 9, with the same result. No threshold was tuned on either suite.
-
-### 10.5 Open question (TQ-039)
-
-Should a burst of siblings also escalate the turn with the lock offer, as three disputed charges do? Recommendation: not now. Counting charges the customer did not dispute would send customers with several legitimate purchases at one merchant to a human, it is a spec change (a new input for `POL-ESC-MULTI` or a new clause), and no data can calibrate the size of a burst.
+Proposed on 3-Oct: once a case is open, tell the customer, and the specialist in a handoff, the other disputable charges of the same card, merchant and process day, without counting them for `POL-ESC-MULTI`. It reached `main` with #57 on 4-Oct, and Kmilo decided the same day (chat) to take it out before the submission; the revert of #57 removes the code, its tests and its wiring notes. TQ-039 is closed as withdrawn. What the data allows, the rule and the measured effect on both suites are in the history of this file and in commits `bb4842d` and `d3e3c65`.
 
 ## 11. Proposal: gold tells a merchant that does not apply from one that is missing (4 October)
 

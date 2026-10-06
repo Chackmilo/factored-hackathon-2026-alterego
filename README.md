@@ -2,7 +2,9 @@
 
 Team AlterEgo's submission to the **Factored AI & Data Hackathon 2026**: an AI-first customer-service system for one workflow, **transaction-dispute intake**, in Spanish and Portuguese. The agent finds the charge the customer does not recognize, checks it against a written dispute policy, opens a case and confirms it only after reading it back, protects the customer with a card lock they confirm, and hands off to a human with a structured packet when the case needs one. It never moves money.
 
-> **Status (2026-10-04, day 10 of 10).** The dispute stack runs end to end behind the API and the React chat and console, with Supabase sign-in. It is deployed on Vercel at <https://alterego-silk.vercel.app>, over one Supabase project that is also production. This README separates what is delivered from what was planned and not delivered, and states the results and the limitations.
+> **Status (2026-10-05, submission day).** The dispute stack runs end to end behind the API and the React chat and console, with Supabase sign-in. It is deployed on Vercel at <https://alterego-silk.vercel.app>, over one Supabase project that is also production. This README separates what is delivered from what was planned and not delivered, and states the results and the limitations.
+>
+> **Public repository for judging:** <https://github.com/Chackmilo/factored-hackathon-2026-alterego>. It holds the team's full history, with one link replaced wherever it appeared: the link to the organizer's data dictionary, which carries the dataset's AWS keys and left the docs on 4-Oct. Its commit ids therefore differ from the ones some documents cite, and the pull requests they cite live in the team's private working repository.
 
 ## How it works
 

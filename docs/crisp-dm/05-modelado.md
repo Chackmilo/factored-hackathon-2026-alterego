@@ -97,6 +97,8 @@ El pipeline inicial trae un "modelo" sin entrenar, `MLFraudDetector`: una sigmoi
 
 **Contrato 1.2 y bundle en git (5-oct).** El contrato 1.2 trata como cero el residuo de punto flotante que el EDA encontró en `amount_zscore_card` y `tx_sum_card_7d` (TQ-043). El modelo reentrenado da ROC AUC de holdout 0,816 y umbral 0,0637, y en el held-out mantiene 101 de 107 y 9 de 250. `models/fraud_risk_ieee.joblib` está en git para que el build de Vercel lo lleve; producción lo sirve desde el despliegue de `58ab501`, el 5-oct ([Plan de pendientes](09-plan-de-pendientes.md), sección 2.11).
 
+**Notebook de entrenamiento.** [`notebooks/06_risk_model_training.ipynb`](../../notebooks/06_risk_model_training.ipynb) entrena el modelo de principio a fin con `src.ml.fraud_risk_transfer.train`, comprueba que el reporte es idéntico al comprometido y que el bundle puntúa igual los 75.366 cargos de la ventana (diferencia máxima 0), y muestra cómo lo carga la API.
+
 **EDA de las 19 features.** [`reports/ml/risk_feature_eda.md`](../../reports/ml/risk_feature_eda.md) trae mínimo, máximo y media de cada feature en las dos fuentes, una gráfica por feature y lo observado contra lo predicho: en el holdout de la competencia, 3.513 fraudes observados contra 3.298 esperados, y el decil más alto predice 14,64 % y observa 15,71 %. También encontró un residuo numérico en `amount_zscore_card` y `tx_sum_card_7d`, que queda como decisión (Plan de pendientes, secciones 2.5 y 3).
 
 **Contradicciones abiertas y siguiente paso.**

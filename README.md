@@ -4,7 +4,7 @@ Team AlterEgo's submission to the **Factored AI & Data Hackathon 2026**: an AI-f
 
 > **Status (2026-10-05, submission day).** The dispute stack runs end to end behind the API and the React chat and console, with Supabase sign-in. It is deployed on Vercel at <https://alterego-silk.vercel.app>, over one Supabase project that is also production. This README separates what is delivered from what was planned and not delivered, and states the results and the limitations.
 >
-> **Public repository for judging:** <https://github.com/Chackmilo/factored-hackathon-2026-alterego>. It holds the team's full history with one link removed from three old commits: the link to the organizer's data dictionary, which carries the dataset's AWS keys. Its commit ids therefore differ from the ones some documents cite, and the pull requests they cite live in the team's private working repository.
+> **Public repository for judging:** <https://github.com/Chackmilo/factored-hackathon-2026-alterego>. It holds the team's full history, with one link replaced wherever it appeared: the link to the organizer's data dictionary, which carries the dataset's AWS keys and left the docs on 4-Oct. Its commit ids therefore differ from the ones some documents cite, and the pull requests they cite live in the team's private working repository.
 
 ## How it works
 

@@ -17,7 +17,7 @@ AlterEgo addresses the most costly and friction-heavy workflow in the LATAM Bank
 
 ### 1. Key Submission Links
 - **Public GitHub Repository:** [https://github.com/Chackmilo/factored-hackathon-2026-alterego](https://github.com/Chackmilo/factored-hackathon-2026-alterego)  
-  *(Full commit history, docs and reproducible evaluation harnesses. One link to the organizer's data dictionary, which carries the dataset's AWS keys, was removed from three old commits, so commit ids differ from the team's private working repository.)*
+  *(Full commit history, docs and reproducible evaluation harnesses. One link to the organizer's data dictionary, which carries the dataset's AWS keys, was replaced wherever it appeared in the history, so commit ids differ from the team's private working repository.)*
 - **Live Production Deployment:** [https://alterego-silk.vercel.app](https://alterego-silk.vercel.app)  
   *(API Health check: `https://alterego-silk.vercel.app/health`)*
 - **Interactive Architecture & Workflow Artifacts:** Included in repository at `.archify/`

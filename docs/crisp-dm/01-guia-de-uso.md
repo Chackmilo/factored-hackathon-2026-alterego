@@ -21,7 +21,7 @@ Las personas vienen de [`data/fixtures/personas.json`](../../data/fixtures/perso
 
 | Label | Rol | `customer_id` | Escenario | Mensaje sugerido | Resultado esperado |
 | --- | --- | --- | --- | --- | --- |
-| `cliente-hasta-150` | Cliente | `CLI-00SA0N9OQTM0` | Un cargo de 150 USD o menos, en ventana | `No reconozco un cargo de 113.65 USD del 3 de junio` | `AUTONOMOUS_RESOLUTION`: caso abierto sin humano, con `POL-AUT-150` (candidato a crédito que decide un humano) o `POL-AUT-INTAKE`. **Hoy no**: ver 1.5 |
+| `cliente-hasta-150` | Cliente | `CLI-00SA0N9OQTM0` | Un cargo de 150 USD o menos, en ventana | `No reconozco un cargo de 113.65 USD del 3 de junio` | `AUTONOMOUS_RESOLUTION`: caso abierto sin humano, con `POL-AUT-150` (candidato a crédito que decide un humano) o `POL-AUT-INTAKE`. Solo si no hay un caso de prueba abierto sobre ese cargo: ver 1.5 |
 | `cliente-mas-de-500` | Cliente | `CLI-0085D5JD85CX` | Un cargo de más de 500 USD | `No reconozco un cargo de 4259.97 USD del 12 de junio` | `MANDATORY_HITL_ESCALATION` con `POL-ESC-500`; la respuesta trae la referencia del handoff y la consola lo muestra |
 | `cliente-tarjeta-perdida` | Cliente | `CLI-02ARMH0UANWD` | Tarjeta perdida, una sola tarjeta activa y un cargo de 500 USD o menos | `Perdí la tarjeta y no reconozco un cargo de 168.88 USD del 9 de junio` | Caso abierto y oferta de bloqueo en la misma respuesta (`POL-AUT-LOCK`). La tarjeta se bloquea solo después del "Sí" del cliente |
 | `agente` | Agente | Ninguno | Consola HITL | No aplica | Ve el handoff de la disputa de más de 500 USD y el bloqueo |
@@ -69,9 +69,29 @@ Todos los que ingresan con una persona ven y cambian el mismo cliente en `ops`. 
 - **Un bloqueo verificado deja la tarjeta `Blocked`.** La vista `ops.v_product_status` la muestra bloqueada, el bloqueo no se vuelve a ofrecer y el gateway rechaza bloquearla de nuevo (`src/tools/gateway_postgres.py`).
 - **Un handoff por angustia (`SEVERE_DISTRESS`) marca al cliente durante 30 días de reloj real:** sus disputas siguientes sobre un cargo en ventana pasan a humano (`POL-ESC-DISTRESS` decide o queda como cláusula secundaria), y sus preguntas de reglas no van al explicador (`src/ops/store.py`, `case_memory`; `src/rules/dispute_policy.py`).
 
-**Estado de hoy.** Una conversación de la prueba de humo del 3-oct abrió un caso real sobre el cargo del escenario de `cliente-hasta-150` (113,65 USD del 3 de junio) (`docs/HANDOFF.md` sec. 3, A2). La auditoría del 4-oct, que no está comprometida en el repo, registra sobre ese cargo el caso `CASE-ECB3AEEF4C1B`, de una prueba del 4-oct. Mientras exista un caso abierto, esa persona no puede mostrar `POL-AUT-150`, y un nuevo intento recibe `DUPLICATE_CASE_PREVENTED`. El estado de las otras personas no se verificó para esta guía.
+**Estado.** Cambia con cada prueba, así que se revisa antes de cada demo con la primera consulta de abajo. Por ejemplo, el 4-oct `cliente-hasta-150` tenía abierto el caso `CASE-ECB3AEEF4C1B` sobre el cargo de su escenario (113,65 USD del 3 de junio), de una prueba de ese día (auditoría del 4-oct, no comprometida en el repo; `docs/HANDOFF.md` sec. 3, A2). Con un caso abierto, esa persona no puede mostrar `POL-AUT-150`, y un nuevo intento recibe `DUPLICATE_CASE_PREVENTED`.
 
-**Cómo resetear.** Solo desde el SQL Editor de Supabase, con una cuenta del proyecto: el rol de la app no tiene `DELETE` y el MCP del repo es de solo lectura. El SQL de [`docs/HANDOFF.md`](../HANDOFF.md) sec. 3, A2 borra mensajes, casos y conversaciones de dos conversaciones de prueba del 3-oct; para otras se cambian los ids. Sus handoffs y bloqueos las referencian y se borran antes (inferido de `supabase/migrations/0001_ops.sql`). La auditoría no se puede borrar, por diseño.
+**Cómo resetear.** Solo desde el SQL Editor de Supabase, con una cuenta del proyecto: el rol de la app no tiene `DELETE` y el MCP del repo es de solo lectura. La primera consulta cuenta lo que tienen las tres personas de cliente. La transacción borra sus mensajes, casos, bloqueos, handoffs y conversaciones, en ese orden, porque los cuatro primeros referencian la conversación (`supabase/migrations/0001_ops.sql`). La auditoría no se puede borrar, por diseño, y `ops.llm_usage` se deja, porque registra el gasto.
+
+```sql
+select 'conversations' as tabla, count(*) from ops.conversations
+  where customer_id in ('CLI-00SA0N9OQTM0', 'CLI-0085D5JD85CX', 'CLI-02ARMH0UANWD')
+union all select 'dispute_cases', count(*) from ops.dispute_cases
+  where customer_id in ('CLI-00SA0N9OQTM0', 'CLI-0085D5JD85CX', 'CLI-02ARMH0UANWD')
+union all select 'card_locks', count(*) from ops.card_locks
+  where customer_id in ('CLI-00SA0N9OQTM0', 'CLI-0085D5JD85CX', 'CLI-02ARMH0UANWD')
+union all select 'handoffs', count(*) from ops.handoffs
+  where customer_id in ('CLI-00SA0N9OQTM0', 'CLI-0085D5JD85CX', 'CLI-02ARMH0UANWD');
+
+begin;
+delete from ops.messages where conversation_id in (select conversation_id from ops.conversations
+  where customer_id in ('CLI-00SA0N9OQTM0', 'CLI-0085D5JD85CX', 'CLI-02ARMH0UANWD'));
+delete from ops.dispute_cases where customer_id in ('CLI-00SA0N9OQTM0', 'CLI-0085D5JD85CX', 'CLI-02ARMH0UANWD');
+delete from ops.card_locks where customer_id in ('CLI-00SA0N9OQTM0', 'CLI-0085D5JD85CX', 'CLI-02ARMH0UANWD');
+delete from ops.handoffs where customer_id in ('CLI-00SA0N9OQTM0', 'CLI-0085D5JD85CX', 'CLI-02ARMH0UANWD');
+delete from ops.conversations where customer_id in ('CLI-00SA0N9OQTM0', 'CLI-0085D5JD85CX', 'CLI-02ARMH0UANWD');
+commit;
+```
 
 ### 1.6 La consola del agente
 
@@ -200,7 +220,7 @@ Con `--reset-passwords` también da contraseñas nuevas a las cuentas existentes
    uv run python -m src.ml.fraud_risk_transfer --competition data/kaggle --lakehouse data/lakehouse_full.duckdb --out reports/ml --model models/fraud_risk_ieee.joblib   # risk model transferred from IEEE-CIS (files in data/kaggle, git-ignored); logs the run to MLflow in ./mlflow.db and ./mlruns
    ```
 
-Salidas: el bundle en `models/`, los reportes en `reports/ml/` y la corrida en MLflow local. El reporte registrado da ROC AUC 0,817 en el split de test de la competencia, con umbral 0,0669 ([`reports/ml/fraud_risk_transfer.md`](../../reports/ml/fraud_risk_transfer.md)). Un reentrenamiento en el contenedor dio 0,815 y umbral 0,0694: cercano, no idéntico (cuerpo del PR #45). La API carga el bundle desde `FRAUD_MODEL_PATH` cuando crea el orquestador, en el primer pedido (`get_orchestrator`, `src/api/dispute_routes.py`).
+Salidas: el bundle en `models/`, los reportes en `reports/ml/` y la corrida en MLflow local. El reporte registrado (contrato 1.2) da ROC AUC 0,816 en el split de test de la competencia, con umbral 0,0637 ([`reports/ml/fraud_risk_transfer.md`](../../reports/ml/fraud_risk_transfer.md)). El entrenador lee sus filas en orden fijo, así que dos reentrenamientos dan el mismo reporte ([09-plan-de-pendientes.md](09-plan-de-pendientes.md), sección 2.1). La API carga el bundle desde `FRAUD_MODEL_PATH` cuando crea el orquestador, en el primer pedido (`get_orchestrator`, `src/api/dispute_routes.py`).
 
 Las fuentes se contradicen sobre la licencia de los datos: `README.md` ("Limitations") y la respuesta de TQ-032 dicen que los mentores aprobaron el uso; la respuesta de TQ-026, su fila en [`docs/PLAN.md`](../PLAN.md) y el spec del modelo (sec. 7) dicen que sigue pendiente.
 

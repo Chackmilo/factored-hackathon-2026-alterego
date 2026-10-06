@@ -179,7 +179,7 @@ Desde el 5-oct hay reporte comprometido: [reports/eval_heldout_model.md](../../r
 - Estas latencias son de otra máquina que la del reporte comprometido (161,6 ms sin modelo); no se comparan con él.
 - Los 9 inseguros que quedan son los 9 casos de alto riesgo no escalados, que siguen abriendo caso (calculado de `reports/eval_heldout_model.json`).
 - Con el modelo, 10 conversaciones de varios cargos (HO-149 a HO-160) escalan en el primer cargo y pierden la oferta de bloqueo (PR #44).
-- Un reentrenamiento dio ROC AUC 0,815 y umbral 0,0694, cerca de 0,817 y 0,0669. La diferencia venía del orden de las filas; con el orden fijo, el reentrenamiento reproduce 0,817 y 0,0669 (commit `4db45f3`). El bundle no está en el repo ni en producción.
+- Un reentrenamiento dio ROC AUC 0,815 y umbral 0,0694, cerca de 0,817 y 0,0669. La diferencia venía del orden de las filas; con el orden fijo, el reentrenamiento reproduce 0,817 y 0,0669 (commit `4db45f3`). El bundle servido es el del contrato 1.2 (0,816 y 0,0637): está en el repo y en producción desde el 5-oct.
 
 ## 8. Explicador de políticas
 
@@ -195,7 +195,7 @@ Benchmark aparte, sobre 60 preguntas `team-generated, LLM-drafted`: 30 de desarr
 
 En test, la acción correcta es 40,0 % (6 de 15) en ES y 33,3 % (5 de 15) en PT. Por qué falla, las desviaciones declaradas del banco y la comparación con E5 (medida el 5-oct; BM25 se queda) están en [05-modelado.md](05-modelado.md), sección 3. El explicador está encendido en producción (`data/rag_gate.json`, PR #28), y desde el 5-oct el harness puede correr con él (`--explainer`): los 250 casos dan el mismo resultado, porque ninguno hace una pregunta de reglas ([reports/eval_heldout_explainer.md](../../reports/eval_heldout_explainer.md)).
 
-Las métricas offline del modelo de riesgo (ROC AUC de test 0,497 sobre la etiqueta del banco; 0,817 en el holdout de IEEE-CIS) están en [05-modelado.md](05-modelado.md), sección 2.
+Las métricas offline del modelo de riesgo (ROC AUC de test 0,497 sobre la etiqueta del banco; 0,816 en el holdout de IEEE-CIS, contrato 1.2) están en [05-modelado.md](05-modelado.md), sección 2.
 
 ## 9. Calidad de las etiquetas
 

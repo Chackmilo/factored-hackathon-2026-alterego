@@ -46,7 +46,7 @@ Fuentes: [`reports/eval_heldout_blind.md`](../../reports/eval_heldout_blind.md) 
 
 La lista completa de pendientes, con lo que se cerró el 5-oct (modelo reproducible y en git, held-out con el modelo, intervalos, EDA de las features, E5 y Jev medidos, y los dos bugs de conversación arreglados), está en [09-plan-de-pendientes.md](09-plan-de-pendientes.md).
 
-- **Producción** sirve `58ab501` (PR #63) desde el 5-oct. Vercel Hobby bloqueó los merges de #56 a #63, hechos por otra cuenta, porque solo despliega commits atribuidos a la cuenta dueña (estados de despliegue de GitHub).
+- **Producción** sirve desde el 5-oct el código de `58ab501` (PR #63), desplegado con el merge del PR #64, que solo cambia documentación. Vercel Hobby bloqueó los merges de #56 a #63, hechos por otra cuenta, y el despliegue manual desde el panel, porque solo despliega commits atribuidos a la cuenta dueña (estados de despliegue de GitHub; panel de Vercel).
 - **Repo privado** cuyo historial enlaza el PDF del diccionario de datos, con llaves de AWS de solo lectura (`AGENTS.md` regla 10). El PR #49 no reescribió el historial; la auditoría del 4-oct, no comprometida, recomienda publicar `factored-hackathon-2026-alterego` desde una copia sin historial.
 - **`cliente-hasta-150`** tiene un caso abierto sobre su cargo (`docs/HANDOFF.md`, A2; la auditoría registra `CASE-ECB3AEEF4C1B`) y no muestra `POL-AUT-150`. Se borra desde el SQL Editor de Supabase ([01-guia-de-uso.md](01-guia-de-uso.md), sección 1.5).
 - **Correo de entrega:** dice "52.4%, 123/230" (son 131 de 250) y atribuye 25,0 / 85,1 ms a "native hardware" ([06-evaluacion.md](06-evaluacion.md), sección 3).

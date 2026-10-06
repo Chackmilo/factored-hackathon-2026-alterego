@@ -1,6 +1,6 @@
 # Dispute intake frontend
 
-React + TypeScript (Vite) client for the dispute-intake API. Three views: a Login (Supabase Auth, or demo test personas), the customer Chat (Spanish or Portuguese) and the English HITL Console for agents. No UI library, no router library, one stylesheet.
+React + TypeScript (Vite) client for the dispute-intake API. Three views: a Login (Supabase Auth, or demo test personas), the customer Chat (Spanish or Portuguese) and the HITL Console for agents (Spanish, Portuguese or English). No UI library, no router library, one stylesheet.
 
 ## Requirements
 
@@ -49,6 +49,6 @@ Both `frontend/node_modules/` and `frontend/dist/` are git-ignored (root `.gitig
 - `src/App.tsx`: state-based routing between Login, Chat and Console.
 - `src/Login.tsx`: the email and password form in Supabase mode; the personas list and agent entry in local mode.
 - `src/Chat.tsx`: language toggle (sent when the conversation starts), message list, candidate buttons that send the option number, lock confirmation buttons ("Sí" / "Sim" and "No" / "Não"), status line.
-- `src/Console.tsx`: Cases (credit-candidate filter, Approve / Reject), Handoffs (open first, expandable packet, Resolve), Locks, Audit log (newest first, conversation filter). A 403 shows "This view requires the agent role".
+- `src/Console.tsx`: Cases (credit-candidate filter, Approve / Reject), Handoffs (open first, expandable packet, Resolve), Locks, Audit log (newest first, conversation filter). A 403 shows "This view requires the agent role" (or its Spanish or Portuguese label). There is no Questions tab since 5-Oct: the team questions stay in `data/fixtures/team_questions.json` and the `/api/v1/console/questions` endpoints. The ES / PT / EN toggle in the header changes only the console's own text (the data stays as recorded); the pick is kept in `localStorage`, and the first visit follows the browser language (Portuguese or Spanish, else English).
 - `src/styles.css`: neutral light theme, system font stack, 16px side gutters, phone width without horizontal scroll.
 - `.env.example`: the two `VITE_SUPABASE_*` variables, empty; copy it to `.env.local` for the Supabase mode.

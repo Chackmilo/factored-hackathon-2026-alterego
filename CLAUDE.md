@@ -35,6 +35,7 @@ uv run python -m src.eval.rag_benchmark --out reports/rag_benchmark   # policy e
 uv run python -m src.rag.onnx_retriever download      # E5 int8 model into models/e5-small (git-ignored, 135 MB), pinned revision, SHA-256 checked
 uv run python -m src.eval.labeling kappa              # Cohen's kappa once the four sheets in data/eval/labeling are filled
 uv run python -m src.ml.fraud_risk_transfer --competition data/kaggle --lakehouse data/lakehouse_full.duckdb --out reports/ml --model models/fraud_risk_ieee.joblib   # risk model transferred from IEEE-CIS (files in data/kaggle, git-ignored); logs the run to MLflow in ./mlflow.db and ./mlruns
+uv run python scripts/notebooks/run_notebook.py notebooks/06_risk_model_training.ipynb   # the training notebook, executed headless: trains the served model, checks it reproduces the committed report and bundle (needs data/kaggle and data/lakehouse_full.duckdb)
 uv run python -m src.ml.risk_feature_eda --competition data/kaggle --lakehouse data/lakehouse_full.duckdb --model models/fraud_risk_ieee.joblib --out reports/ml   # EDA of the 19 served features (min, max, mean, one chart each in reports/ml/eda) and observed against predicted on IEEE-CIS
 docker-compose up --build -d                          # API plus the React build in one image, lakehouse read from ./data
 uvx ruff check <files you touched>                    # lint (ruff is not a project dependency)

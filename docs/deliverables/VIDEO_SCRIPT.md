@@ -2,7 +2,7 @@
 **Factored AI & Data Hackathon 2026 — Team AlterEgo**  
 **Target Duration:** Exactly 3:00 (180 seconds)  
 **Tools Recommended:** OBS Studio, Loom, or Windows Game Bar (`Win + Alt + R`)  
-**Resolution:** 1080p (16:9), Fullscreen Browser at [https://alterego-silk.vercel.app](https://alterego-silk.vercel.app)
+**Resolution:** 1080p (16:9), Fullscreen Browser at [https://factored-alterego.vercel.app](https://factored-alterego.vercel.app)
 
 > [!CAUTION]
 > **Recording Safety Rule:** Never show `.env`, `personas.local.json`, Supabase API secret keys, or browser developer tools with tokens during the recording.
@@ -20,7 +20,7 @@
 ---
 
 ## Part 2: Live Production Demo (0:20 – 1:40 | 80s)
-**URL:** [https://alterego-silk.vercel.app](https://alterego-silk.vercel.app)
+**URL:** [https://factored-alterego.vercel.app](https://factored-alterego.vercel.app)
 
 ### Demo 1: Safe Automated Resolution Under $150 (0:20 – 0:40 | 20s)
 **Action:** 
@@ -121,5 +121,5 @@
 ## Video Checklist Before Submitting:
 - [ ] Duration is under 3 minutes and 5 seconds.
 - [ ] Audio is crisp and intelligible.
-- [ ] Production URL [https://alterego-silk.vercel.app](https://alterego-silk.vercel.app) is clearly visible in the browser address bar.
+- [ ] Production URL [https://factored-alterego.vercel.app](https://factored-alterego.vercel.app) is clearly visible in the browser address bar.
 - [ ] No API keys, passwords, or personal email addresses visible on screen.

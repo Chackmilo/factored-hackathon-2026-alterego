@@ -6,7 +6,7 @@ Los comandos están en sintaxis de bash. En Windows PowerShell 5.1, `&&` no exis
 
 ## 1. Probar la demo en producción
 
-La demo está en <https://alterego-silk.vercel.app>. Desde el 5-oct corre el código de `main` en `58ab501`: la política, el modelo de riesgo, Jev (con tope de 2 USD al día; si falla o se agota el tope, responde el extractor de palabras clave) y el explicador de políticas BM25. Las respuestas son plantillas, no texto redactado por Claude (`README.md`, "Limitations").
+La demo está en <https://factored-alterego.vercel.app>. Desde el 5-oct corre el código de `main` en `58ab501`: la política, el modelo de riesgo, Jev (con tope de 2 USD al día; si falla o se agota el tope, responde el extractor de palabras clave) y el explicador de políticas BM25. Las respuestas son plantillas, no texto redactado por Claude (`README.md`, "Limitations").
 
 ### 1.1 Ingresar
 

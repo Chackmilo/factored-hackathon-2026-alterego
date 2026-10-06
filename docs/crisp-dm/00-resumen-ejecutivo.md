@@ -32,7 +32,7 @@ Fuentes: [`reports/eval_heldout_blind.md`](../../reports/eval_heldout_blind.md) 
 
 ## Qué corre en producción y qué no
 
-<https://alterego-silk.vercel.app> corre, desde el 5-oct, el código de `main` en `58ab501`: la política v2.3, el modelo de riesgo (califica los cargos Web y App), Jev detrás del router con tope de 2 USD al día y el extractor como respaldo, el explicador de políticas con BM25 y el login de Supabase. No corren las respuestas de Claude (2 de 7 tareas, sin conectar) ni E5, que no cabe en el bundle. Toda respuesta es una plantilla. Ninguna corrida mide esa combinación junta ([07-despliegue.md](07-despliegue.md)).
+<https://factored-alterego.vercel.app> corre, desde el 5-oct, el código de `main` en `58ab501`: la política v2.3, el modelo de riesgo (califica los cargos Web y App), Jev detrás del router con tope de 2 USD al día y el extractor como respaldo, el explicador de políticas con BM25 y el login de Supabase. No corren las respuestas de Claude (2 de 7 tareas, sin conectar) ni E5, que no cabe en el bundle. Toda respuesta es una plantilla. Ninguna corrida mide esa combinación junta ([07-despliegue.md](07-despliegue.md)).
 
 ## Limitaciones honestas
 

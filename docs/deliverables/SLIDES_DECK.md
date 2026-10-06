@@ -1,6 +1,6 @@
 # AlterEgo: Slide Deck Specification (Pitch / Submission)
 **Factored AI & Data Hackathon 2026**  
-**Team AlterEgo** | Production Link: [alterego-silk.vercel.app](https://alterego-silk.vercel.app)  
+**Team AlterEgo** | Production Link: [factored-alterego.vercel.app](https://factored-alterego.vercel.app)  
 **Format:** 6 Slides (16:9) | **Language:** English
 
 ---
@@ -142,8 +142,8 @@
 - **Subtitle:** Experience AlterEgo live in production with verified test personas.
 
 ### Live Environment Details
-- **Production URL:** [https://alterego-silk.vercel.app](https://alterego-silk.vercel.app)
-- **API Health Endpoint:** [https://alterego-silk.vercel.app/health](https://alterego-silk.vercel.app/health)
+- **Production URL:** [https://factored-alterego.vercel.app](https://factored-alterego.vercel.app)
+- **API Health Endpoint:** [https://factored-alterego.vercel.app/health](https://factored-alterego.vercel.app/health)
 - **Interactive Architecture Artifacts:** Visualized workflows and component state machines.
 
 ### Verified Demo Personas

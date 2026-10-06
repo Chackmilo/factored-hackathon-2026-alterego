@@ -2,7 +2,7 @@
 
 En AlterEgo ningún modelo decide un resultado. Decide la política como código; los componentes aprendidos o recuperados solo entregan señales tipadas que esa política lee (`AGENTS.md` sec. 4, reglas 6 y 7; sec. 8).
 
-En producción (<https://alterego-silk.vercel.app>) corren, desde el 5-oct, la política v2.3, el modelo de riesgo, Jev con el extractor de palabras clave ES/PT como respaldo y el explicador con BM25 (`main` en `58ab501`). No corren respuestas de Claude (`README.md`, "Limitations").
+En producción (<https://factored-alterego.vercel.app>) corren, desde el 5-oct, la política v2.3, el modelo de riesgo, Jev con el extractor de palabras clave ES/PT como respaldo y el explicador con BM25 (`main` en `58ab501`). No corren respuestas de Claude (`README.md`, "Limitations").
 
 ## Mapa de decisiones
 

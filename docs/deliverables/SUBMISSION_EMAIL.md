@@ -18,8 +18,8 @@ AlterEgo addresses the most costly and friction-heavy workflow in the LATAM Bank
 ### 1. Key Submission Links
 - **Public GitHub Repository:** [https://github.com/Chackmilo/factored-hackathon-2026-alterego](https://github.com/Chackmilo/factored-hackathon-2026-alterego)  
   *(Full commit history, docs and reproducible evaluation harnesses. One link to the organizer's data dictionary, which carries the dataset's AWS keys, was replaced wherever it appeared in the history, so commit ids differ from the team's private working repository.)*
-- **Live Production Deployment:** [https://alterego-silk.vercel.app](https://alterego-silk.vercel.app)  
-  *(API Health check: `https://alterego-silk.vercel.app/health`)*
+- **Live Production Deployment:** [https://factored-alterego.vercel.app](https://factored-alterego.vercel.app)  
+  *(API Health check: `https://factored-alterego.vercel.app/health`)*
 - **Interactive Architecture & Workflow Artifacts:** Included in repository at `.archify/`
 - **Video Demonstration (3 minutes):** `[INSERT_YOUTUBE_OR_LOOM_LINK_HERE]`
 - **Presentation Deck (PDF / Slides):** `[INSERT_GOOGLE_SLIDES_OR_DRIVE_LINK_HERE]`
@@ -33,7 +33,7 @@ AlterEgo addresses the most costly and friction-heavy workflow in the LATAM Bank
 ---
 
 ### 3. Jury Evaluation Credentials (Live Test Personas)
-You can test the live system directly at [https://alterego-silk.vercel.app](https://alterego-silk.vercel.app) using our pre-seeded test personas:
+You can test the live system directly at [https://factored-alterego.vercel.app](https://factored-alterego.vercel.app) using our pre-seeded test personas:
 
 | Persona / Role | Email Address | Password | Intended Test Scenario |
 | :--- | :--- | :--- | :--- |

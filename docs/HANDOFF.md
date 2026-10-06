@@ -9,7 +9,7 @@ Este documento dice qué hay en `main`, qué falta y quién lo toma. El detalle 
 ## 1. Estado
 
 - **`main` incluye todo hasta el PR #36.** No quedan PRs abiertos y la CI está en verde.
-- **App pública: <https://alterego-silk.vercel.app>** (proyecto `alterego` en Vercel).
+- **App pública: <https://factored-alterego.vercel.app>** desde el 5-oct (proyecto `factored-alterego` en la cuenta de Vercel de Kmilo, desplegado desde una copia de `main` sin `.git`). La primera, <https://alterego-silk.vercel.app> (proyecto `alterego` de Daniel), sigue arriba sobre la misma base de Supabase.
   - Solo se despliegan a producción los merges a `main` que GitHub atribuye a la cuenta dueña (Daniel): mientras el repo sea privado, el plan Hobby bloquea los de otros colaboradores.
   - El login usa Supabase, con las cuatro personas de `data/fixtures/personas.json` (tres clientes y un agente).
 - **Supabase: un solo proyecto, `AlterEgo`, que también es producción.** El diseño de `docs/SUPABASE_VERCEL.md` habla de dos proyectos (dev y demo), pero el de demo nunca se creó.

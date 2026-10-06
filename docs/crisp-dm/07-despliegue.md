@@ -1,6 +1,6 @@
 # CRISP-DM 6. Despliegue
 
-AlterEgo está desplegado en <https://alterego-silk.vercel.app>. Una función de Python en Vercel sirve la API y el front de React. Supabase Auth emite la identidad y Supabase Postgres guarda dos cosas: una copia de solo lectura de los datos del banco y lo que el sistema escribe. Desde el 5-oct producción corre la política como código con el modelo de riesgo, Jev y el explicador de políticas con BM25. Esta fase cuenta cómo está armado, qué controles tiene, qué no corre y qué riesgos quedan para la ventana del jurado. Cómo usarlo está en [01-guia-de-uso.md](01-guia-de-uso.md).
+AlterEgo está desplegado en <https://factored-alterego.vercel.app>, el proyecto `factored-alterego` de la cuenta de Vercel de Kmilo, desde el 5-oct. El primer despliegue, <https://alterego-silk.vercel.app> en la cuenta de Daniel, sigue arriba sobre la misma base de Supabase, así que las dos URL comparten los datos. Una función de Python en Vercel sirve la API y el front de React. Supabase Auth emite la identidad y Supabase Postgres guarda dos cosas: una copia de solo lectura de los datos del banco y lo que el sistema escribe. Desde el 5-oct producción corre la política como código con el modelo de riesgo, Jev y el explicador de políticas con BM25. Esta fase cuenta cómo está armado, qué controles tiene, qué no corre y qué riesgos quedan para la ventana del jurado. Cómo usarlo está en [01-guia-de-uso.md](01-guia-de-uso.md).
 
 ## Resumen en una tabla
 

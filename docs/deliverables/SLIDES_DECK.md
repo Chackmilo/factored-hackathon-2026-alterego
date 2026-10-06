@@ -73,7 +73,7 @@
    - Identity is derived strictly from verified Supabase ES256 session tokens (`app_metadata.customer_id`).
    - Customer IDs provided in request bodies or model prompts are ignored. Agents require `app_metadata.app_role = 'agent'`.
 2. **Deterministic Guardrails & Policy Isolation:**
-   - LLMs generate language and proposals—they NEVER execute actions, grant credits, or alter bank rules.
+   - Models only propose signals: Jev classifies the message and the transferred model scores risk. They never execute actions, grant credits or alter bank rules, and every reply is a policy template.
    - Money movement is strictly disabled by design (provisional credit recommendations exist only as an advisory flag in the human handoff packet for eligible low-value claims).
 3. **Proactive Fraud & Risk Protection:**
    - Multi-charge anomalies or reports of lost/stolen cards trigger immediate, proactive offers for **preventive card locking** (`POL-AUT-LOCK`).
@@ -100,10 +100,10 @@
 | **Escalation Recall** | 69.4% (68 / 98) | **79.6%** (78 / 98) | **+10.2%** |
 | **Unsafe Outcomes** | 48.8% (122 / 250) | **8.0%** (20 / 250)* | **-40.8% reduction** |
 | **Language Accuracy** | 59.7% (142 / 238) | **99.2%** (236 / 238) | **Near-perfect parity** |
-| **In-Process Latency (p50 / p95)** | 0.0 ms / 0.0 ms | **161.6 ms / 662.1 ms*** | **Deterministic response** |
+| **In-Process Latency (p50 / p95)** | 0.1 ms / 0.2 ms | **161.6 ms / 662.1 ms**\*\* | Rules-only run |
 
-*\*Note on Unsafe Outcomes: The 20 remaining cases in rules-only mode correspond specifically to foreign high-risk online purchases where the rules-engine resolved eligible intakes that an active ML risk model would flag for human escalation.*  
-*\*\*Latency measured in containerized dev environment on laptop; native Linux host benchmarked at 25.0 ms / 85.1 ms.*
+*\*Note on Unsafe Outcomes: the 20 remaining cases of the rules-only run are high-risk foreign online purchases that it opens as cases. With the transferred risk model, which production serves since October 5, unsafe outcomes fall to 9/250 (3.6%) and safe automated resolution to 101/107 (94.4%). The deployed combination (risk model, Jev and policy explainer together) was not measured as a whole.*  
+*\*\*Rules-only run, in process with no network, in the dev container on a Windows laptop; latency depends on the machine.*
 
 ### Cross-Cutting Slices
 - **Language Parity:** Spanish (96.7% safe resolution) | Portuguese (100.0% safe resolution).
@@ -124,13 +124,14 @@
   - *Engineering Decision:* We explicitly barred `fraud_score` from all feature pipelines and baseline models to eliminate data leakage.
 - **Behavioral Signal Absence in Dataset:**
   - Rigorous cross-table modeling confirmed `transactions.is_fraud` was distributed uniformly across channels, amounts, and merchant categories (ROC-AUC ~0.50).
-  - *Engineering Decision:* We explored transfer learning with IEEE-CIS feature homologation, while maintaining a fully auditable rules-only deployment in production.
+  - *Engineering Decision:* We transferred a risk model from IEEE-CIS on 19 homologated features (holdout ROC AUC 0.816). It serves in production behind `POL-ESC-ML-RISK`, with its threshold at the 98th percentile of the bank's Web and App charges. No bank label validates it, so it routes charges to a human; it is not a fraud detector validated on LATAM Bank.
 
 ### Documented System Limitations (Transparency First)
 1. **Language Scope:** The LATAM Bank dataset natively contains only Spanish; all Portuguese evaluation cases and utterances were team-generated and explicitly labeled.
-2. **Containment Ceiling:** By policy, charges $> \$500$ mandatorily escalate to humans, capping theoretical automated containment at $\sim 60.5\%$ of disputable charges.
+2. **Containment Ceiling:** By policy, charges $> \$500$ mandatorily escalate to humans, capping theoretical automated containment at $\sim 60.4\%$ of disputable charges.
 3. **No Money Movement:** AlterEgo handles intake, dispute filing, and card protection. Provisional credit is an advisory recommendation inside the human handoff packet.
 4. **Free Tier Operational Limits:** Supabase and Vercel serverless free tiers introduce cold starts; Supabase Free pauses after 7 days without queries.
+5. **Unmeasured Combination:** production runs the risk model, Jev and the policy explainer together. Each was measured on its own; the combination was not.
 
 ---
 
@@ -146,7 +147,7 @@
 - **Interactive Architecture Artifacts:** Visualized workflows and component state machines.
 
 ### Verified Demo Personas
-1. `cliente-hasta-150`: Automated single-turn dispute resolution under $150 (`POL-AUT-150`).
+1. `cliente-hasta-150`: single-turn dispute opened without a human (`POL-AUT-150` or `POL-AUT-INTAKE`).
 2. `cliente-mas-de-500`: Mandatory policy escalation over $500 (`POL-ESC-500`) with instant HITL handoff.
 3. `cliente-tarjeta-perdida`: Immediate proactive offer for preventive card lock (`POL-AUT-LOCK`).
 4. `agente`: Dedicated English HITL Console for reviewing structured packets and auditing decisions.

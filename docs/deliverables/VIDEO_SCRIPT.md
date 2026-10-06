@@ -29,7 +29,7 @@
    `"No reconozco un cargo de 113.65 USD del 3 de junio"`
 3. Press Send.  
 **Visual on Screen:**
-- The assistant identifies the transaction, confirms eligibility within the 60-day window (`POL-WIN-60`), and automatically opens a dispute case under policy clause `POL-AUT-150`.
+- The assistant identifies the transaction, confirms eligibility within the 60-day window (`POL-WIN-60`), and automatically opens a dispute case (`POL-AUT-150` or `POL-AUT-INTAKE`).
 - The case number, disputed amount ($113.65 USD), and resolution timeline (3-5 business days) are displayed.  
 **Spoken Voiceover:**
 > "First, a standard dispute under 150 dollars. The customer claims an unrecognized charge. AlterEgo extracts the intent and date hints, validates that the charge exists and is within the 60-day window, executes the case creation through our secure gateway, and reads back the committed case ID before confirming. Zero human intervention needed."
@@ -48,7 +48,7 @@
 
 ---
 
-### Demo 3: Proactive Card Locking upon Lost Card Report (0:55 – 1:20 | 25s)
+### Demo 3: Proactive Card Locking upon Lost Card Report (0:55 – 1:15 | 20s)
 **Action:**
 1. Log in as `cliente-tarjeta-perdida`.
 2. Type:  
@@ -56,8 +56,7 @@
 3. Press Send.  
 **Visual on Screen:**
 - The assistant detects the disputed charge, opens the dispute case, AND immediately identifies the security risk (`POL-AUT-LOCK`).
-- Assistant replies: Offers an immediate, preventive card lock and asks for explicit confirmation:  
-  `"¿Deseas que procedamos a bloquear preventivamente tu tarjeta terminada en XXXX para proteger tus fondos?"`
+- The assistant offers a preventive lock of the card and asks for an explicit yes.
 4. User replies: `"Sí, por favor bloquéala"`.
 5. Visual confirms: The card is locked, read back from Postgres `ops.card_locks`, and confirmed to the customer.  
 **Spoken Voiceover:**
@@ -65,20 +64,33 @@
 
 ---
 
-### Demo 4: The HITL Agent Console (1:20 – 1:40 | 20s)
+### Demo 4: Mandatory Human Escalation Over $500 (1:15 – 1:25 | 10s)
+**Action:**
+1. Log in as `cliente-mas-de-500`.
+2. Type:  
+   `"No reconozco un cargo de 4259.97 USD del 12 de junio"`
+3. Press Send.  
+**Visual on Screen:**
+- Outcome `MANDATORY_HITL_ESCALATION` with clause `POL-ESC-500`; the reply gives the handoff reference (`HO-...`) and promises nothing.  
+**Spoken Voiceover:**
+> "Above 500 dollars, policy mandates a human. The customer gets a handoff reference, never a promise."
+
+---
+
+### Demo 5: The HITL Agent Console (1:25 – 1:40 | 15s)
 **Action:**
 1. Sign out and sign in with the `agente` persona.
 2. The UI switches automatically to the English **HITL (Human-in-the-Loop) Console**.
-3. Click on the escalated ticket from `cliente-mas-de-500` (dispute of $4,259.97 USD).  
+3. Open the handoff just created for `cliente-mas-de-500` (dispute of $4,259.97 USD).  
 **Visual on Screen:**
-- Structured handoff packet: Customer metadata, verified transaction history, triggered policy clauses (`POL-ESC-500`), risk indicators, and recommendation for provisional credit.  
+- Structured handoff packet: verified facts (amount, window, ML risk score), the triggered clause (`POL-ESC-500`) and the case memory.  
 **Spoken Voiceover:**
-> "When a dispute exceeds 500 dollars or flags anomalous risk, AlterEgo enforces mandatory escalation. In the HITL Console, bank specialists receive a structured handoff packet with verified facts, triggered clauses, and an advisory credit recommendation. No black-box summaries—only verifiable operational data."
+> "In the HITL Console, bank specialists receive a structured handoff packet with verified facts, the triggered clause and the risk score. No black-box summaries, only verifiable operational data."
 
 ---
 
 ## Part 3: Architecture & Security Rigor (1:40 – 2:30 | 50s)
-**Visual:** Show the interactive Archify diagram [alterego-system.html](file:///d:/Hackaton/.archify/architecture-alterego-system-20261004-090340/alterego-system.html).  
+**Visual:** Show the interactive Archify diagram [alterego-system.html](../../.archify/architecture-alterego-system-20261004-090340/alterego-system.html).  
 **Action:** Pan from Client Channels -> Auth Guard -> 5-Stage Orchestrator -> Postgres `bank` & `ops` schemas.  
 **Spoken Voiceover:**
 > "Under the hood, AlterEgo runs a 5-stage deterministic pipeline: Understand, Decide, Act, Verify, and Escalate.
@@ -100,7 +112,7 @@
 > - **Unnecessary escalations** dropped from 72 to **exactly zero**.
 > - **Unsafe outcomes** decreased from 48.8% to 8%, with deterministic in-process execution.
 >
-> In accordance with hackathon rules, we state our limits honestly: Portuguese data was synthesized because the bank dataset only covers Spanish; production runs in rules-only mode to prevent hallucinations; and money movement is strictly reserved for authorized human bankers.
+> In accordance with hackathon rules, we state our limits honestly: Portuguese data was synthesized because the bank dataset only covers Spanish; production runs the policy with a transferred risk model and Jev's typed intent signals, every reply is a policy template so no model writes to the customer, and that combination was not measured as a whole; and money movement is strictly reserved for authorized human bankers.
 >
 > AlterEgo proves that reliable banking AI isn't about chatty models—it's about deterministic policy, verified identity, and rigorous engineering. Thank you."
 

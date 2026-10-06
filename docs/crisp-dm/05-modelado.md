@@ -79,13 +79,13 @@ El pipeline inicial trae un "modelo" sin entrenar, `MLFraudDetector`: una sigmoi
 
 | Medida | Valor |
 | --- | --- |
-| Entrenamiento | 487.837 filas, 17.150 fraudes; ROC AUC 0,859 |
-| Holdout | 102.703 filas, 3.513 fraudes; ROC AUC 0,817, PR AUC 0,165 |
-| Recall y precisión al umbral de costo (holdout) | 0,404 y 0,176 |
-| Ablación sin agregados por tarjeta / sin bloque discreto | ROC AUC 0,785 / 0,755 |
+| Entrenamiento | 487.837 filas, 17.150 fraudes; ROC AUC 0,858 |
+| Holdout | 102.703 filas, 3.513 fraudes; ROC AUC 0,816, PR AUC 0,163 |
+| Recall y precisión al umbral de costo (holdout) | 0,401 y 0,174 |
+| Ablación sin agregados por tarjeta / sin bloque discreto | ROC AUC 0,785 / 0,736 |
 | Referencia con las 415 columnas de la competencia | ROC AUC 0,9169 ([`reports/ml/ieee_cis_feature_importance.md`](../../reports/ml/ieee_cis_feature_importance.md)) |
 
-**Umbral: percentil 98, no 0,70.** Un clasificador separa las dos fuentes con AUC 1,000 con todas las codificaciones probadas (spec sec. 10.1), así que las probabilidades transferidas no tienen sentido absoluto en el banco. El umbral es el percentil 98 de 75.366 cargos Web y App de los 60 días hasta 2026-06-17: 0,0669, con 2,0 % de cargos encima. Además la prevalencia, 3,5 % en la fuente, es desconocida en el banco, y un percentil acota las escalaciones que la consola puede absorber (spec sec. 6). La política lee el umbral del bundle; 0,70 queda como valor por defecto. El acuerdo con `is_fraud` (73 marcas) es ROC AUC 0,507: se reporta y nunca se optimiza.
+**Umbral: percentil 98, no 0,70.** Un clasificador separa las dos fuentes con AUC 1,000 con todas las codificaciones probadas (spec sec. 10.1), así que las probabilidades transferidas no tienen sentido absoluto en el banco. El umbral es el percentil 98 de 75.366 cargos Web y App de los 60 días hasta 2026-06-17: 0,0637, con 2,0 % de cargos encima. Además la prevalencia, 3,5 % en la fuente, es desconocida en el banco, y un percentil acota las escalaciones que la consola puede absorber (spec sec. 6). La política lee el umbral del bundle; 0,70 queda como valor por defecto. El acuerdo con `is_fraud` (73 marcas) es ROC AUC 0,513: se reporta y nunca se optimiza.
 
 **Canales.** Jev homologó Web (0,69) y App (0,60) como del tipo de la competencia; ATM, POS, Branch y Transfer quedaron entre 0,03 y 0,05. Web y App son el 30,0 % de los cargos (spec sec. 10.2). Desde el 3-oct (PR #45, AUD-27), `TransferRiskScorer` no califica otros canales: la política recibe 0,0 y el handoff dice "not scored" ([`src/ml/transfer_scorer.py`](../../src/ml/transfer_scorer.py)).
 
@@ -103,7 +103,7 @@ El pipeline inicial trae un "modelo" sin entrenar, `MLFraudDetector`: una sigmoi
 
 - Licencia de IEEE-CIS: `README.md` y TQ-032 registran la aprobación de los mentores; TQ-026, su fila en `docs/PLAN.md` y la spec la dan por pendiente (detalle en [Entendimiento del negocio](02-entendimiento-del-negocio.md) sec. 7).
 - Canales fuera de Web y App: el reporte del 30-sep ("Caveats") y `docs/technical-discuss-points.md` sec. 7 dicen que las reglas los cubren; la spec sec. 6 (actualizada el 3-oct) y el código dicen que al servir nada los califica.
-- Siguiente paso registrado: traer las familias C y D de la competencia, que son historia del banco, para acercar 0,817 a 0,917 (`reports/ml/ieee_cis_feature_importance.md` sec. 4; TQ-026).
+- Siguiente paso registrado: traer las familias C y D de la competencia, que son historia del banco, para acercar 0,816 a 0,917 (`reports/ml/ieee_cis_feature_importance.md` sec. 4; TQ-026).
 
 ## 3. Explicador de políticas (RAG)
 

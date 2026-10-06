@@ -312,3 +312,24 @@ details.card summary code { font-size: 0.85rem; }
 .pill-done { color: var(--muted); }
 textarea { width: 100%; box-sizing: border-box; font: inherit; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; margin: 4px 0 8px; }
 .btn-small { padding: 4px 10px; font-size: 0.85rem; }
+
+/* Risk explanation and case memory cards of the handoff packet */
+.insight { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
+.insight-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.small { font-size: 0.85rem; margin: 0; }
+.meter { position: relative; height: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; }
+.meter-fill { height: 100%; border-radius: 999px; }
+.meter-fill.low { background: var(--ok-text); }
+.meter-fill.high { background: var(--danger-text); }
+.meter-mark { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--text); }
+.field .sub-label { margin-top: 4px; }
+.drivers { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.drivers li { display: grid; grid-template-columns: 6.5em 1fr auto; gap: 8px; align-items: baseline; }
+.driver-dir { font-size: 0.8rem; font-weight: 600; }
+.driver-dir.up { color: var(--danger-text); }
+.driver-dir.down { color: var(--ok-text); }
+.driver-name { overflow-wrap: anywhere; }
+.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { padding: 4px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; font-size: 0.85rem; }
+.chip.flag { background: var(--warn-bg); border-color: var(--warn-text); }
+.chip-value { font-weight: 600; }

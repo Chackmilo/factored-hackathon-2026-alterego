@@ -104,6 +104,127 @@ function Json({ value }: { value: unknown }) {
   return <pre className="json">{JSON.stringify(value, null, 2)}</pre>
 }
 
+// Discrete features of src/ml/feature_contract.py pass through the ranker; every other value is a percentile (0 to 1)
+// of the bank's Web and App charges, not the raw amount or count.
+const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+const DISTANCE = ['Same city', 'Same country, other city', 'Abroad']
+
+function featureValue(feature: string, value: number): string {
+  switch (feature) {
+    case 'amount_has_cents':
+    case 'card_kind_credit':
+    case 'card_kind_debit':
+      return value >= 0.5 ? 'Yes' : 'No'
+    case 'day_of_week':
+      return WEEKDAYS[Math.round(value)] ?? String(value)
+    case 'address_distance_bucket':
+      return DISTANCE[Math.round(value)] ?? String(value)
+    case 'consistency_matches':
+      return `${Math.round(value * 100)} % of checks match`
+    default:
+      return `percentile ${Math.round(value * 100)} of bank charges`
+  }
+}
+
+interface RiskFeature {
+  feature?: string
+  phrase?: string
+  value?: number
+  contribution?: number
+}
+
+/** The risk score against the POL-ESC-ML-RISK threshold. The score ranks charges; it is not a probability of fraud. */
+function RiskCard({ value }: { value: Record<string, unknown> | null | undefined }) {
+  if (!value) {
+    return <p className="muted">Not scored: the model rates only Web and App charges, or no charge was identified.</p>
+  }
+  const score = typeof value.score === 'number' ? value.score : null
+  const threshold = typeof value.threshold === 'number' ? value.threshold : null
+  const features = (Array.isArray(value.top_features) ? value.top_features : []) as RiskFeature[]
+  const above = score != null && threshold != null && score >= threshold
+  // Bar scale: the threshold sits at 75 % of the width so a score above it still fits.
+  const scale = threshold ? threshold / 0.75 : Math.max(score ?? 0, 1)
+  const pct = (x: number) => `${Math.min(100, (x / scale) * 100)}%`
+  let verdict = 'Score not available'
+  if (score != null && threshold != null) {
+    verdict = above
+      ? `Above the threshold (${(score / threshold).toFixed(1)}x): POL-ESC-ML-RISK`
+      : score > 0 ? `Below the threshold (${(threshold / score).toFixed(1)}x lower): no risk escalation` : 'Below the threshold: no risk escalation'
+  }
+
+  return (
+    <div className="insight">
+      <div className="insight-head">
+        <span className={`pill ${above ? 'refused' : 'resolved'}`}>{above ? 'High risk' : 'Low risk'}</span>
+        <span>{verdict}</span>
+      </div>
+      {score != null && (
+        <div className="meter" role="img" aria-label={`Score ${score.toFixed(3)}, threshold ${threshold?.toFixed(3) ?? 'unknown'}`}>
+          <div className={`meter-fill ${above ? 'high' : 'low'}`} style={{ width: pct(score) }} />
+          {threshold != null && <div className="meter-mark" style={{ left: pct(threshold) }} />}
+        </div>
+      )}
+      <p className="muted small">
+        Score {score?.toFixed(3) ?? 'n/a'}, threshold {threshold?.toFixed(3) ?? 'n/a'} (percentile 98 of the bank's Web and App
+        charges). The score ranks how unusual the charge is; it is not a probability of fraud.
+      </p>
+      {features.length > 0 && (
+        <>
+          <strong className="sub-label">What moved the score</strong>
+          <ul className="drivers">
+            {features.map((f, i) => {
+              const c = f.contribution ?? 0
+              const up = c > 0
+              return (
+                <li key={i} title={f.feature}>
+                  <span className={`driver-dir ${up ? 'up' : 'down'}`}>{up ? '▲ raises' : '▼ lowers'}</span>
+                  <span className="driver-name">
+                    {f.phrase ?? f.feature}
+                    {f.value != null && f.feature && <span className="muted">: {featureValue(f.feature, f.value)}</span>}
+                  </span>
+                  <code className="driver-delta">{up ? '+' : ''}{c.toFixed(3)}</code>
+                </li>
+              )
+            })}
+          </ul>
+          <p className="muted small">Each figure is the change in the score against the same charge with that feature at its median.</p>
+        </>
+      )}
+    </div>
+  )
+}
+
+/** What the system recorded for this customer (src/ops/store.py case_memory). Only the distress flag changes a decision. */
+function CaseMemoryCard({ value }: { value: Record<string, unknown> | undefined }) {
+  if (!value || Object.keys(value).length === 0) return <span className="muted">none</span>
+  const cases = Number(value.prior_cases_180d ?? 0)
+  const escalations = Number(value.prior_escalations_180d ?? 0)
+  const refused = value.prior_lock_refused === true
+  const distress = typeof value.prior_distress_max_30d === 'number' && value.prior_distress_max_30d >= 2
+  const clean = cases === 0 && escalations === 0 && !refused && !distress
+  const items: { label: string; text: string; flag: boolean }[] = [
+    { label: 'Cases opened (180 days)', text: String(cases), flag: cases > 0 },
+    { label: 'Handoffs to a human (180 days)', text: String(escalations), flag: escalations > 0 },
+    { label: 'Refused a card lock', text: refused ? 'Yes' : 'No', flag: refused },
+    { label: 'Severe distress (30 days)', text: distress ? 'Yes: escalates by POL-ESC-DISTRESS' : 'No', flag: distress },
+  ]
+  return (
+    <div className="insight">
+      <div className="insight-head">
+        <span className={`pill ${clean ? 'resolved' : 'offered'}`}>{clean ? 'No history' : 'Has history'}</span>
+        <span className="muted">Recorded by this system only, not the bank's complaint history.</span>
+      </div>
+      <ul className="chips">
+        {items.map((it) => (
+          <li key={it.label} className={it.flag ? 'chip flag' : 'chip'}>
+            <span className="muted">{it.label}</span> <span className="chip-value">{it.text}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 // -------------------------------------------------------------- Questions
 
 function QuestionsTab() {
@@ -332,8 +453,8 @@ function HandoffsTab() {
                 <div className="field"><strong>Unresolved questions for the customer</strong><List items={p.unresolved_questions_for_customer} /></div>
                 <div className="field"><strong>Card lock</strong><Json value={p.card_lock} /></div>
                 <div className="field"><strong>Provisional credit recommendation</strong><Json value={p.provisional_credit_recommendation} /></div>
-                <div className="field"><strong>Risk explanation</strong><Json value={p.risk_explanation} /></div>
-                <div className="field"><strong>Case memory</strong><Json value={p.case_memory} /></div>
+                <div className="field"><strong>Risk explanation</strong><RiskCard value={p.risk_explanation} /></div>
+                <div className="field"><strong>Case memory</strong><CaseMemoryCard value={p.case_memory} /></div>
                 <details className="sub">
                   <summary>Raw packet</summary>
                   <Json value={h.packet} />

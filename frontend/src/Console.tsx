@@ -17,17 +17,17 @@ interface Props {
 
 type Tab = 'cases' | 'handoffs' | 'locks' | 'audit'
 
-const TABS: { id: Tab; label: keyof Labels }[] = [
+const TABS: { id: Tab; label: 'tabCases' | 'tabHandoffs' | 'tabLocks' | 'tabAudit' }[] = [
   { id: 'cases', label: 'tabCases' },
   { id: 'handoffs', label: 'tabHandoffs' },
   { id: 'locks', label: 'tabLocks' },
   { id: 'audit', label: 'tabAudit' },
 ]
 
-type ConsoleLanguage = 'es' | 'pt' | 'en'
+type ConsoleLanguage = 'es' | 'pt'
 
-const LANGUAGES: ConsoleLanguage[] = ['es', 'pt', 'en']
-const LOCALES: Record<ConsoleLanguage, string> = { es: 'es', pt: 'pt-BR', en: 'en-US' }
+const LANGUAGES: ConsoleLanguage[] = ['es', 'pt']
+const LOCALES: Record<ConsoleLanguage, string> = { es: 'es', pt: 'pt-BR' }
 const LANGUAGE_KEY = 'console.language'
 
 // Only the console's own text changes language; the data (clauses, reasons, packets) stays as recorded.
@@ -100,6 +100,29 @@ const LABELS = {
     colDetails: 'Detalles',
     weekdays: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
     distance: ['Misma ciudad', 'Mismo país, otra ciudad', 'Exterior'],
+    meterLabel: 'Puntaje {score}, umbral {threshold}',
+    features: {
+      amount_usd: 'Monto en USD',
+      log_amount_usd: 'Monto en USD (escala log)',
+      amount_has_cents: 'Monto con centavos',
+      hour_sin: 'Hora del día (reloj de proceso)',
+      hour_cos: 'Hora del día (reloj de proceso)',
+      day_of_week: 'Día de la semana',
+      card_kind_credit: 'El producto es tarjeta de crédito',
+      card_kind_debit: 'El producto es tarjeta débito',
+      card_age_days: 'Antigüedad de la tarjeta en días',
+      days_since_prev_tx_card: 'Días desde el cargo anterior de la tarjeta',
+      tx_count_card_1d: 'Cargos de la tarjeta en el último día',
+      tx_count_card_7d: 'Cargos de la tarjeta en los últimos 7 días',
+      tx_count_card_30d: 'Cargos de la tarjeta en los últimos 30 días',
+      tx_sum_card_7d: 'Monto cargado a la tarjeta en los últimos 7 días',
+      amount_mean_card_hist: 'Monto habitual de la tarjeta',
+      amount_std_card_hist: 'Cuánto varían los montos de la tarjeta',
+      amount_zscore_card: 'Monto frente a los montos habituales de la tarjeta',
+      ratio_to_historical_avg: 'Monto frente al promedio del cliente',
+      address_distance_bucket: 'Lugar del cargo frente a la ciudad y el país del cliente',
+      consistency_matches: 'Coherencia de país, ciudad y moneda con el perfil del cliente',
+    },
     featYes: 'Sí',
     featNo: 'No',
     checksMatch: '% de las verificaciones coincide',
@@ -193,6 +216,29 @@ const LABELS = {
     colDetails: 'Detalhes',
     weekdays: ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'],
     distance: ['Mesma cidade', 'Mesmo país, outra cidade', 'Exterior'],
+    meterLabel: 'Pontuação {score}, limite {threshold}',
+    features: {
+      amount_usd: 'Valor em USD',
+      log_amount_usd: 'Valor em USD (escala log)',
+      amount_has_cents: 'Valor com centavos',
+      hour_sin: 'Hora do dia (relógio de processamento)',
+      hour_cos: 'Hora do dia (relógio de processamento)',
+      day_of_week: 'Dia da semana',
+      card_kind_credit: 'O produto é cartão de crédito',
+      card_kind_debit: 'O produto é cartão de débito',
+      card_age_days: 'Idade do cartão em dias',
+      days_since_prev_tx_card: 'Dias desde a cobrança anterior do cartão',
+      tx_count_card_1d: 'Cobranças do cartão no último dia',
+      tx_count_card_7d: 'Cobranças do cartão nos últimos 7 dias',
+      tx_count_card_30d: 'Cobranças do cartão nos últimos 30 dias',
+      tx_sum_card_7d: 'Valor cobrado no cartão nos últimos 7 dias',
+      amount_mean_card_hist: 'Valor habitual do cartão',
+      amount_std_card_hist: 'Quanto variam os valores do cartão',
+      amount_zscore_card: 'Valor frente aos valores habituais do cartão',
+      ratio_to_historical_avg: 'Valor frente à média do cliente',
+      address_distance_bucket: 'Local da cobrança frente à cidade e ao país do cliente',
+      consistency_matches: 'Coerência de país, cidade e moeda com o perfil do cliente',
+    },
     featYes: 'Sim',
     featNo: 'Não',
     checksMatch: '% das verificações coincide',
@@ -218,118 +264,23 @@ const LABELS = {
     hasHistory: 'Com histórico',
     memNote: 'Registrado só por este sistema, não é o histórico de reclamações do banco.',
   },
-  en: {
-    title: 'HITL Console',
-    agent: 'Agent',
-    subtitle: 'Decisions here are recorded; no money moves.',
-    logout: 'Log out',
-    language: 'Language',
-    tabCases: 'Cases',
-    tabHandoffs: 'Handoffs',
-    tabLocks: 'Locks',
-    tabAudit: 'Audit log',
-    forbidden: 'This view requires the agent role',
-    refresh: 'Refresh',
-    refreshing: 'Refreshing...',
-    none: 'none',
-    creditOnly: 'Credit candidates only',
-    noCases: '{t.noCases}',
-    colCase: 'Case',
-    colCustomer: 'Customer',
-    colTransaction: 'Transaction',
-    colSubcategory: 'Subcategory',
-    colStatus: 'Status',
-    colClaimed: 'Claimed',
-    colUsd: 'USD',
-    colClauses: 'Clauses',
-    colCreditCandidate: 'Credit candidate',
-    colDecision: 'Decision',
-    colCreated: 'Created',
-    yes: 'yes',
-    no: 'no',
-    notApplicable: 'n/a',
-    approve: 'Approve',
-    reject: 'Reject',
-    handoffsOrder: 'Open handoffs first, newest first.',
-    noHandoffs: '{t.noHandoffs}',
-    customer: 'customer',
-    customerRequest: 'Customer request',
-    triggeringTransaction: 'Triggering transaction',
-    verifiedFacts: 'Verified facts',
-    supportingEvidence: 'Supporting evidence',
-    applicableClauses: 'Applicable policy clauses',
-    secondaryClauses: 'Secondary clauses',
-    unresolvedQuestions: 'Unresolved questions for the customer',
-    cardLock: 'Card lock',
-    creditRecommendation: 'Provisional credit recommendation',
-    riskExplanation: 'Risk explanation',
-    caseMemory: 'Case memory',
-    rawPacket: 'Raw packet',
-    resolving: 'Resolving...',
-    resolve: 'Resolve',
-    resolvedBy: 'Resolved by',
-    on: 'on',
-    noLocks: '{t.noLocks}',
-    colLock: 'Lock',
-    colProduct: 'Product',
-    colReason: 'Reason',
-    colVerified: 'Verified',
-    colConversation: 'Conversation',
-    colUpdated: 'Updated',
-    conversationId: 'Conversation id',
-    filter: 'Filter',
-    clear: 'Clear',
-    noAudit: '{t.noAudit}',
-    colWhen: 'When',
-    colAction: 'Action',
-    colActor: 'Actor',
-    colDetails: 'Details',
-    weekdays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-    distance: ['Same city', 'Same country, other city', 'Abroad'],
-    featYes: 'Yes',
-    featNo: 'No',
-    checksMatch: '% of checks match',
-    percentileOf: 'percentile {n} of bank charges',
-    notScored: 'Not scored: the model rates only Web and App charges, or no charge was identified.',
-    scoreNA: 'Score not available',
-    aboveThreshold: 'Above the threshold ({x}x): POL-ESC-ML-RISK',
-    belowThresholdBy: 'Below the threshold ({x}x lower): no risk escalation',
-    belowThreshold: 'Below the threshold: no risk escalation',
-    highRisk: 'High risk',
-    lowRisk: 'Low risk',
-    scoreLine: "Score {score}, threshold {threshold} (percentile 98 of the bank's Web and App charges). The score ranks how unusual the charge is; it is not a probability of fraud.",
-    drivers: 'What moved the score',
-    raises: '▲ raises',
-    lowers: '▼ lowers',
-    driversNote: 'Each figure is the change in the score against the same charge with that feature at its median.',
-    memCases: 'Cases opened (180 days)',
-    memHandoffs: 'Handoffs to a human (180 days)',
-    memRefused: 'Refused a card lock',
-    memDistress: 'Severe distress (30 days)',
-    memDistressYes: 'Yes: escalates by POL-ESC-DISTRESS',
-    noHistory: 'No history',
-    hasHistory: 'Has history',
-    memNote: "Recorded by this system only, not the bank's complaint history.",
-  },
-} satisfies Record<ConsoleLanguage, Record<string, string | string[]>>
+} satisfies Record<ConsoleLanguage, Record<string, string | string[] | Record<string, string>>>
 
-type Labels = (typeof LABELS)['en']
+type Labels = (typeof LABELS)['es']
 
-/** The agent's last pick, else the browser language (Portuguese or Spanish), else English. */
+/** The agent's last pick, else Portuguese when the browser asks for it, else Spanish. */
 function initialLanguage(): ConsoleLanguage {
   try {
     const saved = localStorage.getItem(LANGUAGE_KEY)
-    if (saved === 'es' || saved === 'pt' || saved === 'en') return saved
+    if (saved === 'es' || saved === 'pt') return saved
   } catch {
     // storage blocked: fall through to the browser language
   }
   const browser = (navigator.language || '').toLowerCase()
-  if (browser.startsWith('pt')) return 'pt'
-  if (browser.startsWith('es')) return 'es'
-  return 'en'
+  return browser.startsWith('pt') ? 'pt' : 'es'
 }
 
-const I18n = createContext<{ t: Labels; locale: string }>({ t: LABELS.en, locale: LOCALES.en })
+const I18n = createContext<{ t: Labels; locale: string }>({ t: LABELS.es, locale: LOCALES.es })
 
 function useI18n() {
   return useContext(I18n)
@@ -468,7 +419,7 @@ function RiskCard({ value }: { value: Record<string, unknown> | null | undefined
         <span>{verdict}</span>
       </div>
       {score != null && (
-        <div className="meter" role="img" aria-label={`Score ${score.toFixed(3)}, threshold ${threshold?.toFixed(3) ?? 'unknown'}`}>
+        <div className="meter" role="img" aria-label={t.meterLabel.replace('{score}', score.toFixed(3)).replace('{threshold}', threshold?.toFixed(3) ?? 'n/a')}>
           <div className={`meter-fill ${above ? 'high' : 'low'}`} style={{ width: pct(score) }} />
           {threshold != null && <div className="meter-mark" style={{ left: pct(threshold) }} />}
         </div>
@@ -487,7 +438,7 @@ function RiskCard({ value }: { value: Record<string, unknown> | null | undefined
                 <li key={i} title={f.feature}>
                   <span className={`driver-dir ${up ? 'up' : 'down'}`}>{up ? t.raises : t.lowers}</span>
                   <span className="driver-name">
-                    {f.phrase ?? f.feature}
+                    {(f.feature && (t.features as Record<string, string>)[f.feature]) ?? f.phrase ?? f.feature}
                     {f.value != null && f.feature && <span className="muted">: {featureValue(f.feature, f.value, t)}</span>}
                   </span>
                   <code className="driver-delta">{up ? '+' : ''}{c.toFixed(3)}</code>

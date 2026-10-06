@@ -104,6 +104,26 @@ En este despliegue Jev no corrió (`routing_reason: "jev unavailable: no key or 
 
 - **Qué pasa:** con la conversación en `escalated`, "sabes si ya hay una respuesta de mi caso?" recibe la misma lista de cargos, como si fuera una disputa nueva. Si el cliente responde "1" otra vez, el turno puede volver a escalar el mismo cargo.
 - **Causa probable, sin verificar en código:** el turno siguiente a una escalación pasa otra vez por el flujo de disputa, y el extractor no reconoce una pregunta por el estado del caso.
+- **Verificado el 5-oct contra el fixture de los tests** (`tests/conftest.py`, `main` en 4b06411): tras escalar un cargo de 850 USD, "sabes si ya hay una respuesta de mi caso?" vuelve de `escalated` a `new` (`handle_message` resetea los estados terminales), el extractor la lee como `consulta_general` sin temas, y la respuesta es `CLARIFICATION_REQUIRED` con 5 cargos listados. No existe un tema ni una señal de "estado del caso".
+
+### H12. El cargo ya escalado vuelve a aparecer en la lista
+
+- **Qué pasa:** en el turno 4 la lista vuelve a ofrecer el cargo de 4,259.97 USD, que ya tiene el handoff HO-F3730F255891.
+- **Causa (verificada):** una escalación por `POL-ESC-500` crea un handoff, no un caso de disputa (`ops.dispute_cases` queda vacío para ese cargo), y el único filtro que existe, `_open_case_for`, mira solo los casos. Además `ops.handoffs` no tiene columna de cargo: el `transaction_id` vive dentro del `packet`. Por eso TODO-H2, tal como está escrito, no basta: un cargo escalado también tiene que salir de la lista.
+
+### H13. La lista de aclaración ofrece cargos que no se pueden disputar
+
+- **Qué pasa (verificado en el fixture de los tests):** la lista del turno de H11 incluye un cargo `Declined` (TRX-A-DECL). Si el cliente lo elige, la política se abstiene con `POL-DISP-TYPE`: un turno perdido.
+- **Causa:** la lista de "movimientos recientes" no pasa por `_disputable`, que sí se usa para los cargos hermanos.
+
+### Propuesta de Kmilo para H11 y H12 (5-oct), pendiente de aprobación
+
+Kmilo propuso: "ya fue escalado tu caso, ¿hay alguna otra transacción que desees subir? No mostrar transacciones que ya fueron disputadas". Detalle en TQ-045:
+
+1. Un tema nuevo, **estado del caso**: "¿ya hay respuesta?", "¿cómo va mi caso?", "como está meu caso?", o un número `CASE-...` o `HO-...` escrito por el cliente.
+2. La respuesta da el estado real de los casos y handoffs del cliente del token (abierto, en revisión o resuelto), con su referencia, el cargo y la fecha. Nunca promete un resultado ni dinero. Si el agente marcó el handoff como resuelto (como en esta sesión, 9:28 pm), dice que fue revisado y que la respuesta formal llega por los canales del banco, porque hoy la consola no guarda qué se decidió (H10).
+3. Después pregunta si hay otro cargo que no reconozca, y la lista excluye los cargos con caso abierto **o** con handoff abierto (H2, H12) y los que no se pueden disputar (H13). Si no queda ninguno, no muestra lista.
+4. Si el cliente dice que no, la conversación se cierra sin volver a escalar.
 
 ### Otros
 
@@ -133,4 +153,6 @@ Ninguna se implementa hasta que Daniel y Kmilo aprueben los casos que las miden.
 - [ ] **TODO-H8. La solicitud del cliente en el paquete.** Usar el mensaje que abrió la disputa (o los mensajes del cliente desde ese punto), no solo el turno que escala.
 - [ ] **TODO-H9. `handoff_id` dentro del paquete.** Escribir el id en el paquete después de `insert_handoff`, o generarlo antes de construirlo.
 - [ ] **TODO-H10. Resultado al resolver un handoff.** Proponer como TQ que "Resolver" pida un resultado (caso abierto, rechazado, cliente contactado) y una nota que quede en el audit log.
-- [ ] **TODO-H11. Pregunta por el estado después de escalar.** En `escalated`, una pregunta por el caso responde con la referencia del handoff y su estado, y no vuelve a listar cargos.
+- [ ] **TODO-H11. Pregunta por el estado después de escalar.** En `escalated`, una pregunta por el caso responde con la referencia del handoff y su estado, y no vuelve a listar cargos. Diseño propuesto por Kmilo: sección "Propuesta de Kmilo para H11 y H12" y TQ-045.
+- [ ] **TODO-H12. La lista excluye los cargos escalados.** Un método del ops store que devuelva los `transaction_id` con caso abierto o con handoff abierto del cliente (el del handoff sale de `packet`), y el filtro de TODO-H2 usa ese conjunto.
+- [ ] **TODO-H13. La lista solo ofrece cargos disputables.** Filtrar los movimientos recientes con `_disputable` antes de listarlos.

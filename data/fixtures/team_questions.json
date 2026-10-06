@@ -698,6 +698,23 @@
       "answer": "Each statement is a topic read on its own. Kmilo's rules: (1) if a message has more than one topic, tell the customer clearly that they are taken one by one, starting with the first by criticality; (2) count the topics, without showing the count to the customer; (3) if a topic is not a charge dispute (for example 'dame mi saldo'), say that it is not handled in this channel; (4) define the topics in full for the engine. In code since 5-Oct: src/understand/topics.py holds the definitions and the criticality order (card lost or stolen, charge dispute, question about the rules, requests of another channel); Jev answers one yes or no question per statement; the keyword extractor names every topic by clause; the reply announces the one-by-one order and names the unrelated request; the count goes to the message signals and to the audit row TOPICS_DETECTED. A loan installment disputed in one clause stays out of scope, as before. Re-measured with Jev: the 6 extra unsafe outcomes are gone (20 of 250, as with keywords).",
       "answered_by": "Kmilo (chat, 5-Oct)",
       "answered_at": "2026-10-05T14:00:00"
+    },
+    {
+      "question_id": "TQ-045",
+      "topic": "Conversation: a customer asks about a case that was already escalated",
+      "question": "After a turn is escalated, the customer asks 'sabes si ya hay una respuesta de mi caso?'. Today the conversation goes back to new, the message is read as a general question, and the bot lists recent charges again, including the one already escalated. What should the bot answer?",
+      "context": "Seen in production on 5-Oct (docs/hitl-test-log.md, H11 and H12) and reproduced on the test fixture. There is no 'case status' topic or signal. A POL-ESC-500 escalation creates a handoff and no dispute case, so the only filter that hides disputed charges (_open_case_for, over cases) leaves the escalated charge in the list. ops.handoffs has no charge column: the transaction id lives in the packet. The console's Resolve button records who and when, not what was decided (H10), so the bot cannot tell the customer the outcome.",
+      "options": [
+        "Kmilo's proposal: a 'case status' topic that answers with the real status and reference of the customer's cases and handoffs, never promising an outcome or money; then asks whether another charge is unrecognized, listing only disputable charges with no open case or open handoff; closes without escalating again if the answer is no (recommended)",
+        "Answer with the status only, without offering another charge",
+        "Keep the current behavior and state it as a limit"
+      ],
+      "recommendation": "Kmilo's proposal",
+      "source": "5-Oct, Kmilo (chat), from the production session of CLI-0085D5JD85CX; docs/hitl-test-log.md H11 to H13",
+      "status": "open",
+      "answer": null,
+      "answered_by": null,
+      "answered_at": null
     }
   ]
 }

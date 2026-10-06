@@ -6,7 +6,7 @@ Los comandos están en sintaxis de bash. En Windows PowerShell 5.1, `&&` no exis
 
 ## 1. Probar la demo en producción
 
-La demo está en <https://alterego-silk.vercel.app>. Corre en modo solo reglas más el explicador de políticas BM25: sin modelo de riesgo, sin Jev y sin respuestas redactadas por Claude (`README.md`, "Limitations").
+La demo está en <https://alterego-silk.vercel.app>. Desde el 5-oct corre el código de `main` en `58ab501`: la política, el modelo de riesgo, Jev (con tope de 2 USD al día; si falla o se agota el tope, responde el extractor de palabras clave) y el explicador de políticas BM25. Las respuestas son plantillas, no texto redactado por Claude (`README.md`, "Limitations").
 
 ### 1.1 Ingresar
 
@@ -28,7 +28,7 @@ Las personas vienen de [`data/fixtures/personas.json`](../../data/fixtures/perso
 
 Fuentes de la tabla: `data/fixtures/personas.json`; `docs/specs/supabase-login-v1.md` sec. 3.4; [`src/rules/dispute_policy.py`](../../src/rules/dispute_policy.py). El cargo de 168,88 USD supera 150, así que su caso cita `POL-AUT-INTAKE`, no `POL-AUT-150` (inferido de la política).
 
-Escriba "Perdí la tarjeta", no "Perdí mi tarjeta": la segunda frase no está en `STOLEN_CARD_KEYWORDS` y, sin Jev, no dispara la oferta de bloqueo (`docs/specs/supabase-login-v1.md` sec. 3.4). En portugués la lista reconoce "roubaram", "roubo", "perdi o cartão" y "extraviei", no "perdi meu cartão" (`src/rules/dispute_policy.py`).
+Escriba "Perdí la tarjeta", no "Perdí mi tarjeta": la segunda frase no está en `STOLEN_CARD_KEYWORDS`, y si Jev falla o se agota el tope diario no dispara la oferta de bloqueo (`docs/specs/supabase-login-v1.md` sec. 3.4). En portugués la lista reconoce "roubaram", "roubo", "perdi o cartão" y "extraviei", no "perdi meu cartão" (`src/rules/dispute_policy.py`).
 
 ### 1.3 Más mensajes de prueba, en español y portugués
 

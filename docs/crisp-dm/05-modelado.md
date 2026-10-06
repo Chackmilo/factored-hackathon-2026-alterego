@@ -2,7 +2,7 @@
 
 En AlterEgo ningún modelo decide un resultado. Decide la política como código; los componentes aprendidos o recuperados solo entregan señales tipadas que esa política lee (`AGENTS.md` sec. 4, reglas 6 y 7; sec. 8).
 
-En producción (<https://alterego-silk.vercel.app>) corren la política v2.3, el extractor de palabras clave ES/PT y el explicador con BM25. No corren el modelo de riesgo (su archivo está en `.gitignore` y Vercel construye desde GitHub, commit `a18f045`), ni Jev, ni respuestas de Claude (`README.md`, "Limitations"; [`docs/HANDOFF.md`](../HANDOFF.md) sec. 7.3).
+En producción (<https://alterego-silk.vercel.app>) corren, desde el 5-oct, la política v2.3, el modelo de riesgo, Jev con el extractor de palabras clave ES/PT como respaldo y el explicador con BM25 (`main` en `58ab501`). No corren respuestas de Claude (`README.md`, "Limitations").
 
 ## Mapa de decisiones
 
@@ -95,7 +95,7 @@ El pipeline inicial trae un "modelo" sin entrenar, `MLFraudDetector`: una sigmoi
 
 **Reproducibilidad.** El PR #45 dejó abierto el bundle de registro porque un reentrenamiento dio ROC AUC 0,815 y umbral 0,0694. La causa era el orden de las filas con la misma marca de tiempo, que el motor rompía distinto en cada lectura. Con el orden fijo (commit `4db45f3`), dos reentrenamientos dan el mismo reporte: 0,817 y 0,0669, las cifras del 30-sep ([Plan de pendientes](09-plan-de-pendientes.md), sección 2.1).
 
-**Contrato 1.2 y bundle en git (5-oct).** El contrato 1.2 trata como cero el residuo de punto flotante que el EDA encontró en `amount_zscore_card` y `tx_sum_card_7d` (TQ-043). El modelo reentrenado da ROC AUC de holdout 0,816 y umbral 0,0637, y en el held-out mantiene 101 de 107 y 9 de 250. `models/fraud_risk_ieee.joblib` está en git para que el build de Vercel lo lleve; producción lo sirve desde el primer despliegue que lo incluya ([Plan de pendientes](09-plan-de-pendientes.md), sección 2.11).
+**Contrato 1.2 y bundle en git (5-oct).** El contrato 1.2 trata como cero el residuo de punto flotante que el EDA encontró en `amount_zscore_card` y `tx_sum_card_7d` (TQ-043). El modelo reentrenado da ROC AUC de holdout 0,816 y umbral 0,0637, y en el held-out mantiene 101 de 107 y 9 de 250. `models/fraud_risk_ieee.joblib` está en git para que el build de Vercel lo lleve; producción lo sirve desde el despliegue de `58ab501`, el 5-oct ([Plan de pendientes](09-plan-de-pendientes.md), sección 2.11).
 
 **EDA de las 19 features.** [`reports/ml/risk_feature_eda.md`](../../reports/ml/risk_feature_eda.md) trae mínimo, máximo y media de cada feature en las dos fuentes, una gráfica por feature y lo observado contra lo predicho: en el holdout de la competencia, 3.513 fraudes observados contra 3.298 esperados, y el decil más alto predice 14,64 % y observa 15,71 %. También encontró un residuo numérico en `amount_zscore_card` y `tx_sum_card_7d`, que queda como decisión (Plan de pendientes, secciones 2.5 y 3).
 
@@ -142,16 +142,16 @@ El explicador responde preguntas sobre las reglas ("¿cuántos días tengo para 
 
 Understand interpreta el mensaje y llena un esquema tipado; no decide (`AGENTS.md` sec. 8).
 
-- **Jev** (TypeSafe AI, `typesafe-sdk==0.7.1`, modelo fijado `jev-1.13.0`): en una llamada devuelve intención y categoría fuera de alcance (`Choice`), robo de tarjeta (`Noul`) y angustia (`Score`). Solo ve el mensaje enmascarado ([`src/understand/jev_extractor.py`](../../src/understand/jev_extractor.py)).
+- **Jev** (TypeSafe AI, `typesafe-sdk==0.7.1`, modelo fijado `jev-1.13.0`): en una llamada responde una pregunta de sí o no por afirmación (`Noul`: disputa de un cargo, tarjeta perdida o robada, otro pedido; TQ-044), la categoría de ese otro pedido (`Choice`) y la angustia (`Score`). Solo ve el mensaje enmascarado ([`src/understand/jev_extractor.py`](../../src/understand/jev_extractor.py)).
 - **Extractor ES/PT de palabras clave y regex** (`keyword-v1`): aporta siempre montos, fechas, sí o no y número de opción desde el texto crudo, también cuando responde Jev. Además calcula `policy_question`, la señal que manda un turno al explicador ([`src/understand/keyword_extractor.py`](../../src/understand/keyword_extractor.py)).
 
 **El router** ([`src/understand/router.py`](../../src/understand/router.py), TQ-008) usa palabras clave en un turno trivial (12 caracteres o menos, respuesta al bloqueo, opción en una aclaración), sin key o SDK de Jev, o sin presupuesto (tope de 2 USD por día entre proveedores, TQ-015, `src/llm/budget.py`). Si no, llama a Jev y anota el gasto en `ops.llm_usage`; si Jev falla, cae a palabras clave y la auditoría guarda por qué.
 
 **Por qué el extractor es el respaldo.** Jev estaba en acceso anticipado, y su documentación dice que el inglés es su idioma principal, así que su ventaja en ES y PT no está garantizada. CI y tests corren sin red ni costo ([`docs/JEV_TYPESAFE_AI.md`](../JEV_TYPESAFE_AI.md) secs. 1 y 5).
 
-**Qué se midió.** La hipótesis 4 se midió el 5-oct y no se sostiene en esta suite: con Jev detrás del router el held-out da la misma resolución segura (105 de 107) y 26 de 250 inseguros contra 20, porque un mensaje con tarjeta robada y cargo no reconocido baja su confianza de 0,70 y recibe una aclaración en vez de llegar a un humano ([`reports/jev_evaluation_report.md`](../../reports/jev_evaluation_report.md)). Jev sí se usó en análisis: categorizó 1.013 transcripciones, todas como `consulta_general` (`docs/technical-discuss-points.md` sec. 5), y dio 61 respuestas tipadas para homologar niveles de IEEE-CIS (spec sec. 10.2).
+**Qué se midió.** La hipótesis 4 se midió el 5-oct sobre el held-out ([`reports/jev_evaluation_report.md`](../../reports/jev_evaluation_report.md)). Con una intención entre cinco, Jev dio la misma resolución segura (105 de 107) y 26 de 250 inseguros contra 20, porque un mensaje con tarjeta robada y cargo no reconocido bajaba su confianza de 0,70 y recibía una aclaración en vez de llegar a un humano. Con una pregunta por afirmación (TQ-044), el modo que corre en producción, iguala al extractor: 105 de 107 y 20 de 250. En un banco de 100 mensajes de redacción variada lee bien 92 contra 49 ([`reports/intent_hypothesis4_report.md`](../../reports/intent_hypothesis4_report.md)). Jev sí se usó en análisis: categorizó 1.013 transcripciones, todas como `consulta_general` (`docs/technical-discuss-points.md` sec. 5), y dio 61 respuestas tipadas para homologar niveles de IEEE-CIS (spec sec. 10.2).
 
-**En producción** no hay key de Jev: todo turno usa el extractor. Inferido de la lectura del código: el idioma se fija al salir del estado `new` (`src/orchestrator/dispute_orchestrator.py:171`), así que un mensaje posterior en portugués recibe respuestas en español.
+**En producción** corre Jev desde el 5-oct (`main` en `58ab501`; `TYPESAFE_API_KEY` en Vercel Production): los turnos no triviales van a Jev mientras alcance el tope diario, y el extractor toma el resto y cualquier falla. El idioma ya no queda fijo al salir del estado `new`: desde el arreglo de TQ-042 un mensaje posterior lo cambia con evidencia clara del otro idioma ([09-plan-de-pendientes.md](09-plan-de-pendientes.md), sección 2.12).
 
 ## 5. Respuestas redactadas por Claude
 

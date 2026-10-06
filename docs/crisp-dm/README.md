@@ -32,7 +32,7 @@ La lectura se estimó a unas 200 palabras por minuto sobre el conteo de palabras
 6. **Escribir la política como código.** La política v2.3 recorre sus cláusulas en orden fijo y cita la que decide ([05](05-modelado.md), sección 1).
 7. **Sumar señales sin ceder la decisión.** El modelo de riesgo transferido de IEEE-CIS, el explicador de políticas con BM25 y el extractor de palabras clave o Jev solo entregan señales ([05](05-modelado.md), secciones 2 a 4).
 8. **Evaluar.** Corrida ciega con 63,6 % (68 de 107) de resolución segura automatizada, arreglos con tests propios y corrida posterior con 98,1 % (105 de 107), cada una con sus límites ([06](06-evaluacion.md)).
-9. **Desplegar.** Vercel Hobby y Supabase Free; producción corre solo reglas más el explicador ([07](07-despliegue.md)).
+9. **Desplegar.** Vercel Hobby y Supabase Free; desde el 5-oct producción corre la política con el modelo de riesgo, Jev y el explicador ([07](07-despliegue.md)).
 10. **Iterar y registrar.** Cada giro tiene su fecha, su evidencia y su lección ([08](08-iteraciones-y-decisiones.md)).
 
 ## 3. Lo que hay que tener en cuenta para entender el proyecto
@@ -43,7 +43,7 @@ La lectura se estimó a unas 200 palabras por minuto sobre el conteo de palabras
 4. **El modelo propone y la política decide** ([`docs/PLAN.md`](../PLAN.md) sec. 2; `AGENTS.md` sec. 8). Ningún modelo abre un caso ni bloquea una tarjeta.
 5. **La identidad sale solo del token de sesión**, del `app_metadata` de Supabase; nunca del mensaje ni del cuerpo de la petición (`AGENTS.md` sec. 4, regla 5; [`src/auth/session.py`](../../src/auth/session.py)).
 6. **Suite held-out congelada, dos corridas.** La corrida ciega (63,6 %) es el resultado held-out. La posterior (98,1 %) reutiliza los casos que guiaron los arreglos (TQ-033; [06](06-evaluacion.md), sección 5).
-7. **Producción corre solo reglas más el explicador BM25:** sin modelo de riesgo, sin Jev y sin respuestas de Claude ([`README.md`](../../README.md), "Limitations"; commit `a18f045`).
+7. **Producción corre, desde el 5-oct, el código de `main` en `58ab501`:** la política, el modelo de riesgo, Jev con tope de 2 USD al día y el explicador BM25, sin respuestas de Claude. Ninguna corrida mide esa combinación junta ([`README.md`](../../README.md), "Limitations").
 8. **Las personas de demo comparten estado.** Un caso abierto queda para el siguiente usuario y apaga `POL-AUT-150` ([01](01-guia-de-uso.md), sección 1.5; [`docs/HANDOFF.md`](../HANDOFF.md) sec. 3, A2).
 9. **Planes gratuitos.** Vercel Hobby y un solo proyecto Supabase Free que también es producción. El plan Free pausa un proyecto inactivo y el canario planeado no existe (`README.md`, "Limitations"; [07](07-despliegue.md), sección 8).
 10. **Techo de contención de 60,4 %.** El tope de 500 USD manda a humano 3.547 de los 8.967 cargos disputables de junio (39,6 %) ([`docs/specs/dispute-policy-v2.3.md`](../specs/dispute-policy-v2.3.md) sec. 5).
@@ -100,5 +100,5 @@ Preguntas abiertas sin respuesta registrada en el repo (la lista completa, con s
 - **Las cifras salen de `reports/` y de los documentos canónicos**, nunca de `docs/deliverables/*.md`, que tienen errores conocidos (fila 17 de la sección 5).
 - **Cuando cambie un reporte**, busque la cifra vieja en toda la carpeta (por ejemplo, `grep -rn "98,1" docs/crisp-dm`). Actualice 00, el archivo de la fase y esta README, y anote el commit y la fecha de la corrida. Si cambia la suite held-out, la cifra es otra versión con otro SHA-256, nunca una edición de la anterior (`CLAUDE.md`, "Gotchas").
 - **Lo que solo respalda la auditoría del 4-oct**, una revisión que no está comprometida en el repo, va marcado así. Si esa auditoría se compromete, enlácela; si no, vuelva a verificar esas afirmaciones antes de repetirlas.
-- **El estado de producción es una foto del 4-oct:** el commit servido (`d25891e`) y la CI de `main` (776 tests pasados) vienen de `gh api` y `gh run view`. Vuelva a leerlos después de cada merge.
+- **El estado de producción es una foto del 5-oct:** el código servido (`58ab501`, desplegado con el merge del PR #64) y la CI de `main` (908 tests pasados) vienen de `gh api` y `gh run view`. Vuelva a leerlos después de cada merge.
 - **Formato.** Español, frases cortas, números con denominador y en formato español (punto de miles, coma decimal), sin rayas largas ni medias, sin emoji y con enlaces relativos solo a archivos que existen. Nunca credenciales, rutas locales absolutas ni el enlace del diccionario de datos: `tests/test_repo_hygiene.py` falla con esos dos últimos.

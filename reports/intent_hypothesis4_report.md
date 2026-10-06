@@ -111,4 +111,4 @@ Every one of the 8 wrong readings falls in the band, so none becomes a wrong dec
 - The messages were written to vary the wording, which is where a keyword list is weakest. On the template messages of the held-out suite both engines read 225 of 225 right. Real customer messages sit somewhere between the two banks, and the bank has none.
 - 100 test messages, 50 per language: the intervals are wide (Jev 92 %, Wilson 95 % interval 85.0 to 95.9 %; keywords 49 %, 39.4 to 58.7 %).
 - This measures the reading of one message, not the outcome of a conversation. End to end on the held-out suite Jev and the keywords are equally safe (`reports/jev_evaluation_report.md`).
-- Production has no Jev key: it runs the keyword extractor. Turning Jev on there is a decision of its own (a key in Vercel and the daily cap).
+- Since 5-Oct production runs Jev (`main` at `58ab501`; `TYPESAFE_API_KEY` in Vercel Production, 2 USD daily cap), and the keyword extractor takes trivial turns and any Jev failure.
